@@ -57,4 +57,7 @@ testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers", "--strict-config"]
 markers = [
     "slow: marks tests measured at >=0.1s call time (deselect with '-m \"not slow\"')",
+    "upstream(id): the test translates the upstream case with inventory ID id",
+    "contract(id): the test checks the semantic-contract property with ID id",
+    "divergence(id): the test checks the divergence with ID id",
 ]

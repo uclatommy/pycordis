@@ -1,6 +1,6 @@
 # Build Spec: Upstream Conformance
 
-**Status**: 🔶 In progress — Increment 1 complete
+**Status**: 🔶 In progress — Increment 2 complete
 
 ## Goal
 
@@ -263,7 +263,57 @@ its languages, so that each module the core port adds is checked from its first 
 **Files**: `pyproject.toml`, `tests/conformance_checks.py` (~120),
 `tests/test_conformance.py` (~60), `conformance/ledger.toml` (contract section)
 **Validation**: `uv run pytest tests/test_conformance.py`
-**Status**: ⬜ Pending
+**Status**: ✅ Completed
+**Changed**:
+- `pyproject.toml`: registered the `upstream`, `contract` and `divergence` markers.
+- `tests/conformance_checks.py`: `parse_markdown_table` / `table_section_ids` read the
+  contract and divergence tables from `docs/architecture.md` by their exact header row and
+  strip backticks from cells; `pending_contract_ids` reads the ledger's `[contract]` table;
+  `scan_markers` reads traceability markers from the `ast` of the test sources — decorator
+  form on a function, method, async function, or class, marks inherited from a skipped
+  enclosing class, and `marks=` on a `pytest.param` set inside a `parametrize` decorator —
+  and records a running test as one with no `skip` mark and no `skipif` mark with a literal
+  `True` condition; an `xfail` (or `xfail(reason=...)`) mark still runs, because the test
+  states the expected result; the same rule applies to `contract` and `divergence` markers.
+  Checks: `check_marker_arguments` (non-literal ID), `check_marker_ids` (marker names an ID
+  that is not a row of `docs/architecture.md`), `check_contract_coverage` (contract ID with
+  no running test and not pending; pending ID outside the table; stale pending entry). Each
+  check is a pure function that returns failure messages naming the item.
+- `conformance/ledger.toml`: created with `[contract] pending` listing all eight contract
+  IDs; the core port has no tests yet.
+**Tests**:
+- `tests/test_conformance.py`: 14 tests pass — the parametrized bad-data test (one case per
+  check failure mode, with the expected message fragment), the committed-data test, and
+  scanner tests for marks on a running marked test, `skip` / literal-`True` `skipif` /
+  non-literal `skipif` / `xfail` (counted as running), marks inherited from a skipped
+  class, `pytest.param` marks including a skipped parameter set, one param with two
+  `contract` IDs, and an f-string param ID reported as non-literal, the divergence rules
+  (xfail reason not reported; a literal ID outside the divergence table fails), non-literal
+  and missing ID arguments on decorators, and the table reader (backticks stripped, bare ID
+  read as a row, missing header table raises `ValueError`).
+- Full suite (`uv run pytest`): 32 pass. `ruff check` and `ruff format --check` clean.
+**Deviations**:
+- The spec sentence "`xfail` does not count as running" is ambiguous, and the maintainer
+  decided: an `xfail`-marked test counts toward conformance, for `contract` and
+  `divergence` alike — a test can expect failure as a negative check of the formal
+  specification. Only `skip` and a literal-`True` `skipif` prevent a marker from counting.
+- Corollary of that decision, implemented and tested: `xfail` with a non-empty argument
+  list (for example `xfail(reason=...)`) is not reported by `check_marker_arguments`, and a
+  literal string ID remains mandatory, for `contract` and `divergence` alike.
+- The two files came out larger than the estimate (305 and 313 lines against ~120 and ~60),
+  mostly docstrings and the multi-case scanner tests.
+**Manual validation**:
+- In an interactive session, with `tests/` on `sys.path`:
+  `check_contract_coverage(['X'], [], [])` returns one message naming `X` and
+  `[contract] pending`;
+  `check_contract_coverage(['X'], ['X'], [MarkerOccurrence('contract', 'X', 'tests/t.py::test_x', True)])`
+  returns the stale-pending message;
+  `check_contract_coverage(['X'], ['X'], [])` returns `[]`.
+- Add a scratch test file under `tests/` marked `@pytest.mark.contract('NO-SUCH')` and run
+  `uv run pytest tests/test_conformance.py -k committed`: the committed-data test fails with
+  `NO-SUCH` named in the message. Marking the same test `xfail` keeps it failing — an
+  `xfail` test still runs — and marking it `skip` keeps it failing too, because an ID must
+  name a real row even on a test that does not run. Delete the scratch file afterwards.
 
 ### Increment 3: Inventory scanner
 **Goal**: `scripts/upstream_inventory.py` writes `upstream.json` for the tracked revision.

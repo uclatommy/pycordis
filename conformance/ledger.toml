@@ -1,0 +1,18 @@
+# Conformance ledger: the review of each upstream inventory item, plus the contract state.
+#
+# [contract] lists the contract IDs of docs/architecture.md whose marked test is not
+# running yet. The conformance checks reject a pending ID that has a running test, a
+# pending ID that is not in the contract table, and a contract ID that is neither
+# covered by a running test nor pending.
+
+[contract]
+pending = [
+    "EFF-REVERT",
+    "EFF-ISOLATE",
+    "REG-WELLFORMED",
+    "LIFE-ORDER",
+    "LIFE-COHERENT",
+    "LIFE-PROGRESS",
+    "LIFE-CONFLUENT",
+    "LIFE-FAILURE",
+]
