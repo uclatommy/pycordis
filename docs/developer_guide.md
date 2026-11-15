@@ -27,14 +27,19 @@ A small change that is not ready for users stays behind a feature flag, so that 
 branch stays releasable. In this library, the usual flag is a name that `pycordis/__init__.py`
 does not export until the feature is complete.
 
-Both long-lived branches require every CI check to pass on a commit before that commit can be
-pushed to them. To push a direct commit, run CI on it first:
+`develop` has no branch protection, so a direct commit is pushed as it is, and `ci.yml` checks
+it after the push. Run the [checks](#checks) before the push, and fix a CI failure on `develop`
+at once, because `develop` is the source of each release.
+
+`master` is protected: every CI check must pass on a commit before that commit can be pushed to
+`master`. A commit reaches `master` through a pull request, or, for a small fix to released
+behavior, through a branch that runs CI first:
 
 ```bash
-git push origin HEAD:refs/heads/ci/<name>   # ci.yml runs on every branch
-gh run watch --exit-status "$(gh run list --branch ci/<name> --limit 1 --json databaseId --jq '.[0].databaseId')"
-git push origin develop                     # the same commit now has passing checks
-git push origin --delete ci/<name>
+git push origin HEAD:refs/heads/hotfix/<name>   # ci.yml runs on every branch
+gh run watch --exit-status "$(gh run list --branch hotfix/<name> --limit 1 --json databaseId --jq '.[0].databaseId')"
+git push origin master                          # the same commit now has passing checks
+git push origin --delete hotfix/<name>
 ```
 
 ## Checks
