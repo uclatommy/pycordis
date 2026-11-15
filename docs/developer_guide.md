@@ -7,9 +7,35 @@ divides the work into increments. Each increment delivers one working feature wi
 and the maintainer confirms it before the next increment starts. When all increments are
 complete, the spec moves to `docs/build_specs/completed/`.
 
-This guide holds the mechanics: workflow, checks, test speed, porting steps, and releases.
-[Contributing](contributing.md) holds the standards a change must meet, and
+This guide holds the mechanics: workflow, branches, checks, test speed, porting steps, and
+releases. [Contributing](contributing.md) holds the standards a change must meet, and
 [Architecture](architecture.md) holds the design principles and the divergence table.
+
+## Branches
+
+The repository has two long-lived branches: `master` holds releases, and `develop` holds
+integrated work. The size of a change decides how it reaches them:
+
+| Change | Branch | How it merges |
+|---|---|---|
+| Small: a few commits that are complete alone, such as a documentation update, a bug fix, or a single-file change | Commit directly to `develop` | Push `develop` |
+| Small fix to released behavior | Commit directly to `master` | Push `master`, then merge `master` into `develop` |
+| Large: a build spec with increments, or work that needs review before it integrates | `feature/<name>` from `develop` | Pull request to `develop` |
+| Release | `release/<version>` from `develop` | Pull request to `master`, then merge `master` into `develop` |
+
+A small change that is not ready for users stays behind a feature flag, so that each long-lived
+branch stays releasable. In this library, the usual flag is a name that `pycordis/__init__.py`
+does not export until the feature is complete.
+
+Both long-lived branches require every CI check to pass on a commit before that commit can be
+pushed to them. To push a direct commit, run CI on it first:
+
+```bash
+git push origin HEAD:refs/heads/ci/<name>   # ci.yml runs on every branch
+gh run watch --exit-status "$(gh run list --branch ci/<name> --limit 1 --json databaseId --jq '.[0].databaseId')"
+git push origin develop                     # the same commit now has passing checks
+git push origin --delete ci/<name>
+```
 
 ## Checks
 
@@ -77,8 +103,9 @@ change is reviewed by behavior, not applied as a line diff. To move to a newer r
 pycordis uses SemVer `0.x`. A change to the public API increments the minor version; other
 changes increment the patch version.
 
-1. Set `version` in `pyproject.toml`.
-2. Commit, then tag the commit `vX.Y.Z`.
-3. Push the commit and the tag.
+1. Create `release/<version>` from `develop`, and set `version` in `pyproject.toml` there.
+2. Merge the branch into `master` through a pull request.
+3. Tag the merge commit on `master` `vX.Y.Z`, and push the tag.
+4. Merge `master` into `develop`.
 
 Projects that depend on pycordis pin the tag (see [Getting Started](getting_started.md#install)).
