@@ -9,6 +9,7 @@
 
 [project]
 site_name = "pycordis"
+site_url = "https://uclatommy.github.io/pycordis/"
 site_description = "A Python port of the Cordis core: plugin and service composition from revertible effects."
 site_author = "Thomas Chen"
 repo_url = "https://github.com/uclatommy/pycordis"
