@@ -1,6 +1,6 @@
 # Build Spec: Pages and CI
 
-**Status**: ⬜ Not started — design drafted, awaiting review
+**Status**: 🟡 In progress — Increment 1 implemented on `feature/ci-tests-lint`, CI validation pending
 
 ## Goal
 
@@ -224,7 +224,29 @@ command in Architecture, because a pull request needs a target branch.
 
 **Validation**: `gh run watch --exit-status "$(gh run list --workflow ci.yml --branch <branch> --limit 1 --json databaseId --jq '.[0].databaseId')"`
 
-**Status**: ⬜ Pending
+**Status**: 🟡 Implemented — `ci.yml` exists on `feature/ci-tests-lint` and passes the same
+commands locally; the **Validation** run is pending the push confirmation
+
+**Changed**:
+
+- `.github/workflows/ci.yml`: `test` job (3.12/3.13 matrix, `fail-fast: false`, full
+  `uv run pytest`) and `lint` job (`uv lock --check`, `ruff check`, `ruff format --check`);
+  `push` on all branches, `pull_request` to `develop`/`master`, workflow `permissions`
+  `contents: read`, cancel-in-progress concurrency per `${{ github.workflow }}-${{ github.ref }}`
+
+**Tests**:
+
+- No new tests; the `test` job runs the existing suite. Local run of the job commands
+  (`uv sync --frozen`, `uv lock --check`, `uv run pytest`, `uv run ruff check .`,
+  `uv run ruff format --check .`) passes on 3.12; the 3.13 leg runs in CI.
+
+**Deviations**:
+
+- `origin/develop` already exists at `origin/master`, so the branch-creating push in
+  Architecture is not run.
+- `astral-sh/setup-uv` publishes no moving major tag above `v7` (verified via its tags API), so
+  it is pinned to the commit SHA its README documents for `v10.3.3`; `actions/checkout` uses the
+  moving `v7` tag as planned.
 
 ### Increment 2: Strict docs gate with nav drift check
 
