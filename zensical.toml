@@ -30,7 +30,9 @@ nav = [
   { "Build Specs" = [
     { "Overview" = "build_specs/index.md" },
     { "Core Port" = "build_specs/core_port.md" },
-    { "Pages And Ci" = "build_specs/pages_and_ci.md" },
+    { "Completed" = [
+      { "Pages And Ci" = "build_specs/completed/pages_and_ci.md" },
+    ]},
   ]},
   # BUILD_SPECS_NAV_END
 ]

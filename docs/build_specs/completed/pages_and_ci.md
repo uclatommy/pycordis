@@ -1,8 +1,8 @@
 # Build Spec: Pages and CI
 
-**Status**: 🟢 Complete — all four increments published. `master` at the merge of
-`feature/ci-tests-lint` runs `ci.yml` (six `test (…)` legs, `lint`, `docs`) and `pages.yml`, and
-`https://uclatommy.github.io/pycordis/` serves the site
+**Status**: 🟢 Completed — all four increments are on `master` and verified. `ci.yml` runs the
+six `test (…)` legs, `lint`, and `docs` on every push and pull request; `pages.yml` publishes
+`https://uclatommy.github.io/pycordis/` from `master`. The open items are in Follow-ups.
 
 ## Goal
 
@@ -418,8 +418,8 @@ package"` matches, and the site answers HTTP 200
 
 ## Code Standards
 
-- [Contributing](../contributing.md) — documentation rules and the pull request checklist
-- [Developer Guide](../developer_guide.md) — checks, slow tests, and the docs build
+- [Contributing](../../contributing.md) — documentation rules and the pull request checklist
+- [Developer Guide](../../developer_guide.md) — checks, slow tests, and the docs build
 - Docstrings & Markdown Style — present tense, admonitions, and blank lines between list and
   metadata lines
 
