@@ -1,8 +1,8 @@
 # Build Spec: Pages and CI
 
-**Status**: 🟢 Completed — all four increments are on `master` and verified. `ci.yml` runs the
-six `test (…)` legs, `lint`, and `docs` on every push and pull request; `pages.yml` publishes
-`https://uclatommy.github.io/pycordis/` from `master`. The open items are in Follow-ups.
+**Status**: 🟢 Completed — all four increments and the branch protection Follow-up are on
+`master` and verified. `ci.yml` runs the six `test (…)` legs, `lint`, and `docs` on every push
+and pull request; `pages.yml` publishes `https://uclatommy.github.io/pycordis/` from `master`.
 
 ## Goal
 
@@ -429,7 +429,9 @@ introduced it.
 
 ## Follow-ups
 
-- Branch protection rules on `develop` and `master` that require the six `test (…)` legs plus
-  `lint` and `docs`. A required status check is an exact name, so a rule written before the test
-  matrix would name `test (3.12)` and `test (3.13)`, names that stop existing when the matrix
-  adds `os`. Write the rule after the matrix, with `git push` and merge not exempt.
+None open.
+
+- Applied: branch protection on `develop` and `master` requires the six `test (…)` legs plus
+  `lint` and `docs`, with `git push` and merge not exempt. A required status check is an exact
+  name, so the rule was written after the test matrix, matching the `test (<python-version>,
+  <os>)` job names.
