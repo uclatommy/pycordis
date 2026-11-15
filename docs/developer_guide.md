@@ -51,20 +51,26 @@ test that runs, so a fast test can show as slow.
 
 ## Port an Upstream Change
 
-pycordis tracks one upstream revision of `cordiverse/cordis`. The README records it. To move to a
-newer revision:
+pycordis tracks one upstream revision of `cordiverse/cordis`. The README records it. An upstream
+change is reviewed by behavior, not applied as a line diff. To move to a newer revision:
 
 1. Clone upstream into a scratch directory outside this repository.
-2. Diff `packages/core/src` and `packages/core/tests` between the tracked revision and the new
-   one.
-3. For each change, port the source change and its test change together. A change that the
-   port cannot follow becomes a row in the
-   [divergence table](architecture.md#divergences-from-upstream).
-4. Update the tracked revision in `README.md` in the same commit as the last ported change.
-5. Release a new version (see below).
-
-Steps 1-4 apply one upstream change and its tests together; a change that the port cannot
-follow becomes a divergence row before the tracked revision moves.
+2. Generate the inventory of the new revision into `conformance/upstream.json` with
+   `scripts/upstream_inventory.py`. The conformance check now lists every new, removed, or
+   changed upstream item: a missing ledger entry, a stale ledger entry, or a stale hash.
+3. Review each listed item, and put it in one class:
+    - **Contract change**: the change affects a semantic-contract property. Update the contract
+      table first, then the tests, then the code.
+    - **Behavior change**: the change gives a different result in a test scenario. Port the test
+      first, then the change, unless it breaks a contract property (see
+      [Contributing](contributing.md#upstream-has-the-same-fault)).
+    - **Internal change**: the change gives the same results. For a `mirror = true` item, port
+      the change with the same structure; otherwise no code change.
+    - **TypeScript only**: types, build files, or JavaScript runtime details. No code change.
+4. For each item, update its ledger entry: the status, the pycordis symbol or test, the
+   divergence ID if there is one, and the new hash. Never copy a hash without this review.
+5. Update the tracked revision in `README.md` in the same commit as the last reviewed item.
+6. Release a new version (see below).
 
 ## Release
 

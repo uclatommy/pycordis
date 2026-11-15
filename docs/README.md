@@ -1,14 +1,16 @@
 # pycordis Documentation
 
-pycordis is a Python port of the core package of [Cordis](https://github.com/cordiverse/cordis).
-It composes plugins and services from revertible effects and declared dependencies.
+pycordis is a Python implementation of the Cordis programming model, with the core package of
+[Cordis](https://github.com/cordiverse/cordis) as its reference implementation. It composes
+plugins and services from revertible effects and declared dependencies.
 
 ## Quick Links
 
 - **[Getting Started](getting_started.md)**: install pycordis and set up a development environment
 - **[Developer Guide](developer_guide.md)**: workflow, tests, upstream porting, releases
 - **[Contributing](contributing.md)**: rules a change must meet, with the pull request checklist
-- **[Architecture](architecture.md)**: design principles, background, divergences from upstream
+- **[Architecture](architecture.md)**: design principles, the semantic contract, conformance,
+  divergences from upstream
 - **[API Reference](api/index.md)**: generated from the source docstrings
 - **[Build Specs](build_specs/index.md)**: design documents for work in progress
 
@@ -20,7 +22,7 @@ docs/
 ├── getting_started.md   # Install and development setup
 ├── developer_guide.md   # Workflow, tests, porting, releases
 ├── contributing.md      # Standards for a change, pull request checklist
-├── architecture.md      # Principles, background, divergences from upstream
+├── architecture.md      # Principles, semantic contract, conformance, divergences
 ├── api/
 │   ├── index.md         # Hand-written API overview
 │   └── <module>.md      # Generated, one page per public module (not committed)
@@ -46,8 +48,10 @@ Open `site/index.html`, or run `uv run zensical serve` to rebuild on each edit.
 **We maintain:**
 
 - Guides that explain concepts, intent, and design decisions. These change slowly.
-- The divergence table in [Architecture](architecture.md#divergences-from-upstream). Every
-  difference from upstream behavior has a row.
+- The [semantic contract](architecture.md#semantic-contract) and the divergence table in
+  [Architecture](architecture.md#divergences-from-upstream). Every difference from upstream
+  behavior has a row.
+- The conformance ledger in `conformance/`. Every upstream test case and symbol has an entry.
 
 **We do not maintain:**
 
@@ -71,7 +75,9 @@ Open `site/index.html`, or run `uv run zensical serve` to rebuild on each edit.
 | A public function, class, or module | Its docstring |
 | A concept or usage pattern | [Getting Started](getting_started.md) or a guide page |
 | A design decision or invariant | [Architecture](architecture.md) |
+| A guarantee that pycordis keeps | The [semantic contract](architecture.md#semantic-contract) |
 | A difference from upstream | The divergence table in [Architecture](architecture.md#divergences-from-upstream) |
+| How an upstream item maps to pycordis | `conformance/ledger.toml` (never a docstring) |
 | A development procedure | [Developer Guide](developer_guide.md) |
 
 A new guide page needs an entry in the hand-written part of the `nav` list in `zensical.toml`.

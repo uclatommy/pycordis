@@ -1,9 +1,11 @@
 # Contributing
 
-pycordis ports one package: `packages/core` of [Cordis](https://github.com/cordiverse/cordis).
-Most of the rules below protect one property: every line in pycordis stays traceable to upstream,
-and its behavior stays testable. A change that breaks that property costs more than it shows in a
-diff.
+pycordis implements the programming model of the Cordis paper in Python. The core package of
+[Cordis](https://github.com/cordiverse/cordis) (`packages/core`) is the reference implementation.
+Most of the rules below protect two properties: pycordis keeps every guarantee of the
+[semantic contract](architecture.md#semantic-contract), and each difference from upstream
+behavior is intended, recorded, and tested. A change that breaks either property costs more than
+it shows in a diff.
 
 Read [Architecture](architecture.md) for the design principles and the divergence table, and
 [Developer Guide](developer_guide.md) for the checks, the test-speed policy, and the release
@@ -14,9 +16,13 @@ procedure, before you start. Set up the environment with
 
 These rules decide every other choice.
 
-- **Upstream fidelity**: behavior, state names, and algorithms follow upstream at the tracked
-  revision that `README.md` records. Every intended difference has a row in the
-  [divergence table](architecture.md#divergences-from-upstream). Any other difference is a bug.
+- **Contract, then conformance**: code keeps every
+  [semantic-contract](architecture.md#semantic-contract) property, and gives the upstream result
+  in every upstream test scenario at the tracked revision that `README.md` records. Use a Python
+  feature where it gives a clearer API or a stronger guarantee, and do not copy an upstream
+  defect. Every intended difference has a row in the
+  [divergence table](architecture.md#divergences-from-upstream) with the evidence its kind
+  requires. Any other difference is a bug.
 - **No runtime dependencies**: `src/` imports only the standard library. Put a tool that only
   tests use in the `dev` dependency group, and a tool that only docs use in the `docs` group. A
   runtime dependency needs a stated reason.
@@ -44,8 +50,8 @@ These rules decide every other choice.
   machine, strategy, adapter, visitor, command) to a chain of extracted helpers. The fiber
   lifecycle is a state machine: keep its transitions in one place.
 - Extract a method when it has one clear, namable responsibility that is reusable or testable on
-  its own. Do not extract to satisfy a static-analysis warning, and do not split a ported function
-  that upstream keeps as one unit.
+  its own. Do not extract to satisfy a static-analysis warning, and do not split a function that
+  the conformance ledger marks `mirror = true`.
 - Keep allocation off paths that run often, such as an empty scheduler pump or a service lookup.
 - Reach collaborators through injection (scheduler, clock, validator), not through globals or
   attribute digging.
@@ -67,8 +73,8 @@ without naming the invariant is incomplete.
    bypassed, duplicated, or assumed.
 3. List the sibling cases the same root cause reaches, and fix the class, not the instance.
 4. Choose the enforcement point that makes the fault impossible to represent, not merely unlikely.
-5. Check whether upstream has the same fault. If it does, follow
-   [Porting From Upstream](#upstream-has-the-same-fault).
+5. Name the contract property that the fault breaks, if any, and check whether upstream has the
+   same fault. If it does, follow [Upstream Has the Same Fault](#upstream-has-the-same-fault).
 
 !!! info "Patch, or refactor"
     Refactor rather than patch when any of these hold: you add a second condition to a branch you
@@ -106,52 +112,60 @@ at least one test. No percentage target excuses a missing one.
   cross-thread behavior through scheduler submit and `Deferred` completion only.
 - A test whose behavior is gone leaves in the same change.
 
-!!! warning "Upstream test translation"
-    The one-to-one mapping from an upstream case to a test function outranks consolidation, so
-    that an upstream test diff maps to one place. Python-only tests follow normal consolidation.
+!!! info "Traceability markers"
+    A translated upstream case carries `@pytest.mark.upstream("<case ID>")`, a test of a contract
+    property carries `@pytest.mark.contract("<ID>")`, and a test of a divergence carries
+    `@pytest.mark.divergence("<ID>")`. The markers, not the test names, link a test to upstream,
+    so translated cases follow normal consolidation: a merged test keeps one marker per case.
 
 ## Documentation
 
 - Docstrings are the reference documentation: the API reference builds from them. Use Google style,
   and give every public module, class, function, and method one.
+- Write a docstring for a Python developer who uses pycordis and has not seen upstream: what the
+  object is for, where it fits in the system, the contract of its interface, and an example. A
+  docstring never names upstream, TypeScript, or the port; the conformance ledger holds that
+  mapping.
 - State the present. A docstring, comment, test name, or guide says what the code does and why,
-  never what it did before, which change introduced it, or which plan asked for it. An upstream
-  symbol name is a stable reference; an upstream revision or line number is not.
+  never what it did before, which change introduced it, or which plan asked for it. A comment can
+  name a contract ID or a divergence ID; it never names an upstream revision or line number.
 - Give each fact one home. The table in the
   [documentation guide](README.md#contributing-to-documentation) says which page each kind of fact
   belongs to. Link rather than copy a signature.
-- Write in ASD-STE100 Simplified Technical English: literal single-meaning words, no idioms,
-  metaphors, or borrowed jargon, and no marketing or narrative phrasing.
+- Write guides in ASD-STE100 Simplified Technical English: literal single-meaning words, no
+  idioms, metaphors, or borrowed jargon, and no marketing or narrative phrasing. Write docstrings
+  in plain, literal English, where a clear meaning is more important than the STE word rules.
 
 ## Porting From Upstream
 
-- Port from upstream code and tests at the tracked revision, not from memory. The Cordis paper
-  described in [Background](architecture.md#background) explains why a rule exists; it never
-  changes one.
-- Read the upstream file before you change the function that mirrors it. Clone upstream into a
-  scratch directory outside this repository and never add upstream files to it.
-- Keep upstream structure inside a function: branch order, early returns, and loop order. One
-  upstream change must map to one place in the port.
-- Keep the upstream text of an error message. A test that checks a message checks that text.
+- The [semantic contract](architecture.md#semantic-contract) decides what is correct. Upstream
+  behavior at the tracked revision decides the result where the contract permits more than one.
+  Python design decides the shape of the code and the API inside those limits.
+- Take the observable result of each upstream test scenario, the state names, the event names,
+  and the error message text. A test that checks a message checks the upstream text.
+- Copy upstream control flow only for the items that the conformance ledger marks
+  `mirror = true`: the fiber state machine and the epoch digest. Elsewhere, write the clearest
+  Python that gives the same results.
+- Read the upstream file before you change the behavior it defines. Clone upstream into a scratch
+  directory outside this repository and never add upstream files to it.
 - Follow the established naming: `camelCase` members become `snake_case`, an upstream promise
   becomes `Deferred[T]`, and a symbol-keyed hook becomes a `cordis_`-prefixed attribute rather
   than a new dunder. Keep a leading underscore.
-- One upstream spec file maps to one test module. Keep the upstream blocks as classes and the
-  upstream cases as functions, in the upstream order, named from the upstream case titles. A case
-  pycordis cannot translate stays as a function skipped with a reason that names its divergence
-  row. Python-only behavior gets its own modules instead of extra cases.
+- Update the item's entry in `conformance/ledger.toml` in the same change. When the conformance
+  check reports a stale hash, review the upstream change before you copy the new hash.
 
 !!! warning "A new divergence needs agreement first"
     Open an issue before you implement a change in observable behavior or public surface that
-    differs from upstream, and add its row (topic, upstream behavior, pycordis behavior, reason) in
-    the same change as the code. When an upstream change removes the reason for a divergence,
-    remove the divergence and its row.
+    differs from upstream. Add its row (ID, kind, upstream behavior, pycordis behavior, contract,
+    evidence) in the same change as the code. When an upstream change removes the reason for a
+    divergence, remove the divergence and its row.
 
-### Upstream has the same fault
+### Upstream Has the Same Fault
 
-Do not fix it silently. Report it with a minimal reproduction in both implementations. The choice
-is the maintainer's: keep the upstream behavior and wait for an upstream fix, or fix pycordis and
-record a divergence that links the upstream issue or pull request.
+Do not fix it silently. Report it with a minimal reproduction in both implementations, and name
+the contract property it breaks. The choice is the maintainer's: keep the upstream behavior and
+wait for an upstream fix, or fix pycordis and record a `correction` divergence that links the
+upstream issue or pull request.
 
 ## Pull Request Checklist
 
@@ -167,5 +181,7 @@ Also confirm that:
 
 - Every changed public behavior has a test, and no test asserts a fact another test covers.
 - Docstrings and guide pages match the code, and no page cites a plan or a change.
-- Any difference from upstream has a divergence row, and nothing new diverges by accident.
+- Any difference from upstream has a divergence row with its evidence, and the ledger entries
+  of the changed items are current.
+- No docstring names upstream, TypeScript, or the port.
 - Nothing that the change made dead survives.
