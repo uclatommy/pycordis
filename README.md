@@ -6,6 +6,7 @@ pycordis is a Python port of the core package of [Cordis](https://github.com/cor
 has an inverse, and the framework loads, unloads, and reloads fibers when the services that they
 depend on change.
 
+**Documentation**: <https://uclatommy.github.io/pycordis/>
 **Status**: in development, no release yet. The work plan is in
 [docs/build_specs/](docs/build_specs/index.md).
 
