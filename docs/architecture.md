@@ -86,6 +86,12 @@ algorithm: the fiber state machine and the epoch digest (`LIFE-ORDER`, `LIFE-COH
 these items the ledger entry sets `mirror = true`, and an upstream change to them is ported
 with the same structure.
 
+The tests that measure conformance are protected from automated test removal. A process that
+removes tests, such as a cover-set reduction, never removes a test that carries an `upstream`,
+`contract`, or `divergence` marker, or a test of the conformance checks themselves. Use
+`-m "upstream or contract or divergence"` to select the marked tests. A process that merges
+tests keeps one marker on the merged test for each case that it covers.
+
 ## Divergences from Upstream
 
 A divergence is an intended difference from upstream in observable behavior or public surface.
