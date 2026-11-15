@@ -27,6 +27,21 @@ The fast loop excludes slow tests:
 uv run pytest -m "not slow"
 ```
 
+## Continuous Integration
+
+The `ci.yml` workflow runs on every push and on pull requests to `develop` or `master`:
+
+- `test`: the full suite with `uv run pytest`, on Python 3.12 and 3.13. CI never filters
+  markers; the fast loop above is local only.
+- `lint`: `uv lock --check`, `uv run ruff check .`, and `uv run ruff format --check .`
+- `docs`: `uv run python scripts/gen_ref_pages.py`, a drift check, then
+  `uv run zensical build --strict`. The drift check fails when the generator changes a
+  tracked file, which means a module or build spec was added without its regenerated nav.
+
+When `docs` fails at the drift check, run `uv run python scripts/gen_ref_pages.py` and commit
+the updated `zensical.toml`. `--strict` fails the build on any warning, including a link that
+does not resolve.
+
 ## Slow Tests
 
 A test whose `call` phase takes 0.1 s or more gets `@pytest.mark.slow`. The test suite lists

@@ -1,6 +1,8 @@
 # Build Spec: Pages and CI
 
-**Status**: ⬜ Not started — design drafted, awaiting review
+**Status**: 🟡 In progress — Increments 3 and 4 implemented on `feature/ci-tests-lint`; the
+outward-facing steps of both (the `ci.yml` matrix run, enabling Pages, the merge to `master`, and
+the first publish) await user confirmation
 
 ## Goal
 
@@ -70,6 +72,10 @@ The generator rewrites the `API_NAV` and `BUILD_SPECS_NAV` sections of the track
 nav, the generator changes `zensical.toml` and step 2 fails. `pages.yml` runs the same check
 before the upload, so a direct push to `master` cannot publish a stale nav.
 
+A later increment that adds a file under `docs/` updates `zensical.toml` in the same commit as
+the file, and runs `uv run python scripts/gen_ref_pages.py` to confirm the tracked nav needs no
+further change. That check is local only, and CI repeats it on the push.
+
 `docs/api/<module>.md` pages stay generated build output. `.gitignore` ignores `docs/api/*`
 except `index.md`, and `docs/README.md` documents them as "not committed". Each build makes the
 pages again from `src/`, so a page cannot be stale. The nav entries that point to the pages are
@@ -96,9 +102,15 @@ nav" applies to one tracked file, not to the pages.
   after the job. The cache from `actions/setup-python` is not used: it does not know uv's cache
   layout.
 - Python: the `test` job has a matrix of `"3.12"` (the floor that `requires-python = ">=3.12"`
-  sets) and `"3.13"` (the newest version in the `pyproject.toml` classifiers), with
-  `fail-fast: false`. `uv.lock` is a universal lock for `>=3.12`, so `uv sync --frozen` works on
-  both. The `lint`, `docs`, and `build` jobs run on 3.12 only.
+  sets) and `"3.13"` (the newest version in the `pyproject.toml` classifiers) crossed with
+  `os: [ubuntu-latest, windows-latest, macos-latest]`, with `fail-fast: false`. Hosts skew
+  Windows- and macOS-flavored, so the suite is checked on all three runner OSes. `uv.lock` is a
+  universal lock for `>=3.12`, so `uv sync --frozen` works on every leg: `pyyaml` and `watchdog`
+  are the only packages that build native code, and the lock has a `win_amd64` wheel and a
+  macOS `arm64` wheel for each, so no leg compiles from a source distribution. The leg display
+  names become `test (<python-version>, <os>)`. The `lint`, `docs`, and `build` jobs run on
+  `ubuntu-latest` and 3.12 only. Public repositories get hosted macOS and Windows minutes under
+  the same free terms as Linux.
 
 ### Slow tests in CI
 
@@ -147,6 +159,8 @@ docs/
 
 - Docs build order and the generated nav markers: `scripts/gen_ref_pages.py` (module docstring,
   `replace_section`) and the header comment of `zensical.toml`
+- Nav drift check: `Script.replace_section` in `zensical` reads and writes the nav by marker and
+  returns the input unchanged when `nav.md` does not exist, so the check needs no feature flag
 - Local checks that CI repeats: "Checks" in `docs/developer_guide.md` and the "Pull Request
   Checklist" in `docs/contributing.md`
 - Slow-test report: `pytest_runtest_logreport` and `pytest_terminal_summary` in
@@ -156,14 +170,20 @@ docs/
 
 ## Key Constraints
 
-- Before you write YAML, confirm the managed block: `git check-ignore .github/workflows/ci.yml`
-  exits 1 (not ignored). Do not change the managed block, `.git/info/exclude`, or `attach.sh`.
-  That exit code states the same fact the last "Testing" bullet asserts: `.github/workflows/` is in
-  the public clone and no other `.github/` path is, because `git status` hides a directory whose
-  contents are all ignored.
+- `.github/workflows/` is in the public clone and no other `.github/` path is. The managed block
+  that `.github/bin/attach.sh` writes to `.git/info/exclude` ignores `/.github/*` and un-ignores
+  `!/.github/workflows/`. Do not change that block, `.git/info/exclude`, or `attach.sh`. The gate
+  on a new workflow file is the tracked file that `git ls-files .github/workflows` lists, not
+  `git check-ignore`: the rules in `.git/info/exclude` apply at add time only, so a path that is
+  already tracked stays tracked even when an ignore rule names it.
 - No CI step writes under `.github/instructions/`, `.github/skills/`, or `.vscode/`. Those paths
-  are not in the public clone. The drift check (`git status --porcelain` empty) fails a job that
-  leaves any untracked file that is not ignored.
+  are not in the public clone. A step also leaves no new untracked file: `git status --porcelain`
+  lists an untracked file that no ignore rule matches, and the `docs` job runs that check after
+  the generator, whatever the command that wrote the file.
+- Line endings reach only the `docs` job and the Pages `build` job. Each runs on Linux with a
+  clean checkout, so `git diff` compares tracked bytes. A Windows or macOS leg of the `test` job
+  checks out with `core.autocrlf` behavior of the runner and therefore runs no byte comparison:
+  the test matrix adds no `git status` or `git diff` step to `test`.
 - Lint is `uv run ruff check .` and `uv run ruff format --check .`. `black` is not in the `dev`
   group, so no step runs it.
 - No change to `src/` and no runtime dependency. CI tooling comes from GitHub Actions and the
@@ -194,6 +214,7 @@ docs/
 
 - ✅ `ci.yml` passes on a feature branch push and on a pull request to `develop` (needs `develop`
   on `origin`, which Increment 1 creates)
+- ✅ One CI run shows six green `test` legs (three OSes by two Python versions)
 - ✅ A commit that adds a build spec and does not have the regenerated `zensical.toml` fails the
   `docs` job at the drift check
 - ✅ A push to a branch other than `master` starts no `pages.yml` run
@@ -224,7 +245,30 @@ command in Architecture, because a pull request needs a target branch.
 
 **Validation**: `gh run watch --exit-status "$(gh run list --workflow ci.yml --branch <branch> --limit 1 --json databaseId --jq '.[0].databaseId')"`
 
-**Status**: ⬜ Pending
+**Status**: 🟡 Implemented — `ci.yml` on `feature/ci-tests-lint`; `gh run watch --exit-status` for
+run 43665177180 (push event) reports success for `test (3.12)`, `test (3.13)`, and `lint`; the
+pull-request leg of the Testing checklist awaits the PR to `develop`
+
+**Changed**:
+
+- `.github/workflows/ci.yml`: `test` job (3.12/3.13 matrix, `fail-fast: false`, full
+  `uv run pytest`) and `lint` job (`uv lock --check`, `ruff check`, `ruff format --check`);
+  `push` on all branches, `pull_request` to `develop`/`master`, workflow `permissions`
+  `contents: read`, cancel-in-progress concurrency per `${{ github.workflow }}-${{ github.ref }}`
+
+**Tests**:
+
+- No new tests; the `test` job runs the existing suite. Local run of the job commands
+  (`uv sync --frozen`, `uv lock --check`, `uv run pytest`, `uv run ruff check .`,
+  `uv run ruff format --check .`) passes on 3.12; the 3.13 leg runs in CI.
+
+**Deviations**:
+
+- `origin/develop` already exists at `origin/master`, so the branch-creating push in
+  Architecture is not run.
+- `astral-sh/setup-uv` publishes no moving major tag above `v7` (verified via its tags API), so
+  it is pinned to the commit SHA its README documents for `v10.3.3`; `actions/checkout` uses the
+  moving `v7` tag as planned.
 
 ### Increment 2: Strict docs gate with nav drift check
 
@@ -234,14 +278,86 @@ warning, and the guides document the CI checks.
 **Files**: `.github/workflows/ci.yml` (+~20), `zensical.toml` (+1), `docs/developer_guide.md`
 (+~15), `docs/README.md` (+~4)
 
-**Validation**: the `gh run watch --exit-status` command from Increment 1. It passes on the
-branch head. For the failure case, push a scratch branch with one commit that adds a spec without
-its regenerated nav: the `docs` job runs on that push and fails at the drift check. Delete the
-scratch branch after the run.
+**Validation**: the `gh run watch --exit-status` command of Increment 1, for the newest `ci.yml`
+run of the branch. It passes on the branch head, which proves the `docs` job works on a clean
+tree. For the failure case, commit the `docs/` file without its regenerated `zensical.toml` and
+run `uv run python scripts/gen_ref_pages.py` right after: `git status --porcelain` then lists
+`zensical.toml`, which proves the drift check catches it.
 
-**Status**: ⬜ Pending
+**Status**: 🟢 Implemented — `gh run watch --exit-status` for run 43674068283 (push of
+`f8781ad`) reports success for `test (3.12)`, `test (3.13)`, `lint`, and `docs`; the drift
+check's failure case is proven locally by the generator simulation in **Tests**
 
-### Increment 3: Publish to GitHub Pages from master
+**Changed**:
+
+- `.github/workflows/ci.yml`: `docs` job on `ubuntu-latest` with Python 3.12: `uv sync --frozen`,
+  the generator, the drift check, and `uv run zensical build --strict`
+- `zensical.toml`: `site_url = "https://uclatommy.github.io/pycordis/"`, so canonical links and
+  the sitemap use the project subpath
+- `docs/developer_guide.md`: "Continuous Integration" section after "Checks": which workflow
+  runs which job, the full-suite rule, and the drift-check failure and fix
+- `docs/README.md`: the published URL under "Build the Documentation" and `--strict` in the
+  build command
+
+**Tests**:
+
+- No new tests; the `docs` job validates the documentation build. Local run of the job command
+  sequence (`uv sync --frozen`, generator, drift check, `uv run zensical build --strict`)
+  reports "No issues found" on 3.12 with `zensical.toml` unchanged by the generator
+- Local drift simulation: a `docs/build_specs/` file added without the regenerated nav makes
+  the generator modify `zensical.toml`, and the check commands then exit nonzero
+
+**Deviations**:
+
+- The drift check implements "an empty `git status --porcelain`" as
+  `test -z "$(git status --porcelain)"`, because `git status` has no `--exit-code` option
+
+### Increment 3: Cross-platform test matrix
+
+**Goal**: The `test` job runs the suite on `ubuntu-latest`, `windows-latest`, and `macos-latest`
+for both Python versions, so a platform-dependent failure cannot reach `master`.
+
+**Files**: `.github/workflows/ci.yml` (+1, ~1): add the matrix key
+`os: [ubuntu-latest, windows-latest, macos-latest]` and change the `test` job's `runs-on` from
+`ubuntu-latest` to `${{ matrix.os }}`. `lint` keeps the hard-coded `ubuntu-latest`. The `docs`
+job is unchanged, and `pages.yml` does not exist yet at this point.
+
+**Notes**: `fail-fast: false` already covers the whole matrix, so a failing leg never cancels a
+leg. A leg that fails on a path separator or an encoding assumption is fixed in the code or the
+test, not by dropping the OS. Each leg syncs the `dev` and `docs` groups, because
+`[tool.uv] default-groups` sets both. The slow-test report stays informational on every OS: the
+0.1 s threshold and the full-suite rule do not change here.
+
+**Validation**: `gh run watch --exit-status` of Increment 1, for the newest `ci.yml` run of the
+branch. Then `gh run view <run-id> --json jobs --jq '.jobs[].name'` lists six `test (…)` legs,
+one per OS and Python version.
+
+**Status**: 🟡 Implemented — matrix in `ci.yml` on `feature/ci-tests-lint`, manual validation
+confirmed; the `gh run watch` verification runs after the push of this increment
+
+**Changed**:
+
+- `.github/workflows/ci.yml`: `test` job matrix gains `os: [ubuntu-latest, windows-latest,
+  macos-latest]` and `runs-on` becomes `${{ matrix.os }}`, so the legs display as
+  `test (<python-version>, <os>)`; the `lint` and `docs` jobs keep `ubuntu-latest`
+
+**Tests**:
+
+- No new tests; the six matrix legs run the existing suite. Local run of the job commands
+  (`uv run pytest`) passes on the macOS host, and the parsed workflow shows the
+  two-dimensional matrix with `fail-fast: false`
+
+**Deviations**:
+
+- None
+
+**Manual validation**:
+
+- Confirmed in an interactive `uv run python` session: parsing `.github/workflows/ci.yml` with
+  `yaml.safe_load` shows `runs-on` `${{ matrix.os }}`, the `os` and `python-version` matrix
+  values, `fail-fast: false`, and `lint` and `docs` on `ubuntu-latest`, i.e. six matrix legs
+
+### Increment 4: Publish to GitHub Pages from master
 
 **Goal**: A push to `master` builds the site and deploys it, and the published URL serves the home
 page.
@@ -250,13 +366,49 @@ page.
 GitHub Actions (the `gh api -X POST` call above; it is outward-facing, so get confirmation
 before you run it)
 
-**Procedure**: this spec publishes by merging the feature branch locally and pushing `master`
-directly, because no branch protection rule exists yet (see Follow-ups). Later updates to
+**Procedure**: this increment is last, so the feature branch holds every change in the spec and
+nothing yet on it is merged. It publishes by merging the branch locally into `master` and pushing
+`master` directly, because no branch protection rule exists yet (see Follow-ups). Later updates to
 `master` follow the branch workflow in Architecture and reach Pages through their merge.
 
 **Validation**: `curl -fsS https://uclatommy.github.io/pycordis/ | grep -F "pycordis is a Python port of the core package"`
 
-**Status**: ⬜ Pending
+**Status**: 🟡 Implemented — `pages.yml` on `feature/ci-tests-lint`, structural checks pass
+locally; the outward-facing steps await user confirmation: enabling the Pages source, merging the
+branch into `master`, pushing `master`, and the `curl` verification of the published site
+
+**Changed**:
+
+- `.github/workflows/pages.yml`: `build` job (checkout, setup-uv pinned as in `ci.yml`,
+  `uv sync --frozen`, the generate/drift-check/strict-build sequence identical to the `ci.yml`
+  `docs` job, `actions/upload-pages-artifact@v5` with `path: site` and the default artifact
+  name) and `deploy` job (`needs: build`, `environment: github-pages` with the
+  `steps.deployment.outputs.page_url` URL, job `permissions` `pages: write` and
+  `id-token: write`, `actions/deploy-pages@v5`); trigger `push` with `branches: [master]` and no
+  `workflow_dispatch`; workflow `permissions` `contents: read`; concurrency `group: pages` with
+  `cancel-in-progress: false`
+
+**Tests**:
+
+- No new tests; `pages.yml` is CI configuration. Local run of the `build` job command sequence
+  (generator, drift check, `uv run zensical build --strict`) reports "No issues found" on 3.12
+  with `zensical.toml` unchanged by the generator. Action tags verified against the actions'
+  repositories: `actions/checkout@v7`, `actions/upload-pages-artifact@v5`,
+  `actions/deploy-pages@v5` exist as moving major tags
+
+**Deviations**:
+
+- None
+
+**Manual validation**:
+
+- Pending the push. In an interactive `uv run python` session, parsing `.github/workflows/pages.yml`
+  with `yaml.safe_load` shows: the `push`/`branches: [master]` trigger with no
+  `workflow_dispatch`; workflow `permissions` `contents: read`; `concurrency` `pages` with
+  `cancel-in-progress: false`; `deploy` with `needs: build`, the `github-pages` environment, and
+  only job-level `pages: write` and `id-token: write`; the upload step with `path: site` and no
+  artifact name; and the `run` step sequence equal to the `ci.yml` `docs` job's — asserted and
+  passing on the branch before the push
 
 ## Code Standards
 
@@ -271,4 +423,7 @@ introduced it.
 
 ## Follow-ups
 
-- Branch protection rules on `develop` and `master` that require the `test`, `lint`, and `docs` checks
+- Branch protection rules on `develop` and `master` that require the six `test (…)` legs plus
+  `lint` and `docs`. A required status check is an exact name, so a rule written before the test
+  matrix would name `test (3.12)` and `test (3.13)`, names that stop existing when the matrix
+  adds `os`. Write the rule after the matrix, with `git push` and merge not exempt.

@@ -31,11 +31,14 @@ scripts/gen_ref_pages.py # Generates API pages and nav sections
 
 ## Build the Documentation
 
+The published site is at <https://uclatommy.github.io/pycordis/>. To build it locally:
+
 ```bash
 uv run python scripts/gen_ref_pages.py
-uv run zensical build
+uv run zensical build --strict
 ```
 
+`--strict` fails the build on any warning, so a local build applies the same gate as CI.
 Open `site/index.html`, or run `uv run zensical serve` to rebuild on each edit.
 
 ## Maintenance Philosophy
