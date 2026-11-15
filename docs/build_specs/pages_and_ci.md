@@ -1,6 +1,8 @@
 # Build Spec: Pages and CI
 
-**Status**: 🟡 In progress — Increment 2 verified on `feature/ci-tests-lint`, Increment 3 pending
+**Status**: 🟡 In progress — Increments 3 and 4 implemented on `feature/ci-tests-lint`; the
+outward-facing steps of both (the `ci.yml` matrix run, enabling Pages, the merge to `master`, and
+the first publish) await user confirmation
 
 ## Goal
 
@@ -330,7 +332,30 @@ test, not by dropping the OS. Each leg syncs the `dev` and `docs` groups, becaus
 branch. Then `gh run view <run-id> --json jobs --jq '.jobs[].name'` lists six `test (…)` legs,
 one per OS and Python version.
 
-**Status**: ⬜ Pending
+**Status**: 🟡 Implemented — matrix in `ci.yml` on `feature/ci-tests-lint`, manual validation
+confirmed; the `gh run watch` verification runs after the push of this increment
+
+**Changed**:
+
+- `.github/workflows/ci.yml`: `test` job matrix gains `os: [ubuntu-latest, windows-latest,
+  macos-latest]` and `runs-on` becomes `${{ matrix.os }}`, so the legs display as
+  `test (<python-version>, <os>)`; the `lint` and `docs` jobs keep `ubuntu-latest`
+
+**Tests**:
+
+- No new tests; the six matrix legs run the existing suite. Local run of the job commands
+  (`uv run pytest`) passes on the macOS host, and the parsed workflow shows the
+  two-dimensional matrix with `fail-fast: false`
+
+**Deviations**:
+
+- None
+
+**Manual validation**:
+
+- Confirmed in an interactive `uv run python` session: parsing `.github/workflows/ci.yml` with
+  `yaml.safe_load` shows `runs-on` `${{ matrix.os }}`, the `os` and `python-version` matrix
+  values, `fail-fast: false`, and `lint` and `docs` on `ubuntu-latest`, i.e. six matrix legs
 
 ### Increment 4: Publish to GitHub Pages from master
 
@@ -348,7 +373,42 @@ nothing yet on it is merged. It publishes by merging the branch locally into `ma
 
 **Validation**: `curl -fsS https://uclatommy.github.io/pycordis/ | grep -F "pycordis is a Python port of the core package"`
 
-**Status**: ⬜ Pending
+**Status**: 🟡 Implemented — `pages.yml` on `feature/ci-tests-lint`, structural checks pass
+locally; the outward-facing steps await user confirmation: enabling the Pages source, merging the
+branch into `master`, pushing `master`, and the `curl` verification of the published site
+
+**Changed**:
+
+- `.github/workflows/pages.yml`: `build` job (checkout, setup-uv pinned as in `ci.yml`,
+  `uv sync --frozen`, the generate/drift-check/strict-build sequence identical to the `ci.yml`
+  `docs` job, `actions/upload-pages-artifact@v5` with `path: site` and the default artifact
+  name) and `deploy` job (`needs: build`, `environment: github-pages` with the
+  `steps.deployment.outputs.page_url` URL, job `permissions` `pages: write` and
+  `id-token: write`, `actions/deploy-pages@v5`); trigger `push` with `branches: [master]` and no
+  `workflow_dispatch`; workflow `permissions` `contents: read`; concurrency `group: pages` with
+  `cancel-in-progress: false`
+
+**Tests**:
+
+- No new tests; `pages.yml` is CI configuration. Local run of the `build` job command sequence
+  (generator, drift check, `uv run zensical build --strict`) reports "No issues found" on 3.12
+  with `zensical.toml` unchanged by the generator. Action tags verified against the actions'
+  repositories: `actions/checkout@v7`, `actions/upload-pages-artifact@v5`,
+  `actions/deploy-pages@v5` exist as moving major tags
+
+**Deviations**:
+
+- None
+
+**Manual validation**:
+
+- Pending the push. In an interactive `uv run python` session, parsing `.github/workflows/pages.yml`
+  with `yaml.safe_load` shows: the `push`/`branches: [master]` trigger with no
+  `workflow_dispatch`; workflow `permissions` `contents: read`; `concurrency` `pages` with
+  `cancel-in-progress: false`; `deploy` with `needs: build`, the `github-pages` environment, and
+  only job-level `pages: write` and `id-token: write`; the upload step with `path: site` and no
+  artifact name; and the `run` step sequence equal to the `ci.yml` `docs` job's — asserted and
+  passing on the branch before the push
 
 ## Code Standards
 
