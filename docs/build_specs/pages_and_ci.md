@@ -1,8 +1,8 @@
 # Build Spec: Pages and CI
 
-**Status**: 🟡 In progress — Increments 3 and 4 implemented on `feature/ci-tests-lint`; the
-outward-facing steps of both (the `ci.yml` matrix run, enabling Pages, the merge to `master`, and
-the first publish) await user confirmation
+**Status**: 🟢 Complete — all four increments published. `master` at the merge of
+`feature/ci-tests-lint` runs `ci.yml` (six `test (…)` legs, `lint`, `docs`) and `pages.yml`, and
+`https://uclatommy.github.io/pycordis/` serves the site
 
 ## Goal
 
@@ -332,8 +332,10 @@ test, not by dropping the OS. Each leg syncs the `dev` and `docs` groups, becaus
 branch. Then `gh run view <run-id> --json jobs --jq '.jobs[].name'` lists six `test (…)` legs,
 one per OS and Python version.
 
-**Status**: 🟡 Implemented — matrix in `ci.yml` on `feature/ci-tests-lint`, manual validation
-confirmed; the `gh run watch` verification runs after the push of this increment
+**Status**: 🟢 Implemented — `gh run watch --exit-status` for run 43675781929 (push of
+`ad67227` to `feature/ci-tests-lint`) reports success, and its jobs list names the six
+`test (<python-version>, <os>)` legs plus `lint` and `docs`; the push of the merge to `master`
+then passed with the same six legs
 
 **Changed**:
 
@@ -373,9 +375,10 @@ nothing yet on it is merged. It publishes by merging the branch locally into `ma
 
 **Validation**: `curl -fsS https://uclatommy.github.io/pycordis/ | grep -F "pycordis is a Python port of the core package"`
 
-**Status**: 🟡 Implemented — `pages.yml` on `feature/ci-tests-lint`, structural checks pass
-locally; the outward-facing steps await user confirmation: enabling the Pages source, merging the
-branch into `master`, pushing `master`, and the `curl` verification of the published site
+**Status**: 🟢 Implemented — Pages source is GitHub Actions, and run 43675870626 (push of the
+merge `03049e0` to `master`) reports success for `build` and `deploy`;
+`curl -fsS https://uclatommy.github.io/pycordis/ | grep -F "pycordis is a Python port of the core
+package"` matches, and the site answers HTTP 200
 
 **Changed**:
 
@@ -402,13 +405,16 @@ branch into `master`, pushing `master`, and the `curl` verification of the publi
 
 **Manual validation**:
 
-- Pending the push. In an interactive `uv run python` session, parsing `.github/workflows/pages.yml`
-  with `yaml.safe_load` shows: the `push`/`branches: [master]` trigger with no
-  `workflow_dispatch`; workflow `permissions` `contents: read`; `concurrency` `pages` with
-  `cancel-in-progress: false`; `deploy` with `needs: build`, the `github-pages` environment, and
-  only job-level `pages: write` and `id-token: write`; the upload step with `path: site` and no
-  artifact name; and the `run` step sequence equal to the `ci.yml` `docs` job's — asserted and
-  passing on the branch before the push
+- Confirmed in an interactive `uv run python` session before the push: parsing
+  `.github/workflows/pages.yml` with `yaml.safe_load` shows the `push`/`branches: [master]`
+  trigger with no `workflow_dispatch`; workflow `permissions` `contents: read`; `concurrency`
+  `pages` with `cancel-in-progress: false`; `deploy` with `needs: build`, the `github-pages`
+  environment, and only job-level `pages: write` and `id-token: write`; the upload step with
+  `path: site` and no artifact name; and the `run` step sequence equal to the `ci.yml` `docs`
+  job's
+- After the push: `gh api repos/uclatommy/pycordis/pages --jq .build_type` returns `workflow`,
+  no branch other than `master` has a `pages.yml` run, and the home-page `curl` command of
+  **Validation** matches
 
 ## Code Standards
 
