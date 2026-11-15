@@ -1,6 +1,6 @@
 # Build Spec: Upstream Conformance
 
-**Status**: ⬜ Not started — reviewed, ready to implement
+**Status**: 🔶 In progress — Increment 1 complete
 
 ## Goal
 
@@ -232,7 +232,30 @@ mirror = true
 its languages, so that each module the core port adds is checked from its first commit.
 **Files**: `tests/test_docstrings.py` (~60)
 **Validation**: `uv run pytest tests/test_docstrings.py`
-**Status**: ⬜ Pending
+**Status**: ✅ Completed
+**Changed**:
+- `tests/test_docstrings.py`: `docstring_violations(source, location)` parses source with `ast`
+  and returns one message per module, class, function, or async-function docstring that names a
+  banned term (`upstream`, `TypeScript`, `JavaScript` case-insensitive as words; `Promise`,
+  `Proxy`, `WeakMap` case-sensitive as words; `\.ts\b`). `_tree_violations` scans every `.py`
+  file under a directory. `#` comments are not read.
+- `src/pycordis/__init__.py`: the module docstring describes pycordis itself; the tracked
+  upstream revision is named only in `README.md`.
+**Tests**:
+- `tests/test_docstrings.py`: 17 tests pass — a parametrized case per banned term plus near-word
+  and case variants that must not flag, one test asserting the exact messages for module, class,
+  method, nested-class, nested-method, and async-function positions, one `#` comment test, one
+  test that the source tree has no violation, and one test that the file scan reaches packages
+  in subdirectories.
+- Re-ran `tests/test_package.py`: passes.
+**Deviations**:
+- `src/pycordis/__init__.py` changed although the increment lists only the test file: its module
+  docstring named `upstream`, which fails the required "passes on `src/pycordis`" check, so it
+  was reworded.
+**Manual validation**:
+- In an interactive session, `docstring_violations` returned `[]` for
+  `src/pycordis/__init__.py`, one message for a docstring naming `upstream`, and `[]` for a
+  `#` comment naming banned terms.
 
 ### Increment 2: Markers and contract coverage
 **Goal**: The three markers are registered, the static marker scan validates `contract` and

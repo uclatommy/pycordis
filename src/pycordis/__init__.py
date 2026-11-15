@@ -1,8 +1,8 @@
-"""Plugin and service composition from revertible effects, ported from Cordis.
+"""Plugin and service composition from revertible effects.
 
-pycordis is a Python port of the core package of
-[Cordis](https://github.com/cordiverse/cordis) (`packages/core`). The upstream revision
-that the port tracks is in the repository `README.md`.
+pycordis composes plugins and services from revertible effects and declared
+dependencies. A component declares what it needs before it loads, and disposing a
+component reverts the effects it registered.
 
 Attributes:
     __version__: The installed distribution version of pycordis.
