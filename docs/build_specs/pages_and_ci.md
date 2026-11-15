@@ -1,7 +1,6 @@
 # Build Spec: Pages and CI
 
-**Status**: 🟡 In progress — Increment 2 implemented on `feature/ci-tests-lint`, push and CI
-validation pending
+**Status**: 🟡 In progress — Increment 2 verified on `feature/ci-tests-lint`, Increment 3 pending
 
 ## Goal
 
@@ -283,9 +282,9 @@ tree. For the failure case, commit the `docs/` file without its regenerated `zen
 run `uv run python scripts/gen_ref_pages.py` right after: `git status --porcelain` then lists
 `zensical.toml`, which proves the drift check catches it.
 
-**Status**: 🟡 Implemented — `docs` job and docs updates in the working tree of
-`feature/ci-tests-lint`; the job's command sequence passes locally with "No issues found", and
-the drift simulation fails the check; the push and `gh run watch` legs await user confirmation
+**Status**: 🟢 Implemented — `gh run watch --exit-status` for run 43674068283 (push of
+`f8781ad`) reports success for `test (3.12)`, `test (3.13)`, `lint`, and `docs`; the drift
+check's failure case is proven locally by the generator simulation in **Tests**
 
 **Changed**:
 
