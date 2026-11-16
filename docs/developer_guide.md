@@ -143,20 +143,26 @@ A small fix that you commit directly to `master` publishes the next patch versio
 
 If a release run fails, re-run the failed job:
 
-- If `publish` fails, no tag exists. Re-run the workflow.
+- If `publish` fails and the cause is outside the repository (for example, the PyPI trusted
+  publisher), no tag exists. Correct the cause, then re-run the workflow.
+- If `publish` fails and the fix needs a change in the repository, commit the fix on the same
+  `release/<version>` branch, and merge it into `master` through a second pull request with a
+  merge commit. Its merge message names the release branch again, so the run calculates the
+  same version. Before `publish` starts, check that the `build` job shows that version.
 - If only `tag` fails, the upload is complete. Re-run **only** the failed job. A full re-run
   calculates the same version, and PyPI rejects a second upload of it.
 
-Do not push to `master` again until the tag exists. Without the tag, each push to `master`
-calculates the same version, and PyPI rejects the upload.
+Do not push to `master` again until the tag exists. The version of the next push depends on
+the tag.
 
 ### One-time setup
 
 These steps cannot run in a workflow:
 
-1. Make sure that the name `pycordis` is free on PyPI, and register a pending trusted
-   publisher for it (repository `uclatommy/pycordis`, workflow `release.yml`, environment
-   `pypi`).
+1. Register a pending trusted publisher on PyPI for the project `pycordis2` (repository
+   `uclatommy/pycordis`, workflow `release.yml`, environment `pypi`). The distribution name
+   is `pycordis2` because PyPI refuses `pycordis` as too similar to the project `py-cordis`.
+   The import name stays `pycordis`.
 2. Create the GitHub environment `pypi`.
 3. Add the `build` job of `ci.yml` to the required checks of `master`.
 4. Make sure that no tag ruleset blocks `GITHUB_TOKEN` from creating `v*` tags.

@@ -30,8 +30,10 @@ on change.
 ## Install
 
 ```bash
-pip install pycordis
+pip install pycordis2
 ```
+
+The import name is `pycordis`.
 
 ## Usage
 

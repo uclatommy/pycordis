@@ -5,14 +5,16 @@
 pycordis has no runtime dependencies and needs Python 3.12 or later. Install it from PyPI:
 
 ```bash
-pip install pycordis
+pip install pycordis2
 ```
 
 With uv:
 
 ```bash
-uv add pycordis
+uv add pycordis2
 ```
+
+The PyPI distribution name is `pycordis2`. The import name is `pycordis`.
 
 ## Use a Local Checkout in Another Project
 

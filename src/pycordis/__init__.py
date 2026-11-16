@@ -9,7 +9,8 @@ Start with `Context`: create a root context with a scheduler (`ImmediateSchedule
 A `Service` and a `Key` give a component access to the services of other components.
 
 Attributes:
-    __version__: The installed distribution version of pycordis.
+    __version__: The version of the installed distribution `pycordis2`, which
+        provides the `pycordis` package.
 """
 
 import importlib.metadata
@@ -25,8 +26,8 @@ from pycordis.service import Service
 
 # The import needs an installed distribution (`uv sync` installs it). There is no
 # fallback: pyproject.toml holds the placeholder 0.0.0, so a fallback would report a
-# false version.
-__version__ = importlib.metadata.version(__name__)
+# false version. The distribution name differs from the import name.
+__version__ = importlib.metadata.version("pycordis2")
 
 __all__ = [
     "Component",
