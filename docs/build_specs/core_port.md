@@ -459,7 +459,7 @@ and is tested through it.
 
 ## Dependencies
 
-- **Prerequisite**: the [Upstream Conformance](conformance.md) spec is complete before
+- **Prerequisite**: the [Upstream Conformance](completed/conformance.md) spec is complete before
   Increment 1. It registers the `upstream`, `contract`, and `divergence` markers (`pyproject.toml`
   sets `--strict-markers`, so a marked test fails collection without them), and it supplies
   `conformance/upstream.json` and the `pending` ledger stubs that each increment reviews.

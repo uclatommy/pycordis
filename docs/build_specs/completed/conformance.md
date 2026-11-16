@@ -1,6 +1,6 @@
 # Build Spec: Upstream Conformance
 
-**Status**: 🔶 In progress — Increment 5 complete — all increments done
+**Status**: ✅ Completed — all five increments are done
 
 ## Goal
 
@@ -437,9 +437,9 @@ item `pending` (the core port has not started).
 
 ## Code Standards
 
-- [Architecture](../architecture.md) — the contract, conformance, and divergence rules
-- [Developer Guide](../developer_guide.md) — the upstream review procedure
-- [Contributing](../contributing.md) — the test and docstring standards
+- [Architecture](../../architecture.md) — the contract, conformance, and divergence rules
+- [Developer Guide](../../developer_guide.md) — the upstream review procedure
+- [Contributing](../../contributing.md) — the test and docstring standards
 
 This spec is scaffolding — do not cite it, its filename, or its increment numbers in source,
 docstrings, comments, or test names. Docstrings state the present rule, not the change that
