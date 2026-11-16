@@ -23,6 +23,9 @@ from pycordis.registry import Component, inject
 from pycordis.scheduler import FramePumpScheduler, ImmediateScheduler, Scheduler
 from pycordis.service import Service
 
+# The import needs an installed distribution (`uv sync` installs it). There is no
+# fallback: pyproject.toml holds the placeholder 0.0.0, so a fallback would report a
+# false version.
 __version__ = importlib.metadata.version(__name__)
 
 __all__ = [

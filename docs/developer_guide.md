@@ -147,6 +147,9 @@ If a release run fails, re-run the failed job:
 - If only `tag` fails, the upload is complete. Re-run **only** the failed job. A full re-run
   calculates the same version, and PyPI rejects a second upload of it.
 
+Do not push to `master` again until the tag exists. Without the tag, each push to `master`
+calculates the same version, and PyPI rejects the upload.
+
 ### One-time setup
 
 These steps cannot run in a workflow:
