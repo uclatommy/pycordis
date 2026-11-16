@@ -67,11 +67,16 @@ The conformance data is in `conformance/`:
   upstream test case, each exported symbol, and the error messages, event names, and state
   names, with a hash of each item's normalized source. It holds no upstream code.
 - `ledger.toml` has one entry for each inventory item. An entry gives the item's status
-  (`ported`, `adapted`, `diverged`, or `not-applicable`), the pycordis symbol or test that
-  covers it, the divergence ID where there is one, and the upstream hash at the time of review.
+  (`pending` before review; `ported`, `adapted`, `diverged`, or `not-applicable` after it), the
+  pycordis symbol that covers it (a `target`; a test case is linked by its `upstream` marker),
+  the divergence ID where there is one, and the upstream hash at the time of review. A `pending`
+  entry has no hash and no target. The inventory has `case`, `symbol`, `member`, `rest`,
+  `message`, `event`, and `state` items. A marker ID is a string literal, because the checks
+  read markers with `ast`.
 
 A test in the suite checks this data with no network access. It fails when:
 
+- the inventory revision differs from the revision in `README.md`;
 - an inventory item has no ledger entry;
 - a ledger hash differs from the inventory hash, which means that upstream changed the item
   after its review;

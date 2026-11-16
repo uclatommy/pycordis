@@ -86,9 +86,11 @@ pycordis tracks one upstream revision of `cordiverse/cordis`. The README records
 change is reviewed by behavior, not applied as a line diff. To move to a newer revision:
 
 1. Clone upstream into a scratch directory outside this repository.
-2. Generate the inventory of the new revision into `conformance/upstream.json` with
-   `scripts/upstream_inventory.py`. The conformance check now lists every new, removed, or
-   changed upstream item: a missing ledger entry, a stale ledger entry, or a stale hash.
+2. Set the new revision in `README.md`. Generate the inventory of that revision into
+   `conformance/upstream.json` with `uv run python scripts/upstream_inventory.py <clone>`. Add
+   `--ledger-stubs` to print `pending` ledger entries for the new items, and append them to
+   `conformance/ledger.toml`. The conformance check now lists every new, removed, or changed
+   upstream item: a missing ledger entry, a stale ledger entry, or a stale hash.
 3. Review each listed item, and put it in one class:
     - **Contract change**: the change affects a semantic-contract property. Update the contract
       table first, then the tests, then the code.
@@ -99,8 +101,11 @@ change is reviewed by behavior, not applied as a line diff. To move to a newer r
       the change with the same structure; otherwise no code change.
     - **TypeScript only**: types, build files, or JavaScript runtime details. No code change.
 4. For each item, update its ledger entry: the status, the pycordis symbol or test, the
-   divergence ID if there is one, and the new hash. Never copy a hash without this review.
-5. Update the tracked revision in `README.md` in the same commit as the last reviewed item.
+   divergence ID if there is one, and the new hash. Never copy a hash without this review: the
+   hash records that the review took place. A translated test carries an `upstream` marker with
+   the case ID as a string literal.
+5. Add, change, or remove divergence rows in `docs/architecture.md` with the code. Delete a row
+   when an upstream change removes its reason.
 6. Release a new version (see below).
 
 ## Release
