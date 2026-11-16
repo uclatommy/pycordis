@@ -110,7 +110,7 @@ def resolve_config(schema: object | None, config: object) -> object:
         ValidationError: If the validator raises. When the error has an `errors()`
             method, each entry gives one issue with its `msg` and `loc`.
         TypeError: If `schema` is neither an object with `model_validate` nor a
-            function.
+            function, or if the validator returns an awaitable.
     """
     if schema is None:
         return config
@@ -118,11 +118,16 @@ def resolve_config(schema: object | None, config: object) -> object:
     if not callable(validate):
         raise TypeError("Config must have a model_validate method or be callable")
     try:
-        return validate(config)
+        result = validate(config)
     except ValidationError:
         raise
     except Exception as error:
         raise ValidationError(_issues(error)) from error
+    if inspect.isawaitable(result):
+        if inspect.iscoroutine(result):
+            result.close()
+        raise TypeError("Async config validation is not supported")
+    return result
 
 
 def _hop() -> Deferred[None]:

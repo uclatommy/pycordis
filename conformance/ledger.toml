@@ -148,7 +148,8 @@ status = "ported"
 hash = "a1981ef39b17e6e61227b6593e4d2f52624388e563e91282fc86cca9ae2f3930"
 
 [items."event:internal/commit"]
-status = "pending"
+status = "ported"
+hash = "e71de4e9fb854a5a50c85d4002f18cd827e16e6394a20bdedf9ce8b524b0f844"
 
 [items."event:internal/config"]
 status = "ported"
@@ -164,7 +165,8 @@ hash = "d494fa9581b7816c7fc05229431ce356b368108d1786a4e60231115493f28ae4"
 divergence = "service-access"
 
 [items."event:internal/listener"]
-status = "pending"
+status = "ported"
+hash = "482eedc50de8b853d213882fd0a4533f0bb97e5803b0afa71328208fd8938e98"
 
 [items."event:internal/plugin"]
 status = "ported"
@@ -316,7 +318,8 @@ status = "ported"
 hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
 
 [items."events.spec.ts::Events::skips a listener disposed by an earlier component during dispatch"]
-status = "pending"
+status = "ported"
+hash = "620b9f66a0078e5179b468e5865890345b9b0fac7f0d69af23b0987611363534"
 
 [items."events.spec.ts::Events::supports symbol event names across dispatch modes"]
 status = "ported"
@@ -556,7 +559,8 @@ status = "ported"
 hash = "ed5dd36229c220d413e5b153becdbbdb13fe73147ce70bcf9a8373cbe0f89189"
 
 [items."message:Async config validation is not supported"]
-status = "pending"
+status = "ported"
+hash = "4b98e86e3ef2be1166c633f9168abac36100ce27b31283617d9f41cab8e07ed3"
 
 [items."message:Invalid effect"]
 status = "ported"
@@ -567,16 +571,20 @@ status = "ported"
 hash = "fc3c2257f49e6f1a5649225fd9d91d75c6d5d4a6c84dd22dca795c82dff0ef29"
 
 [items."message:cannot get property \"{}\" without inject"]
-status = "pending"
+status = "ported"
+hash = "055d340a7147752676d1f547b96ef9281d5ca4e863ea427115b0054c160fff93"
 
 [items."message:cannot set property \"{}\" in multiple fibers"]
-status = "pending"
+status = "ported"
+hash = "884270291b3831898fe38c2e968f00de233a2c658f2bb1e0e02e52e41ddcc369"
 
 [items."message:cannot set property \"{}\" without provide"]
-status = "pending"
+status = "ported"
+hash = "6585ef55f97e54dadb0d7c1d8f84b202c26db11113181726eb7cf78af536cc98"
 
 [items."message:invalid component, expect function or object with an \"apply\" method, received {}"]
-status = "pending"
+status = "ported"
+hash = "efb531674410a0e5fca7dce755f95970427a1469bd134d353dd1278e2d4e90b7"
 
 [items."message:next() called multiple times"]
 status = "ported"
@@ -587,10 +595,12 @@ status = "ported"
 hash = "fbe478dc6723bc901fcf8bc85e52d4403b90eb104c3434d0f1607e70ba4eac0e"
 
 [items."message:property \"{}\" is already declared as {}"]
-status = "pending"
+status = "ported"
+hash = "b68702c04745c9e489805162069cfbc269afb4f235f6a669765889d8723bc507"
 
 [items."message:service \"{}\" has been registered at <{}>"]
-status = "pending"
+status = "ported"
+hash = "a90ac968c6d9a2b3c2f45e0b50b006b37f39b3de472e613ede9be3a9729d8471"
 
 [items."reflect.spec.ts::Reflect::Context.is()"]
 status = "ported"
@@ -866,7 +876,9 @@ status = "ported"
 hash = "e4bf620b47071f8743b770f9bebaf9af138740debb0e82fac042e1c1f94ab212"
 
 [items."src/context.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "fa8163fcec0ac28a56ac0102b333a0a8358b627893dee0059e716913cb4dc54f"
+note = "Imports and the TypeScript interface that types the members of `Context`. The `Context` class declares its members with Python type hints."
 
 [items."src/context.ts:Context"]
 status = "ported"
@@ -925,7 +937,9 @@ hash = "1db8fa5905847edeb4ccd96c1e374d0cfd1c9444d2ca002a1e936733249d5ed2"
 note = "The TypeScript interface of typed event signatures. pycordis lists the internal event names in InternalEventName and types listeners as callables."
 
 [items."src/events.ts:EventsService"]
-status = "pending"
+status = "ported"
+target = "pycordis.events.EventsService"
+hash = "9cd5b30a077fa210b8029a5363131061782f4aaf857bf1f3641a91be3f1ee57b"
 
 [items."src/events.ts:EventsService._resolve"]
 status = "adapted"
@@ -940,7 +954,9 @@ hash = "a6fba01a9c44384a2d33287ac26d2567886f8138d3aa0c14573fc3ad1570d669"
 divergence = "event-dispatch-args"
 
 [items."src/events.ts:EventsService.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.events.EventsService.__init__"
+hash = "fcc580e7fe2a9ddfdf356dca7b597240b1f9d2a7ed7f9d1862861f2a1bc658a0"
 
 [items."src/events.ts:EventsService.dispatch"]
 status = "diverged"
@@ -1025,7 +1041,9 @@ hash = "78b369bee0ef9f129ec1d434d64b24b5c65493cfb938d3b75c9bf51f27cfc137"
 divergence = "event-dispatch-args"
 
 [items."src/fiber.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "3fb7194ace11c44260103ab18af428777167133387c9ccaa25213076073dadbe"
+note = "Imports and TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
 
 [items."src/fiber.ts:AsyncDisposable"]
 status = "adapted"
@@ -1040,10 +1058,14 @@ hash = "a10288c9d38d83843e6939f2100cd7c70dfca18853d052a4963f62ea28615ef7"
 divergence = "async-effects"
 
 [items."src/fiber.ts:CordisError"]
-status = "pending"
+status = "ported"
+target = "pycordis.errors.CordisError"
+hash = "452f4c87f08e8cf1e7cfa5f28f8196aab7a1512c65481acbd1883156ad8222ff"
 
 [items."src/fiber.ts:CordisError.constructor"]
-status = "pending"
+status = "not-applicable"
+hash = "a4e4c3ecae47602aac4041b62f0997447be6a8fde0409ab606e21601cf467e32"
+note = "The Python error takes the message only. The upstream `code` is a key into a message table, and no case reads it."
 
 [items."src/fiber.ts:Disposable"]
 status = "ported"
@@ -1066,7 +1088,9 @@ target = "pycordis.fiber._Runner"
 hash = "df1a6fdf989153608f231d8280f09c51887915dfa44aadb109b535a73c936ef1"
 
 [items."src/fiber.ts:Fiber"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber"
+hash = "2323620692ade98e6c57b7ec7eddbcd707e143f1cc8907eef5da304863a9a754"
 
 [items."src/fiber.ts:Fiber._checkImpl"]
 status = "ported"
@@ -1213,7 +1237,9 @@ hash = "006c123829f8b4c9da97b815ec4eae0a28e09c21c9d86437ca09e629d314141e"
 note = "isinstance replaces the symbol brand"
 
 [items."src/fiber.ts:module ./context.ts"]
-status = "pending"
+status = "ported"
+target = "pycordis.context.Context"
+hash = "c7e59b3a5665f194b5d1171d9ccba656bde85be7d1f928eeefd13448f40de0e2"
 
 [items."src/fiber.ts:resolveConfig"]
 status = "adapted"
@@ -1222,7 +1248,9 @@ hash = "792ca4135047d874e9c12031afa70892637816040468ccbaed23043a5981b9f4"
 divergence = "config-schema"
 
 [items."src/index.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "a7fb3cbd1fdbb2c0dba65ee87077ddd984317d2e3780b31e9beef0b7f52de309"
+note = "Re-exports of the modules. `pycordis/__init__.py` exports the public names."
 
 [items."src/logger.ts:<rest>"]
 status = "not-applicable"
@@ -1369,7 +1397,9 @@ hash = "74cd1ec8af5ebed452dd376507c039b27f2ccd2cc86a88485708002b048ccde3"
 note = "Names that the JavaScript Proxy handler passes through. A Python context has no property traps."
 
 [items."src/reflect.ts:ReflectService"]
-status = "pending"
+status = "ported"
+target = "pycordis.reflect.ReflectService"
+hash = "6889f6493c84e00be6dd758ec73f3ff6219a4c51bf467696608850a925c72866"
 
 [items."src/reflect.ts:ReflectService._getImpl"]
 status = "adapted"
@@ -1390,7 +1420,9 @@ hash = "65f5b3a130d4ac902953371fa7a0c718b73c76128ee69bdfe322534c16cfa700"
 divergence = "traceable-view"
 
 [items."src/reflect.ts:ReflectService.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.reflect.ReflectService.__init__"
+hash = "e35d51ce532b738420d725f5ae3ea5af47be257c655266dbec4d591db0e82049"
 
 [items."src/reflect.ts:ReflectService.get"]
 status = "adapted"
@@ -1449,10 +1481,15 @@ target = "pycordis.reflect.locate"
 hash = "25d3264a80fb12ef7f293ebbc394f05dbdee42e88a0c390bb163d3bcf4170844"
 
 [items."src/reflect.ts:module ./context.ts"]
-status = "pending"
+status = "adapted"
+target = "pycordis.context.Context"
+hash = "634d4d902a7ed85af10b58bea8043f8de41b4357fe9854f64a80b3ebf4ae9b2d"
+divergence = "service-access"
 
 [items."src/registry.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "dae43c67076f05075fae8f5c5074f3ad9028b4d0db3c49bea11a19022697d54e"
+note = "Imports and TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
 
 [items."src/registry.ts:Component"]
 status = "ported"
@@ -1480,7 +1517,9 @@ hash = "979b5c7155030fb75e90d32ee49d58abb4d96857861ef04221f344dedfa38a0c"
 note = "A TypeScript type of the service names that have metadata"
 
 [items."src/registry.ts:RegistryService"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService"
+hash = "07df27f12b200341238dec1884946428dabfcc6e021898982f25e00ef36780c3"
 
 [items."src/registry.ts:RegistryService._create"]
 status = "ported"
@@ -1498,7 +1537,9 @@ target = "pycordis.registry.RegistryService.unregister"
 hash = "9d94e65869374ed9bbb03c6126d2af1ca3d70f17a1fb03e7c0986875777f4baf"
 
 [items."src/registry.ts:RegistryService.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.__init__"
+hash = "396d1a7d09a1d608ffc371ad7d624abca4e18b7561cc2ba80de9f6928d5036aa"
 
 [items."src/registry.ts:RegistryService.counter"]
 status = "ported"
@@ -1577,10 +1618,15 @@ hash = "7c0492b0ff31d8afe0992a9234f029e8aed3b667a4e7949f65b4924dac4f851f"
 note = "RegistryService.resolve checks the apply method"
 
 [items."src/registry.ts:module ./context.ts"]
-status = "pending"
+status = "diverged"
+target = "pycordis.context.Context"
+hash = "a7b528d54dcc49a65cf78a9fb3bb5fce48bf7843902aee59b0a80d07fed947dd"
+divergence = "deprecated-aliases"
 
 [items."src/service.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "479a432bf514916a55ddf0b979f8a3a14ab75a1eb569dd2ff9964f572521b810"
+note = "Imports and TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
 
 [items."src/service.ts:Service"]
 status = "adapted"
@@ -1625,10 +1671,14 @@ hash = "a44aa91b5d64e7e3dd092fddfdf21fd6e334952d523ecb2eeb6bf9a6f1495ca7"
 divergence = "traceable-view"
 
 [items."src/utils.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "ee6cea34cfab0297aefe88d0781d5ef1db339c5cc07d25bb52c37aa19d5f914e"
+note = "Imports and TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
 
 [items."src/utils.ts:AsyncGeneratorFunction"]
-status = "pending"
+status = "not-applicable"
+hash = "35461347921edd45b78112c09ba9d331d972fe00e8af770e4aeca0f3c461d86d"
+note = "A constant that `isConstructor` uses. `inspect.isclass` tells a class from a function."
 
 [items."src/utils.ts:DisposableList"]
 status = "ported"
@@ -1671,7 +1721,9 @@ target = "pycordis.disposables.DisposableList.unshift"
 hash = "135c7a92988b38dfa06f0d4cd8dffec3ad3c242976422ecdc7e6dac05b55c32b"
 
 [items."src/utils.ts:GeneratorFunction"]
-status = "pending"
+status = "not-applicable"
+hash = "fdeace8128813ed6162c838711fa97fa59458c8b7854a2cbef7f722eaf9870d0"
+note = "A constant that `isConstructor` uses. `inspect.isclass` tells a class from a function."
 
 [items."src/utils.ts:StackInfo"]
 status = "adapted"
@@ -1744,16 +1796,24 @@ hash = "74b54d6601c1f259bb29c4dcf1e1699dfbdc1f9161fbd36a53b536e34af33404"
 divergence = "error-notes"
 
 [items."src/utils.ts:isConstructor"]
-status = "pending"
+status = "not-applicable"
+hash = "2ef88e6fda16604f43726074c8f8e6c8c89aa6b26ce8ed54f01ed17fa1ceb5a8"
+note = "`inspect.isclass` replaces the check."
 
 [items."src/utils.ts:isObject"]
-status = "pending"
+status = "not-applicable"
+hash = "2dd94ab1a5c2fbe569c222ee7ee42f2fedde59bcdf616f9e7f685d505bd1af2d"
+note = "Python code checks the type that it needs, for example with `isinstance`."
 
 [items."src/utils.ts:joinPrototype"]
-status = "pending"
+status = "not-applicable"
+hash = "04749ca53fdae10b4f17b850bddcd17033936761450bd41c40af8bc98dee03e7"
+note = "Parent links replace the prototype chains that it joins."
 
 [items."src/utils.ts:symbols"]
-status = "pending"
+status = "adapted"
+hash = "8b54965506cafdc5ee1bb6212d1ebf52dc0d77c4a6bbb0744eecc05b9598ad25"
+divergence = "hook-names"
 
 [items."src/utils.ts:withProp"]
 status = "adapted"
@@ -1792,25 +1852,39 @@ status = "ported"
 hash = "bdc8ba5cab4f938a6dc565d0f4f1a1208eff1ac1fc8a61bad706bf52e2be7663"
 
 [items."tests/associate.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "72be33e6ad889bbc982f72b3254cf36291935b278261cf7e097d95c888d5a7d9"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/component.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "67523a75948a9ad0d6a318e0d45a95c0585846400c19a9e34c9afed06bd268b1"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/decorator.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "cbe09784f0797e557207a0bef2ee60e6f548c05e2098d1f6827a3b8db87ce8b4"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/dispose.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "e6cdec5f1fd00fcfa64722f4589ccb446a384491deaaa7a65fb350a457137afb"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/events.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "bd3843b7c7aa66a0dd708d068f3432a1dc15fe58e1b3c60a9cd52142da4cc8f0"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/events.spec.ts:createArray"]
-status = "pending"
+status = "not-applicable"
+hash = "9f6fe004231d7a1bf8fb5a98cce3171c82f85ed5be32a52625b6d66474b11ad5"
+note = "A list-building helper. Python uses a list comprehension."
 
 [items."tests/events.spec.ts:setup"]
-status = "pending"
+status = "ported"
+hash = "47f741177c8b78423c0ae98e6dd2575f9c7400fbdd8b4692e9412ecdb0d9d3b9"
+note = "The `root` fixture of `tests/conftest.py` replaces it."
 
 [items."tests/events.types.ts:<rest>"]
 status = "not-applicable"
@@ -1838,112 +1912,184 @@ hash = "05549babc495ac32a955f92bd0fc25ac8bb3eb3d3b10724668acf1f02dd78966"
 note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
 
 [items."tests/fiber.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "d72120feb2a457d899ae926da78c728aa070c45a4bfef07a214d2c2d908b3ca6"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/intercept.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "8fe2f988bb35dcce326e75c5645678c9f0db7de25f8ca29da7ed2a9edf550e86"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/intercept.spec.ts:Bar"]
-status = "pending"
+status = "ported"
+hash = "a18b71e5731d2f455e2f677b0b886d9626586066e984e04cbc98f4b6e09aa19e"
+note = "`Bar` in `tests/test_intercept.py`."
 
 [items."tests/intercept.spec.ts:Bar.config"]
-status = "pending"
+status = "ported"
+hash = "91086c151c9dbbe30bb8fb601fe7fb51b344bfc230c800a940adf17e22bfe339"
+note = "`Bar` in `tests/test_intercept.py`."
 
 [items."tests/intercept.spec.ts:Bar.constructor"]
-status = "pending"
+status = "ported"
+hash = "e2fdfae25f623ba41aa3b2a2efc4779cca89afdcd1151baf44c547c238046413"
+note = "`Bar` in `tests/test_intercept.py`."
 
 [items."tests/intercept.spec.ts:Config"]
-status = "pending"
+status = "not-applicable"
+hash = "a0d66052eac736ce6677d46ebceb84849f01f02c248a4dd7c2311e50beed0595"
+note = "A TypeScript type of the service configuration. Python uses `dict[str, Any]`."
 
 [items."tests/intercept.spec.ts:Foo"]
-status = "pending"
+status = "ported"
+hash = "8671ffb0df91ac84d359001e568db5f701f59bd99cf7cde2e344e13d34d57521"
+note = "`Foo` in `tests/test_intercept.py`."
 
 [items."tests/intercept.spec.ts:Foo.config"]
-status = "pending"
+status = "ported"
+hash = "80ee975364c0b53d6772216330e62ecc64a95dbfa5a9e1259782068622c6f7d6"
+note = "`Foo` in `tests/test_intercept.py`."
 
 [items."tests/intercept.spec.ts:Foo.constructor"]
-status = "pending"
+status = "ported"
+hash = "39a976ba05f01125ca8cc4ac9e3e25c5167671ec1f28a39567d9b0651d27df28"
+note = "`Foo` in `tests/test_intercept.py`."
 
 [items."tests/invoke.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "3d5dca283f2b1690999997d70167b0d40435363dcae092236fd6d3be8fd888d2"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/isolate.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "9bf22508be1ecca0968f0e9a39798d9d2edafb19feaa8a98ee967bcaa56fb972"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/logger.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "a8db75bd9af4ef87bb6539f580c418828ba68d49dc581b40d11d546409f83381"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/logger.spec.ts:setup"]
-status = "pending"
+status = "ported"
+hash = "8193a81a98a0ff75e5d06a40d32ac992f37a953b09fbf855bdfc1df61137deb4"
+note = "The `captured` fixture of `tests/test_logger.py` replaces it."
 
 [items."tests/reflect.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "868ce0012e71dd996241b8275f9d69dfe802d57c4072cda703d86271bdd73a0b"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/replace.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "5fbd54f18c8c058a13b9ad1381fb742f403ed91c84cf9c67c6535f64e05901f4"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/service-dispose.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "1ccf693e95c25354776f335eba57da1dcb98fc8ac98bab38297720d404ea64a1"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/service-dispose.spec.ts:fixture"]
-status = "pending"
+status = "ported"
+hash = "a32de02bd71921dc37290acf271b1121e6875bca8df161ed31178dee590b8c63"
+note = "`Fixture` in `tests/test_service_dispose.py`."
 
 [items."tests/service.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "d65696743eedf6e0ed00dbf7abfa414705faedd69af074bd3482236735d76b1f"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/shadow.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "405e0fcef817b8dce161142978367c45658b16b48f75e540983e1ad45278d54b"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/update.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "2d059991f7fa30cc62c4a6aa8e16586a69744455ad25ea359a70d20b9c7d2311"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/utils.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "da221d70dea2a356410638e47faa5f94fa548b18f6d54c8c0a3f0336832e572a"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
 
 [items."tests/utils.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "809fe0521c0a40da3a5bb8c1f1f51ba1a0bb6816f8b1894458cd4a7695f4db74"
+note = "Imports of the helper module."
 
 [items."tests/utils.ts:Counter"]
-status = "pending"
+status = "ported"
+hash = "46ca8fec26e6e136d6ed04098989b12ef35611aea750bcde71e282b1a1789fdf"
+note = "`Counter` in `tests/conftest.py`."
 
 [items."tests/utils.ts:Counter.constructor"]
-status = "pending"
+status = "ported"
+hash = "3dd2b517663620285c0a5a9959be638cf44a0ecb7319491fd9c233a7ef0141ce"
+note = "`Counter` in `tests/conftest.py`."
 
 [items."tests/utils.ts:Counter.increase"]
-status = "pending"
+status = "ported"
+hash = "90893a8e23895f7e8f087d8440ec8d3f5d2f48b5233426964af2aa23e2dd4479"
+note = "`Counter.increase` in `tests/conftest.py`."
 
 [items."tests/utils.ts:Filter"]
-status = "pending"
+status = "ported"
+hash = "d7191bf284d60c562fe3d330ccfdb12030846177886c13c24ba3dfecd98be33d"
+note = "`Filter` in `tests/conftest.py`."
 
 [items."tests/utils.ts:Filter.constructor"]
-status = "pending"
+status = "ported"
+hash = "f7e691416f7cf5c5d97c43a3caf1a191f0458edb78c0c9f62bad54724f13fe55"
+note = "`Filter` in `tests/conftest.py`."
 
 [items."tests/utils.ts:Session"]
-status = "pending"
+status = "ported"
+hash = "24941ae221fbcfd6339cbf62e5e36f6050a2ecd6d02e06ec7f86e7b9fe8ff3a8"
+note = "`Session` in `tests/conftest.py`."
 
 [items."tests/utils.ts:Session.[Context.filter]"]
-status = "pending"
+status = "ported"
+hash = "4d5a5a5a9f8b7439e2606a088fd218c6dda89eb1ff03c5c83f06e5cebc20db9f"
+note = "`Session.cordis_filter` in `tests/conftest.py`."
 
 [items."tests/utils.ts:Session.constructor"]
-status = "pending"
+status = "ported"
+hash = "f71973d862a54872dc84ec908f46882f528bcc03105a6c8ad6fd84882a8364a6"
+note = "`Session` in `tests/conftest.py`."
 
 [items."tests/utils.ts:event"]
-status = "pending"
+status = "ported"
+hash = "29c0e6096250b211889a212efa522ac53a8551cf39ed2a5d9a18d899bf0fce68"
+note = "`event` in `tests/conftest.py`."
 
 [items."tests/utils.ts:getHookSnapshot"]
-status = "pending"
+status = "ported"
+hash = "ffe2849d7602d7c1430b7835a030db85474c69a55a9c2f5392b91fea02723710"
+note = "`hook_snapshot` in `tests/conftest.py`."
 
 [items."tests/utils.ts:module ../src/context.ts"]
-status = "pending"
+status = "not-applicable"
+hash = "8f24d712775fc9bdb6851fbadba81fe3ae32abe1bd28c180614c5bcfd9e24bec"
+note = "Imports of the TypeScript module."
 
 [items."tests/utils.ts:module ../src/events.ts"]
-status = "pending"
+status = "not-applicable"
+hash = "d9b595410427982cccc500da48567fb79a73667c41d72e6e3a6b235c5d54cf85"
+note = "Imports of the TypeScript module."
 
 [items."tests/utils.ts:sleep"]
-status = "pending"
+status = "ported"
+hash = "6d2eb332f7d7de94e32f9466e350c0372479f8cdc26875eca4d1898ad04a754b"
+note = "`FakeClock.sleep` in `tests/conftest.py`."
 
 [items."tests/utils.ts:withTimers"]
-status = "pending"
+status = "ported"
+hash = "cc2c4beb5197400b8acf80ca82b81d818e1b60f0760552d0c81274dfe7b8b339"
+note = "The `clock` fixture of `tests/conftest.py` replaces it."
 
 [items."update.spec.ts::Fiber: concurrent updates::cleans up a superseded failure without failing the latest update"]
 status = "ported"

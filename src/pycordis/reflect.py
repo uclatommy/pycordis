@@ -112,6 +112,11 @@ def locate(ctx: "Context", name: str) -> Located | None:
         fiber = fiber.parent.fiber
 
 
+def _already_declared(name: str, declared: str) -> CordisError:
+    """Return the error for a `name` that is already declared as `declared`."""
+    return CordisError(f'property "{name}" is already declared as {declared}')
+
+
 class _Filter:
     """The `this` object of an `internal/service` event.
 
@@ -265,7 +270,7 @@ class ReflectService:
 
         def setup() -> Callable[[], Deferred[None]]:
             if name in self._accessors:
-                raise CordisError(f'property "{name}" is already declared as accessor')
+                raise _already_declared(name, "accessor")
             self._services.add(name)
             ctx.declare_realm(name)
             realm = ctx.isolates[name]
@@ -338,9 +343,9 @@ class ReflectService:
 
         def setup() -> Callable[[], None]:
             if name in self._services:
-                raise CordisError(f'property "{name}" is already declared as service')
+                raise _already_declared(name, "service")
             if name in self._accessors:
-                raise CordisError(f'property "{name}" is already declared as accessor')
+                raise _already_declared(name, "accessor")
             self._accessors[name] = accessor
 
             def remove() -> None:

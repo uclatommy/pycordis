@@ -9,6 +9,7 @@ import pytest
 from conftest import Recorder, event, hook_snapshot
 
 from pycordis.context import Context
+from pycordis.deferred import Deferred
 from pycordis.errors import CordisError, Issue, ValidationError
 from pycordis.fiber import EffectMeta, FiberState
 from pycordis.keys import Key
@@ -424,6 +425,27 @@ def test_a_config_that_is_not_a_validator_is_a_type_error(root: Context) -> None
 
     assert isinstance(fiber.error, TypeError)
     assert not isinstance(fiber.error, ValidationError)
+
+
+async def _coroutine(value: object) -> object:
+    return value
+
+
+@pytest.mark.parametrize(
+    "asynchronous",
+    [Deferred.resolved, _coroutine],
+    ids=["deferred", "coroutine"],
+)
+def test_a_config_validator_that_returns_an_awaitable_is_a_type_error(
+    root: Context, asynchronous: Callable[[object], object]
+) -> None:
+    apply = Recorder()
+
+    fiber = root.use(SimpleNamespace(Config=asynchronous, apply=apply), 1)
+
+    assert apply.calls == [] and fiber.state == FiberState.FAILED
+    assert isinstance(fiber.error, TypeError)
+    assert str(fiber.error) == "Async config validation is not supported"
 
 
 def test_the_config_waterfall_lets_a_listener_change_the_config(root: Context) -> None:

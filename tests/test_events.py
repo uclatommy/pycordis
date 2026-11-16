@@ -19,6 +19,7 @@ from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.events import EventOptions
+from pycordis.fiber import Fiber
 
 Run = Callable[[Coroutine[Any, Any, Any]], Deferred[Any]]
 MODES = ("emit", "parallel", "serial", "bail")
@@ -227,6 +228,29 @@ def test_waterfall_chains_listeners_until_one_stops(root: Context) -> None:
     assert root.waterfall("test/waterfall", 1, lambda: 2) == 3
     assert (len(first.calls), len(second.calls)) == (2, 2)
     assert (len(stop.calls), len(after.calls)) == (1, 0)
+
+
+@pytest.mark.upstream(
+    "events.spec.ts::Events::"
+    "skips a listener disposed by an earlier component during dispatch"
+)
+def test_serial_skips_a_listener_that_an_earlier_listener_disposed(
+    root: Context, run: Run
+) -> None:
+    children: list[Fiber] = []
+    removed = Recorder()
+
+    async def dispose_child() -> None:
+        await children[0].dispose()
+
+    async def main() -> None:
+        await root.serial(event)
+
+    root.on(event, dispose_child)
+    children.append(root.use(lambda ctx: ctx.on(event, removed)))
+
+    assert run(main()).result() is None
+    assert len(removed.calls) == 0
 
 
 @pytest.mark.upstream(
