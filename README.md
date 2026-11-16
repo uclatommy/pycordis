@@ -1,5 +1,8 @@
 # pycordis
 
+[![CI](https://github.com/uclatommy/pycordis/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/uclatommy/pycordis/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/uclatommy/pycordis/branch/master/graph/badge.svg)](https://codecov.io/gh/uclatommy/pycordis)
+
 pycordis is a Python implementation of the programming model in *A Programming Paradigm for
 Spatiotemporal Composability* (arXiv `2608.25512`), with the core package of
 [Cordis](https://github.com/cordiverse/cordis) (`packages/core`) as its reference

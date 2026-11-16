@@ -188,7 +188,9 @@ status = "ported"
 hash = "f5e494e80dbe4da452ad88063d8cefabef0efce078911f5e0ae25c6b0c738183"
 
 [items."event:internal/update"]
-status = "pending"
+status = "adapted"
+hash = "ec34763057031419289255af6efcf58f336b85de77d9d57555238f246e99dee9"
+divergence = "event-dispatch-args"
 
 [items."events.spec.ts::Events::bail defers added listeners until the next dispatch"]
 status = "ported"
@@ -273,19 +275,24 @@ status = "ported"
 hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
 
 [items."events.spec.ts::Events::internal/update continues past a removed fiber listener"]
-status = "pending"
+status = "ported"
+hash = "b2dd63ccb2a1c357ad344d9ca507f0bd8c1be1967494acc8b685cd7f20d620ed"
 
 [items."events.spec.ts::Events::internal/update::can be disposed explicitly"]
-status = "pending"
+status = "ported"
+hash = "ff3e324e058857aaaa18249000d183bc534bc9ee9c9feec97c6ff5da12d7f8ca"
 
 [items."events.spec.ts::Events::internal/update::does not accumulate across reloads"]
-status = "pending"
+status = "ported"
+hash = "90ba12b05719c840ea28fd2d2d2fa8429f9dac360c641835af03ac23d0df5a76"
 
 [items."events.spec.ts::Events::internal/update::global listeners are not tied to a child fiber reload"]
-status = "pending"
+status = "ported"
+hash = "898c4ddc949d6c826c7fc9cd8ac2c67a4e3ce09ad814deaa962c55906cd8caed"
 
 [items."events.spec.ts::Events::internal/update::runs prepended listeners first"]
-status = "pending"
+status = "ported"
+hash = "c404d923b9ef292688891cadca51bb4910a8282dcbe2c14a3781365bce96d750"
 
 [items."events.spec.ts::Events::parallel defers added listeners until the next dispatch"]
 status = "ported"
@@ -340,7 +347,9 @@ hash = "d289ae27e6b2af9e53d1cc27825cccf0095e6a4ddac5c2c7a2a92ea35bbc2355"
 divergence = "config-schema"
 
 [items."fiber.spec.ts::Fiber: config validation::keep a running component on update"]
-status = "pending"
+status = "adapted"
+hash = "b27ec391e59befa693d5f466658d3fe76bb16a5454b2a96923b7c8764e87acde"
+divergence = "config-schema"
 
 [items."fiber.spec.ts::Fiber: config validation::keep the issues and their paths"]
 status = "adapted"
@@ -348,10 +357,14 @@ hash = "04e48f78018010fb539e1753fda4757df12aa74a8b8273ad230b00520294060f"
 divergence = "config-schema"
 
 [items."fiber.spec.ts::Fiber: config validation::keep the source config when a listener handles the update"]
-status = "pending"
+status = "adapted"
+hash = "531cdc1b7b19f445a6c58eab0cd4ec01ef9f45f57d788711c8210553fd65f8c7"
+divergence = "update-result"
 
 [items."fiber.spec.ts::Fiber: config validation::pass the resolved config to listeners"]
-status = "pending"
+status = "adapted"
+hash = "2c08347493a4371a347a3616350d927e34184a555ae8b715b7b36f8bb28d2846"
+divergence = "config-schema"
 
 [items."fiber.spec.ts::Fiber::component error"]
 status = "ported"
@@ -394,25 +407,33 @@ status = "ported"
 hash = "e3d00dc5dac65dd0935a5f865ad612ff8d6fffb418aef0c3b1f779708f099f48"
 
 [items."fiber.spec.ts::Fiber::update config on wrapped fiber"]
-status = "pending"
+status = "ported"
+hash = "036d562166591c3baab6188139923123d892e215ef33364bc3f3832de4d16b59"
 
 [items."fiber.spec.ts::Fiber::update config while injected service reloads"]
-status = "pending"
+status = "ported"
+hash = "653099ed60246428fac5860ae07f58a2a9c2a3e0625900a92173cc648e987917"
+note = "The Object.hasOwn assertions check the prototype chain of a JavaScript wrapper and are not ported."
 
 [items."fiber.spec.ts::Fiber::update does not leak a dropped failure"]
-status = "pending"
+status = "ported"
+hash = "fd71cd0b2550d37e9bb19f59d47f2d17f490a338383eee71fdd751874c0f3d7b"
 
 [items."fiber.spec.ts::Fiber::update recovers a failed fiber"]
-status = "pending"
+status = "ported"
+hash = "d75cd917971477459a536d1dd81d326f806ca1d60df2f1e01c5f22432c234c64"
 
 [items."fiber.spec.ts::Fiber::update surfaces a failed recovery to its caller"]
-status = "pending"
+status = "ported"
+hash = "40ed0b96656c554d9052764a192cb8acc80ce97f309079c38d37344cb5e8f6a9"
 
 [items."fiber.spec.ts::Fiber::update surfaces a failed reload to its caller"]
-status = "pending"
+status = "ported"
+hash = "c3041c783b7b104240a08d60c6ca2dcaf4c7b1fc1a3867139268d3e3f7ac2d60"
 
 [items."fiber.spec.ts::Fiber::update waits for asynchronous recovery"]
-status = "pending"
+status = "ported"
+hash = "9209b74a95447b0ea2e72646d29ac773c115643cb190f162425abc1dc5767db1"
 
 [items."intercept.spec.ts::Intercept::custom merge"]
 status = "adapted"
@@ -626,98 +647,128 @@ status = "pending"
 status = "pending"
 
 [items."service-dispose.spec.ts::Service disposal::allows unrelated providers and sibling effects to clean up concurrently"]
-status = "pending"
+status = "ported"
+hash = "2dba4bdae72a08e2e1a679d4058fb43ba31dff5fedb00e4fded2a48962cfbe78"
 
 [items."service-dispose.spec.ts::Service disposal::keeps an inherited service accessible to a child in a composed effect"]
-status = "pending"
+status = "ported"
+hash = "dd42b4c4396331765703ee7586025891474c4c162c9a8e75ec0bc694871c6387"
 
 [items."service-dispose.spec.ts::Service disposal::keeps provider listeners alive through the final consumer event"]
-status = "pending"
+status = "ported"
+hash = "6ee633764d3756cac447c5ac36942728b5d34ff710fa9550a5009e2c382165eb"
 
 [items."service-dispose.spec.ts::Service disposal::releases an injected binding after providing the same name in another realm (consumer)"]
-status = "pending"
+status = "ported"
+hash = "2b27bb7ca1cb2d954a85202657d737de77f235fe6052dc9eaa2bd6967347c989"
 
 [items."service-dispose.spec.ts::Service disposal::releases an injected binding after providing the same name in another realm (provider)"]
-status = "pending"
+status = "ported"
+hash = "2b27bb7ca1cb2d954a85202657d737de77f235fe6052dc9eaa2bd6967347c989"
 
 [items."service-dispose.spec.ts::Service disposal::releases an injected binding after providing the same name in another realm (root)"]
-status = "pending"
+status = "ported"
+hash = "2b27bb7ca1cb2d954a85202657d737de77f235fe6052dc9eaa2bd6967347c989"
 
 [items."service-dispose.spec.ts::Service disposal::releases dependencies after a cleanup error"]
-status = "pending"
+status = "ported"
+hash = "2740e1deab24985720a00de5f3b0e9fe813510c1f1ebeadeddcc75784dde6ee1"
 
 [items."service-dispose.spec.ts::Service disposal::replaces a binding from the same provider during consumer initialization"]
-status = "pending"
+status = "ported"
+hash = "688d63763a9734fb1ba7bbed81e8a44caa22f7352169c042bc3468ad3f28ab67"
 
 [items."service-dispose.spec.ts::Service disposal::retains an ancestor injection until its child finishes cleanup"]
-status = "pending"
+status = "ported"
+hash = "8591308f33092d4336753ce31f0bd56e01c6b03b91927f0036e9168e1dc69225"
 
 [items."service-dispose.spec.ts::Service disposal::retains dependencies through in-flight setup and rollback (failure: false)"]
-status = "pending"
+status = "ported"
+hash = "cb33ecb86f00c3b95086ef4da2e0d0949dec3801d967e35c9bcfbccacdac0b82"
 
 [items."service-dispose.spec.ts::Service disposal::retains dependencies through in-flight setup and rollback (failure: true)"]
-status = "pending"
+status = "ported"
+hash = "cb33ecb86f00c3b95086ef4da2e0d0949dec3801d967e35c9bcfbccacdac0b82"
 
 [items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (consumer first)"]
-status = "pending"
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
 
 [items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (provider first)"]
-status = "pending"
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
 
 [items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (provider)"]
-status = "pending"
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
 
 [items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (restart)"]
-status = "pending"
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
 
 [items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (root)"]
-status = "pending"
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
 
 [items."service-dispose.spec.ts::Service disposal::retains transitive dependencies while a consumer providing another service drains"]
-status = "pending"
+status = "ported"
+hash = "3f68830fc296f41fa35a98d02264374a001e0f0f35f7fbb28c2410bc6f4bf923"
 
 [items."service-dispose.spec.ts::Service disposal::supports composed provider effects (owner shutdown: false)"]
-status = "pending"
+status = "ported"
+hash = "3604ac25ceafb0d9df22b4f7a5f05cfb3359c3933e4c5342a0661ee21b4f8131"
 
 [items."service-dispose.spec.ts::Service disposal::supports composed provider effects (owner shutdown: true)"]
-status = "pending"
+status = "ported"
+hash = "3604ac25ceafb0d9df22b4f7a5f05cfb3359c3933e4c5342a0661ee21b4f8131"
 
 [items."service-dispose.spec.ts::Service disposal::tracks same-name services in separate isolation realms (root shutdown: false)"]
-status = "pending"
+status = "ported"
+hash = "25d8c450cda5b009944654781c8bfab0bfe201664c963dc9f4c0b0b5be37af90"
 
 [items."service-dispose.spec.ts::Service disposal::tracks same-name services in separate isolation realms (root shutdown: true)"]
-status = "pending"
+status = "ported"
+hash = "25d8c450cda5b009944654781c8bfab0bfe201664c963dc9f4c0b0b5be37af90"
 
 [items."service-dispose.spec.ts::Service disposal::waits for a child that explicitly injects its parent service"]
-status = "pending"
+status = "ported"
+hash = "90c4ba8cd53f304a05a1c84df67624a526a208423725225293c0028d9b73cbf4"
 
 [items."service-dispose.spec.ts::Service disposal::waits for a disposing consumer that has already left the registry"]
-status = "pending"
+status = "ported"
+hash = "69f762b8f5fa53d4fa897b6976b7ce9aa5ffe56381be376cf2202953b85dc14d"
 
 [items."service-dispose.spec.ts::Service disposal::waits for current and withdrawn bindings during provider disposal (withdrawn first: false)"]
-status = "pending"
+status = "ported"
+hash = "07d8de0f3317292ea4bb049abc31f4dfcee24ccaf94492ec8515f200a8989e03"
 
 [items."service-dispose.spec.ts::Service disposal::waits for current and withdrawn bindings during provider disposal (withdrawn first: true)"]
-status = "pending"
+status = "ported"
+hash = "07d8de0f3317292ea4bb049abc31f4dfcee24ccaf94492ec8515f200a8989e03"
 
 [items."service-dispose.spec.ts::Service disposal::withdraws one binding without waiting for another binding from the same provider"]
-status = "pending"
+status = "ported"
+hash = "4f8396083a7afd748394b6e50d34ebd808066a2c7601158077dcd5ab6fc6c2dd"
 
 [items."service-dispose.spec.ts::Service disposal::withdraws only the old binding without waiting for the next load"]
-status = "pending"
+status = "ported"
+hash = "233eeb8a8e5030a006e8debc537331d46624e2854ef4dd79bb48727c553087d5"
 
 [items."service.spec.ts::Service::compare snapshot"]
 status = "ported"
 hash = "8b38682a0cc4295fffe0f3b858861aa6b479578bb66a133a4a66ca7b50af93b2"
 
 [items."service.spec.ts::Service::dispose dependents before isolated provider"]
-status = "pending"
+status = "ported"
+hash = "ea86d8125d50b12b0abb783ff7f32505710bbf58fde57ef1c88e029503d76081"
 
 [items."service.spec.ts::Service::dispose dependents before provider"]
-status = "pending"
+status = "ported"
+hash = "702b9269966b5f86857b8ace3f696dc4b144ea00a68c0f77cedf641e96b1ec35"
 
 [items."service.spec.ts::Service::dispose dependents before provider restarts"]
-status = "pending"
+status = "ported"
+hash = "8610b385ec841e1f7a8405791ee59d8c122b8ad71382e9cebe332714579d8d3f"
 
 [items."service.spec.ts::Service::multiple injects"]
 status = "adapted"
@@ -987,7 +1038,10 @@ hash = "19e5bd6e33db741fd4d7e468e87674a971a2dee22aedb27ee84a6c34685aac6f"
 mirror = true
 
 [items."src/fiber.ts:Fiber._reload"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._reload"
+hash = "6682be41383a6c0e2f4dd813638eb3fab8c04b5409d2721294ef4af1ea92b7d6"
+mirror = true
 
 [items."src/fiber.ts:Fiber._replace"]
 status = "pending"
@@ -1004,7 +1058,10 @@ hash = "59735115ed5aa5ae323f512a6a05f0d53e12784c93bfeac7d7bcf65ba5a148eb"
 mirror = true
 
 [items."src/fiber.ts:Fiber._unload"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._unload"
+hash = "521ea9721c196b3a1c1a51b78afe0d6eb6892e8487027f3ec5f81bcb3d527ebb"
+mirror = true
 
 [items."src/fiber.ts:Fiber._updateState"]
 status = "ported"
@@ -1050,7 +1107,10 @@ target = "pycordis.fiber.Fiber.restart"
 hash = "94511f76e214bb6f177deb6a2b0a8fe4b092d7201d053e13899a3596c0c07502"
 
 [items."src/fiber.ts:Fiber.update"]
-status = "pending"
+status = "adapted"
+target = "pycordis.fiber.Fiber.update"
+hash = "7d552b1a389fc951aece727bcdb101b19ecf2a5e258c0173d5f4bd4d9fff49ea"
+divergence = "update-result"
 
 [items."src/fiber.ts:FiberState"]
 status = "ported"
@@ -1705,40 +1765,52 @@ status = "pending"
 status = "pending"
 
 [items."update.spec.ts::Fiber: concurrent updates::cleans up a superseded failure without failing the latest update"]
-status = "pending"
+status = "ported"
+hash = "35b4db94c86d8b7d535505a6c45ea59c40f4cc379dda99ef9cb67ad3b6105aad"
 
 [items."update.spec.ts::Fiber: concurrent updates::coalesces updates during unloading"]
-status = "pending"
+status = "ported"
+hash = "99eee75582626551ecc688448fba8e48b614eac2925c9ee76006191e44076c24"
 
 [items."update.spec.ts::Fiber: concurrent updates::does not load a queued config after disposal"]
-status = "pending"
+status = "ported"
+hash = "5d7b70a3f7f8160e6f666d066e595def4884c6fc51fd8bb185d87d2488e5ff9b"
 
 [items."update.spec.ts::Fiber: concurrent updates::does not restart when a listener accepts an update during loading"]
-status = "pending"
+status = "ported"
+hash = "eae09c0d568296fb6af1e1305b8a9141ab0de6748d593c51448c2a6699317f17"
 
 [items."update.spec.ts::Fiber: concurrent updates::honors config ABA while loading even when config is unchanged"]
-status = "pending"
+status = "ported"
+hash = "f417991a56e6ddc3552fed48f6088a86ef589cacf70e0d131672b482bedf0067"
 
 [items."update.spec.ts::Fiber: concurrent updates::honors restart while loading even when config is unchanged"]
-status = "pending"
+status = "ported"
+hash = "f417991a56e6ddc3552fed48f6088a86ef589cacf70e0d131672b482bedf0067"
 
 [items."update.spec.ts::Fiber: concurrent updates::rejects all waiting updates when the latest load fails"]
-status = "pending"
+status = "ported"
+hash = "b6afedcdfa2cbb1c9850c85640dcabef4a41b2511c718f19bb1e6e74265f15cb"
 
 [items."update.spec.ts::Fiber: concurrent updates::settles concurrent updates on the latest config (inject: false)"]
-status = "pending"
+status = "ported"
+hash = "bdde8ae5fc08ea27e4b04db32837f445fbd81b916cf071248f81a8e5fc31cb8e"
 
 [items."update.spec.ts::Fiber: concurrent updates::settles concurrent updates on the latest config (inject: true)"]
-status = "pending"
+status = "ported"
+hash = "bdde8ae5fc08ea27e4b04db32837f445fbd81b916cf071248f81a8e5fc31cb8e"
 
 [items."update.spec.ts::Fiber: concurrent updates::skips superseded loads before executing the component"]
-status = "pending"
+status = "ported"
+hash = "1669df0ccbfc9b61561346a76c11d7ee37b24154007f1423c5127e0db5ea980b"
 
 [items."update.spec.ts::Fiber: concurrent updates::stops advancing an outdated async generator and collects its final yield"]
-status = "pending"
+status = "ported"
+hash = "e8427ce24632a802aced78aa45cbef1b5dd8b3bdbd26cd13af940e03f889d89f"
 
 [items."update.spec.ts::Fiber: concurrent updates::waits for dependencies and loads only the latest config"]
-status = "pending"
+status = "ported"
+hash = "cc9657368126986825e21635a7e1ddafbc7dae826439b3b8d700b07d8d25277f"
 
 [items."utils.spec.ts::DisposableList::clear removes every entry and returns them in order"]
 status = "ported"

@@ -52,6 +52,13 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+To measure coverage (line and branch), add `--cov`. The run fails when total coverage is below
+`fail_under` in `pyproject.toml`:
+
+```bash
+uv run pytest --cov --cov-report=term-missing
+```
+
 The fast loop excludes slow tests:
 
 ```bash
@@ -62,8 +69,12 @@ uv run pytest -m "not slow"
 
 The `ci.yml` workflow runs on every push and on pull requests to `develop` or `master`:
 
-- `test`: the full suite with `uv run pytest`, on Python 3.12 and 3.13. CI never filters
-  markers; the fast loop above is local only.
+- `test`: the full suite with `uv run pytest --cov`, on Python 3.12 and 3.13. CI never filters
+  markers; the fast loop above is local only. The run fails when coverage is below
+  `fail_under`. The Ubuntu, Python 3.12 job uploads `coverage.xml` to Codecov, which supplies
+  the coverage badge in the README. The upload needs the `CODECOV_TOKEN` repository secret.
+  `codecov.yml` sets the Codecov status checks: total coverage can drop by at most 1%, and the
+  lines that a pull request changes need 90% coverage.
 - `lint`: `uv lock --check`, `uv run ruff check .`, and `uv run ruff format --check .`
 - `docs`: `uv run python scripts/gen_ref_pages.py`, a drift check, then
   `uv run zensical build --strict`. The drift check fails when the generator changes a

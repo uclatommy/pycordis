@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 6 of 12 complete
+**Status**: 🔄 In progress — Increment 8 of 13 complete
 
 ## Goal
 
@@ -390,8 +390,8 @@ and is tested through it.
   complete when it holds every translatable upstream case: `test_utils.py` by Increment 1,
   `test_events.py` by Increment 3, `test_dispose.py` and `test_reflect.py` by Increment 5,
   `test_component.py`, `test_service.py`, and `test_intercept.py` by Increment 6,
-  `test_fiber.py` and `test_isolate.py` by Increment 7, `test_update.py`, `test_replace.py`, and
-  `test_service_dispose.py` by Increment 8, `test_associate.py`, `test_shadow.py`, and
+  `test_fiber.py` and `test_isolate.py` by Increment 7, `test_update.py` and
+  `test_service_dispose.py` by Increment 8, `test_replace.py` by Increment 8b, `test_associate.py`, `test_shadow.py`, and
   `test_invoke.py` by Increment 9, and `test_logger.py` and `test_decorator.py` by Increment 10.
   A module shared before its upstream dependencies exist holds the subset that runs and grows in
   the increment that unblocks the rest.
@@ -719,13 +719,44 @@ tests/test_dispose.py`
 **Manual validation**:
 - A root context parks an `inject` fiber at `PENDING`, loads it on `provide`, parks it again on dispose, and a raising component ends `FAILED` then `DISPOSED` (confirmed by the user)
 
-### Increment 8: Dependents guard, update, restart, replace
+### Increment 8: Dependents guard and update
 **Goal**: The provider waits for its dependents, the provision's disposer waits on release, and
-`update` / `restart` / `RegistryService.replace` work.
-**Files**: `fiber.py`, `reflect.py`, `registry.py` (~120 total), `test_update.py`,
-`test_replace.py`, `test_service_dispose.py`
-**Validation**: `uv run pytest tests/test_update.py tests/test_replace.py
-tests/test_service_dispose.py tests/test_fiber.py`
+`Fiber.update` works with its `internal/update` listeners.
+**Files**: `fiber.py`, `context.py`, `events.py` (~120 total), `test_update.py`,
+`test_service_dispose.py`
+**Validation**: `uv run pytest tests/test_update.py tests/test_service_dispose.py
+tests/test_service.py tests/test_events.py tests/test_fiber.py`
+**Docs**: Docstrings of `Fiber.update`, `Fiber.update_hooks`, and `EventsService.install`; the divergence row `update-result`
+**Status**: ✅ Completed
+
+**Changed**:
+- `fiber.py`: `_reload` records the fiber in `Impl.dependents`; `_unload` waits while a provision has dependents, then releases the providers it used; `update` validates, commits, runs the `internal/update` waterfall, and always returns a `Deferred`
+- `context.py`: the root installs the `internal/listener` router (an `internal/update` listener belongs to the fiber that registers it) and the default `internal/update` step that runs the listeners of the updating fiber
+- `events.py`: `install` takes `prepend` and registers a global listener
+- `docs/architecture.md`: divergence row `update-result`
+- `conformance/ledger.toml`: 61 items reviewed (`Fiber._reload` and `Fiber._unload` as `ported` with `mirror = true`, `Fiber.update` and `event:internal/update` as `adapted`, and the ported cases)
+
+**Tests**:
+- `tests/test_update.py` (16 pass, includes `internal/commit` with `no_save`, `update` of a disposed fiber, and an asynchronous listener), `tests/test_service_dispose.py` (27 pass), `tests/test_fiber.py` (24 pass, 10 new), `tests/test_service.py` (3 new), `tests/test_events.py` (5 new)
+- Full suite: 444 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, and `tests/test_docstrings.py`
+- With the wait removed from `Fiber._unload`, 16 tests of `tests/test_service_dispose.py` fail; with `self._error = None` removed from `Fiber.update`, 3 tests of `tests/test_fiber.py` fail
+
+**Deviations**:
+- The spec moves `RegistryService.replace`, the alias table, and `test_replace.py` to Increment 8b (user-approved)
+- `Fiber.update` always returns a `Deferred` (user-approved, divergence `update-result`)
+- The `LIFE-ORDER` tests are not marked as contract tests: they must drive seeded random schedules (Increment 11), so the ID stays in the pending list of the ledger
+- Cases that upstream starts in one synchronous block (`skips superseded loads`, `update config while injected service reloads`) run inside one task, because `ImmediateScheduler` drains after each top-level call
+- The `Object.hasOwn` assertions of `update config while injected service reloads` are not ported: they check the prototype chain of a JavaScript wrapper
+- `test_events.py` compares the `internal/listener` count with its baseline, because the root now installs one listener for that event
+
+**Manual validation**:
+- `update` runs the component again with the new config and calls an `internal/update` listener, and a provider stays open until its consumer finishes its teardown (confirmed by the user)
+
+### Increment 8b: Replace
+**Goal**: `RegistryService.replace` moves live fibers to a new component, and `get`, `has`, and `use` follow a replaced component through its aliases.
+**Files**: `registry.py`, `fiber.py` (~80 total), `test_replace.py`
+**Validation**: `uv run pytest tests/test_replace.py tests/test_component.py tests/test_fiber.py`
+**Docs**: Docstrings of `RegistryService.replace` and the `internal/replace` event
 **Status**: ⬜ Pending
 
 ### Increment 9: Traceable views

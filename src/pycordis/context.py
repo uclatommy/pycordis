@@ -20,6 +20,23 @@ from pycordis.registry import Component, RegistryService
 from pycordis.scheduler import Scheduler
 
 
+def _run_update_hooks(fiber: Fiber, config: object, next_: Callable[[], Any]) -> Any:
+    """Run the `internal/update` listeners of `fiber`, and then the rest of the chain.
+
+    A listener that a fiber registered belongs to that fiber, so the chain of an update
+    contains only the listeners of the fiber that updates. A listener that another
+    listener removes during the chain is skipped.
+    """
+    hooks = list(fiber.update_hooks)
+
+    def advance() -> Any:
+        if not hooks:
+            return next_()
+        return hooks.pop(0)(fiber, config, advance)
+
+    return advance()
+
+
 class Context:
     """The place from which code registers effects.
 
@@ -65,9 +82,37 @@ class Context:
             "internal/config",
             lambda fiber, next_: resolve_config(fiber.runtime.config, next_()),
         )
+        self.events.install(self, "internal/listener", self._route_update_listener)
+        self.events.install(self, "internal/update", _run_update_hooks, prepend=True)
 
     def __repr__(self) -> str:
         return f"Context <{self.fiber.name}>"
+
+    @staticmethod
+    def _route_update_listener(
+        ctx: "Context", name: EventName, listener: Listener, options: EventOptions
+    ) -> EffectHandle | None:
+        """Keep an `internal/update` listener on the fiber that registers it."""
+        if name != "internal/update" or options.is_global:
+            return None
+
+        def setup() -> Callable[[], None]:
+            removed = False
+
+            def guarded(fiber: Fiber, config: object, next_: Callable[[], Any]) -> Any:
+                return next_() if removed else listener(fiber, config, next_)
+
+            hooks = ctx.fiber.update_hooks
+            remove = hooks.unshift(guarded) if options.prepend else hooks.push(guarded)
+
+            def revert() -> None:
+                nonlocal removed
+                removed = True
+                remove()
+
+            return revert
+
+        return ctx.fiber.effect(setup, 'ctx.on("internal/update")')
 
     @property
     def isolates(self) -> Mapping[str, object]:

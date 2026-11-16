@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
-from conftest import Recorder, event, hook_snapshot
+from conftest import FakeClock, Recorder, event, hook_snapshot
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
@@ -162,3 +162,98 @@ def test_the_filter_hook_accepts_the_contexts_of_the_same_realm(root: Context) -
 
     assert foo.cordis_filter(root.extend())
     assert not foo.cordis_filter(root.isolate("foo"))
+
+
+class Tracked(Service[Any]):
+    """A service that records when it is active and when it closes."""
+
+    def __init__(self, ctx: Context, seq: list[str]) -> None:
+        super().__init__(ctx, "foo")
+        self.seq = seq
+        self.active = False
+
+    def cordis_init(self) -> Any:
+        self.active = True
+
+        def close() -> None:
+            self.active = False
+            self.seq.append("foo")
+
+        yield close
+
+
+def dependent(seq: list[str], clock: FakeClock) -> Callable[[Context], None]:
+    """A component whose teardown waits 10 ms, then reads the service."""
+
+    def apply(ctx: Context) -> None:
+        def revert() -> Deferred[None]:
+            wait = clock.sleep(10)
+            wait.add_done_callback(
+                lambda _: seq.append(
+                    "dependent" if ctx["foo"].active else "dependent (stale)"
+                )
+            )
+            return wait
+
+        ctx.effect(lambda: revert)
+
+    return apply
+
+
+@pytest.mark.upstream("service.spec.ts::Service::dispose dependents before provider")
+def test_a_dependent_leaves_before_its_provider(
+    root: Context, clock: FakeClock
+) -> None:
+    seq: list[str] = []
+
+    def owner(ctx: Context, config: object) -> None:
+        ctx.use(Tracked, seq)
+        ctx.inject(["foo"], dependent(seq, clock))
+
+    fiber = root.use(owner)
+    disposing = fiber.dispose()
+    clock.advance(10)
+
+    assert disposing.done()
+    assert seq == ["dependent", "foo"]
+
+
+@pytest.mark.upstream(
+    "service.spec.ts::Service::dispose dependents before provider restarts"
+)
+def test_a_dependent_leaves_before_its_provider_restarts(
+    root: Context, clock: FakeClock
+) -> None:
+    seq: list[str] = []
+    fiber = root.use(Tracked, seq)
+    callback = Recorder(dependent(seq, clock))
+    root.inject(["foo"], callback)
+    assert len(callback.calls) == 1
+
+    restarting = fiber.restart()
+    clock.advance(10)
+
+    assert restarting.done()
+    assert seq == ["dependent", "foo"]
+    assert len(callback.calls) == 2
+
+
+@pytest.mark.upstream(
+    "service.spec.ts::Service::dispose dependents before isolated provider"
+)
+def test_a_dependent_leaves_before_the_provider_of_its_realm(root: Context) -> None:
+    label = object()
+    callback = Recorder()
+    dispose = Recorder()
+
+    def consume(ctx: Context) -> Recorder:
+        callback()
+        return dispose
+
+    root.isolate("foo", label).inject(["foo"], consume)
+    fiber = root.use(lambda ctx, config: ctx.isolate("foo", label).provide("foo", {}))
+    assert len(callback.calls) == 1
+
+    fiber.dispose().result()
+
+    assert len(dispose.calls) == 1

@@ -284,13 +284,25 @@ class EventsService:
         dispose = self.on(ctx, name, call_once, options)
         return dispose
 
-    def install(self, ctx: "Context", name: EventName, listener: Listener) -> None:
+    def install(
+        self,
+        ctx: "Context",
+        name: EventName,
+        listener: Listener,
+        prepend: bool = False,
+    ) -> None:
         """Register `listener` for `name` without a fiber, so that nothing removes it.
 
         A root context uses it for the listeners that its own services need. The
-        listener is not reported to `internal/listener` listeners.
+        listener is not reported to `internal/listener` listeners. It is global: a
+        dispatch filter does not skip it.
         """
-        self._hooks.setdefault(name, []).append(Hook(ctx, listener))
+        hooks = self._hooks.setdefault(name, [])
+        hook = Hook(ctx, listener, prepend, True)
+        if prepend:
+            hooks.insert(0, hook)
+        else:
+            hooks.append(hook)
 
     def _resolve(
         self, mode: DispatchMode, name: EventName, args: tuple[Any, ...], this: object

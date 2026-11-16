@@ -276,6 +276,7 @@ class Fiber:
         committed: The providers that the running load resolved, by name, or `None`
             while the fiber is not loaded.
         provisions: The services that the fiber provides.
+        update_hooks: The `internal/update` listeners that the fiber registered.
     """
 
     def __init__(
@@ -298,8 +299,10 @@ class Fiber:
         self._inertia: Deferred[None] | None = None
         self._reverting = False
         self._disposables = DisposableList[Disposer]()
+        self.update_hooks = DisposableList[Callable[..., Any]]()
         self._store: dict[str, Impl] = {}
         self._handle: EffectHandle | None = None
+        self._release: Callable[[], None] | None = None
         if runtime is None:
             self._uid: int | None = 0
             self._state = FiberState.ACTIVE
@@ -476,6 +479,63 @@ class Fiber:
             self._revision += 1
             self._refresh()
             return start(self._scheduler, self._restarted())
+
+    def update(self, config: object, no_save: bool = False) -> Deferred[None]:
+        """Give the fiber a new config, and run the component again with it.
+
+        A loaded fiber first validates `config` with the component's `Config`, and an
+        invalid config raises before anything changes. The fiber then stores `config`,
+        clears the error of a failed fiber, and calls the `internal/update` listeners
+        with `(fiber, resolved_config, next)`. Calling `next()` goes on to the next
+        listener, and the last `next()` restarts the fiber. A listener that does not
+        call `next()` takes the update itself: the fiber keeps running with its old
+        effects, and the new config applies at the next restart.
+
+        A fiber that is not loaded (it waits for a service, or it failed) skips the
+        listeners and restarts at once. A failed fiber loads again with the new config.
+
+        Several updates while a load or unload runs end in one load with the latest
+        config, and each returned `Deferred` resolves when that load ends.
+
+        Args:
+            config: The raw config.
+            no_save: Do not emit `internal/commit`. A host that stores the configs
+                of its components listens to that event to save them.
+
+        Returns:
+            A `Deferred` that resolves when the fiber is idle again, or rejects with
+            the error that failed the fiber. It is already resolved when a listener
+            takes the update. The fiber logs the failure itself, so a caller can
+            drop the `Deferred`.
+
+        Raises:
+            ValidationError: If the fiber is loaded and `config` is not valid.
+            CordisError: If the fiber is disposed.
+
+        Examples:
+            ```python
+            >>> fiber = ctx.use(lambda ctx, config: print("config", config), 1)
+            config 1
+            >>> _ = fiber.update(2)
+            config 2
+            ```
+        """
+        with self._scheduler.call():
+            self.assert_active()
+            loaded = self._runner.epoch != INACTIVE
+            resolved = self._resolve(config) if loaded else None
+            if not no_save:
+                self.ctx.emit("internal/commit", self, config)
+            self.config = config
+            self._error = None
+            if not loaded:
+                return self.restart()
+            result = self.ctx.waterfall("internal/update", self, resolved, self.restart)
+            if isinstance(result, Deferred):
+                return result
+            if inspect.iscoroutine(result):
+                return start(self._scheduler, result)
+            return Deferred.resolved(None)
 
     def dispose(self) -> Deferred[None]:
         """End the fiber: unload it, revert its effects, and remove it.
@@ -690,6 +750,10 @@ class Fiber:
 
     async def _reload(self) -> None:
         self.committed = dict(self._store)
+        for impl in self.committed.values():
+            if impl.ctx.fiber is self:
+                continue
+            impl.dependents.add(self)
         old_epoch = self._runner.epoch
         try:
             await _hop()
@@ -714,6 +778,12 @@ class Fiber:
         self._update_state(transition)
 
     async def _unload(self) -> None:
+        # LIFE-ORDER: dependents leave when this fiber leaves ACTIVE, but they can
+        # still read its services during their own teardown, so the effects of this
+        # fiber are reverted only after every dependent has unloaded.
+        while any(impl.dependents for impl in list(self.provisions)):
+            await self._released()
+        self._release = None
         # Every unload awaits at least once, so the caller stores the task before it
         # ends. Disposers start in reverse registration order. A disposer that
         # returns a `Deferred` finishes concurrently with the others, and an error
@@ -737,6 +807,18 @@ class Fiber:
         for watcher in pending:
             await watcher
         self._reverting = False
+        # release the providers that wait for this fiber to unload
+        for impl in (self.committed or {}).values():
+            if self not in impl.dependents:
+                continue
+            impl.dependents.discard(self)
+            if impl.dependents:
+                continue
+            if impl.release is not None:
+                impl.release()
+            release = impl.ctx.fiber._release
+            if release is not None:
+                release()
         self.committed = None
 
         def transition() -> FiberState | None:
@@ -747,3 +829,14 @@ class Fiber:
             return FiberState.LOADING
 
         self._update_state(transition)
+
+    def _released(self) -> Deferred[None]:
+        """Return a `Deferred` that the next release of a dependent resolves."""
+        gate = Deferred[None]()
+
+        def release() -> None:
+            if not gate.done():
+                gate.resolve(None)
+
+        self._release = release
+        return gate

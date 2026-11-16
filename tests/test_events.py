@@ -534,7 +534,10 @@ def test_an_internal_listener_event_can_replace_a_registration(root: Context) ->
     root.on("internal/listener", seen)
 
     assert root.on(event, lambda: None) is replacement
-    assert hook_snapshot(root) == {**baseline, "internal/listener": 1}
+    assert hook_snapshot(root) == {
+        **baseline,
+        "internal/listener": baseline["internal/listener"] + 1,
+    }
     assert seen.calls[0][1] == event
 
 
@@ -574,3 +577,137 @@ def test_serial_waits_for_an_async_listener_before_the_next_one(
     clock.advance(10)
 
     assert order == ["slow", "next"] and result.done()
+
+
+def update_listener(
+    calls: list[Any], pick: Callable[[Any], Any] = lambda config: config["n"]
+) -> Callable[[Any, Any, Callable[[], Any]], Any]:
+    """Return an `internal/update` listener that records `pick(config)` and goes on."""
+
+    def listen(fiber: Any, config: Any, next_: Callable[[], Any]) -> Any:
+        calls.append(pick(config))
+        return next_()
+
+    return listen
+
+
+@pytest.mark.upstream(
+    "events.spec.ts::Events::internal/update continues past a removed fiber listener"
+)
+def test_an_update_continues_past_a_listener_that_another_listener_removed(
+    root: Context,
+) -> None:
+    removed, remaining, loaded = Recorder(), Recorder(), []
+    handle: list[Callable[[], Any]] = []
+
+    def apply(ctx: Context, config: dict[str, int]) -> None:
+        loaded.append(config["n"])
+
+        def first(fiber: Any, config: Any, next_: Callable[[], Any]) -> Any:
+            handle[0]()
+            return next_()
+
+        def second(fiber: Any, config: Any, next_: Callable[[], Any]) -> Any:
+            removed()
+            return next_()
+
+        def third(fiber: Any, config: Any, next_: Callable[[], Any]) -> Any:
+            remaining()
+            return next_()
+
+        ctx.on("internal/update", first)
+        handle[:] = [ctx.on("internal/update", second)]
+        ctx.on("internal/update", third)
+
+    child = root.use(apply, {"n": 0})
+    child.update({"n": 1}).result()
+
+    assert len(removed.calls) == 0
+    assert len(remaining.calls) == 1
+    assert loaded == [0, 1]
+
+
+@pytest.mark.upstream(
+    "events.spec.ts::Events::internal/update::does not accumulate across reloads"
+)
+def test_update_listeners_do_not_accumulate_across_reloads(root: Context) -> None:
+    calls: list[int] = []
+    fiber = root.use(
+        lambda ctx, config: ctx.on("internal/update", update_listener(calls)), {"n": 0}
+    )
+
+    for n in (1, 2, 3):
+        fiber.update({"n": n}).result()
+
+    assert calls == [1, 2, 3]
+
+
+@pytest.mark.upstream(
+    "events.spec.ts::Events::internal/update::can be disposed explicitly"
+)
+def test_a_disposed_update_listener_does_not_run(root: Context) -> None:
+    calls: list[int] = []
+    handle: list[Callable[[], Any]] = []
+
+    def apply(ctx: Context, config: dict[str, int]) -> None:
+        handle.append(ctx.on("internal/update", update_listener(calls)))
+
+    fiber = root.use(apply, {"n": 0})
+    handle[0]()
+    fiber.update({"n": 1}).result()
+
+    assert calls == []
+
+
+@pytest.mark.upstream(
+    "events.spec.ts::Events::internal/update::runs prepended listeners first"
+)
+def test_prepended_update_listeners_run_first(root: Context) -> None:
+    order: list[str] = []
+    handles: dict[str, Callable[[], Any]] = {}
+
+    def apply(ctx: Context, config: dict[str, int]) -> None:
+        def listen(name: str, prepend: bool = False) -> Callable[[], Any]:
+            return ctx.on(
+                "internal/update",
+                update_listener(order, lambda config: name),
+                EventOptions(prepend=prepend),
+            )
+
+        listen("a")
+        handles["b"] = listen("b", True)
+        listen("c")
+        listen("d", True)
+
+    fiber = root.use(apply, {"n": 0})
+    fiber.update({"n": 1}).result()
+    assert order == ["d", "b", "a", "c"]
+
+    order.clear()
+    handles["b"]()
+    fiber.update({"n": 2}).result()
+    assert order == ["d", "a", "c"]
+
+
+@pytest.mark.upstream(
+    "events.spec.ts::Events::internal/update::global listeners are not tied to a "
+    "child fiber reload"
+)
+def test_a_global_update_listener_hears_every_update_of_every_fiber(
+    root: Context,
+) -> None:
+    global_calls: list[int] = []
+    local_calls: list[int] = []
+    root.on(
+        "internal/update", update_listener(global_calls), EventOptions(is_global=True)
+    )
+    fiber = root.use(
+        lambda ctx, config: ctx.on("internal/update", update_listener(local_calls)),
+        {"n": 0},
+    )
+
+    fiber.update({"n": 1}).result()
+    fiber.update({"n": 2}).result()
+
+    assert global_calls == [1, 2]
+    assert local_calls == [1, 2]

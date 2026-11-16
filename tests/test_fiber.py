@@ -1,7 +1,8 @@
 """Fiber lifecycle: inertia, failure, disposal states, and config validation on load."""
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -274,3 +275,227 @@ def test_a_validation_error_keeps_its_issues_and_lists_their_paths() -> None:
 
     assert error.issues == tuple(issues)
     assert str(error) == "invalid config:\n  - not a number (at items.0)\n  - required"
+
+
+def config_component(apply: Callable[..., Any]) -> Any:
+    """A component whose `Config` validates `ok` and adds `resolved`."""
+
+    def config(value: dict[str, Any]) -> dict[str, Any]:
+        if not value["ok"]:
+            raise ValueError("not ok")
+        return {**value, "resolved": True}
+
+    return SimpleNamespace(apply=apply, Config=config)
+
+
+@pytest.mark.upstream("fiber.spec.ts::Fiber::update recovers a failed fiber")
+def test_update_loads_a_failed_fiber_again(
+    root: Context, caplog: pytest.LogCaptureFixture
+) -> None:
+    fixed = [False]
+
+    def apply(ctx: Context) -> None:
+        if not fixed[0]:
+            raise RuntimeError("boom")
+
+    root.provide("foo", 1)
+    calls = Recorder(apply)
+    with caplog.at_level(logging.ERROR, logger="pycordis"):
+        fiber = root.inject(["foo"], calls)
+    assert fiber.state == FiberState.FAILED
+
+    fixed[0] = True
+    fiber.update(None).result()
+
+    assert len(calls.calls) == 2
+    assert fiber.state == FiberState.ACTIVE
+
+
+@pytest.mark.upstream("fiber.spec.ts::Fiber::update waits for asynchronous recovery")
+def test_update_resolves_when_an_asynchronous_recovery_ends(
+    root: Context, caplog: pytest.LogCaptureFixture
+) -> None:
+    gate = Deferred[None]()
+
+    async def apply(ctx: Context, config: dict[str, bool]) -> None:
+        if not config["fixed"]:
+            raise RuntimeError("boom")
+        await gate
+
+    with caplog.at_level(logging.ERROR, logger="pycordis"):
+        fiber = root.use(apply, {"fixed": False})
+    assert fiber.state == FiberState.FAILED
+
+    updating = fiber.update({"fixed": True})
+    assert not updating.done()
+    gate.resolve(None)
+
+    assert updating.done()
+    assert fiber.state == FiberState.ACTIVE
+
+
+@pytest.mark.upstream(
+    "fiber.spec.ts::Fiber::update surfaces a failed recovery to its caller"
+)
+def test_update_rejects_when_the_recovery_fails(
+    root: Context, caplog: pytest.LogCaptureFixture
+) -> None:
+    def apply(ctx: Context, config: dict[str, str]) -> None:
+        raise RuntimeError(config["message"])
+
+    with caplog.at_level(logging.ERROR, logger="pycordis"):
+        fiber = root.use(apply, {"message": "initial failure"})
+        updating = fiber.update({"message": "retry failure"})
+
+    with pytest.raises(RuntimeError, match="retry failure"):
+        updating.result()
+    assert fiber.state == FiberState.FAILED
+
+
+@pytest.mark.upstream(
+    "fiber.spec.ts::Fiber::update surfaces a failed reload to its caller"
+)
+@pytest.mark.upstream("fiber.spec.ts::Fiber::update does not leak a dropped failure")
+@pytest.mark.parametrize("keep_result", [True, False], ids=["awaited", "dropped"])
+def test_update_reports_a_failed_reload_through_the_fiber_and_its_result(
+    root: Context, caplog: pytest.LogCaptureFixture, keep_result: bool
+) -> None:
+    fail = [False]
+
+    def apply(ctx: Context, config: object) -> None:
+        if fail[0]:
+            raise RuntimeError("boom")
+
+    fiber = root.use(apply)
+    fail[0] = True
+    with caplog.at_level(logging.ERROR, logger="pycordis"):
+        updating = fiber.update({})
+
+    assert fiber.state == FiberState.FAILED
+    assert len(errors(caplog)) == 1
+    if keep_result:
+        with pytest.raises(RuntimeError, match="boom"):
+            updating.result()
+
+
+@pytest.mark.upstream("fiber.spec.ts::Fiber::update config on wrapped fiber")
+def test_update_runs_the_component_with_each_new_config(root: Context) -> None:
+    callback = Recorder()
+    fiber = root.use(callback, {"msg": "hello"})
+    assert [call[1] for call in callback.calls] == [{"msg": "hello"}]
+
+    fiber.update({"msg": "world"})
+    fiber.update({"msg": "!!!"})
+
+    assert [call[1] for call in callback.calls] == [
+        {"msg": "hello"},
+        {"msg": "world"},
+        {"msg": "!!!"},
+    ]
+
+
+@pytest.mark.upstream(
+    "fiber.spec.ts::Fiber::update config while injected service reloads"
+)
+def test_a_consumer_updated_while_its_provider_reloads_loads_once(
+    root: Context, run: Callable[[Coroutine[Any, Any, Any]], Deferred[Any]]
+) -> None:
+    applied: list[tuple[int, str]] = []
+
+    class Provider(Service[Any]):
+        def __init__(self, ctx: Context, config: dict[str, int]) -> None:
+            super().__init__(ctx, "provider")
+            self.value = config["value"]
+
+    def consume(ctx: Context, config: dict[str, str]) -> None:
+        applied.append((ctx["provider"].value, config["mode"]))
+
+    provider = root.use(Provider, {"value": 1})
+    consumer = root.use(
+        SimpleNamespace(inject=["provider"], apply=consume), {"mode": "old"}
+    )
+
+    async def update_both() -> None:
+        # both calls run before the scheduler takes another step
+        updates = [provider.update({"value": 2}), consumer.update({"mode": "new"})]
+        for update in updates:
+            await update
+
+    run(update_both()).result()
+
+    assert applied == [(1, "old"), (2, "new")]
+    assert consumer.config == {"mode": "new"}
+    assert consumer.state == FiberState.ACTIVE
+
+
+@pytest.mark.upstream(
+    "fiber.spec.ts::Fiber: config validation::keep a running component on update"
+)
+def test_an_invalid_config_on_update_keeps_the_running_component(root: Context) -> None:
+    apply = Recorder()
+    fiber = root.use(config_component(apply), {"ok": True})
+
+    with pytest.raises(ValidationError, match="invalid config"):
+        fiber.update({"ok": False})
+
+    assert len(apply.calls) == 1
+    assert fiber.state == FiberState.ACTIVE
+    assert fiber.config == {"ok": True}
+
+
+@pytest.mark.upstream(
+    "fiber.spec.ts::Fiber: config validation::pass the resolved config to listeners"
+)
+def test_update_listeners_receive_the_resolved_config(root: Context) -> None:
+    received: list[Any] = []
+    applied: list[Any] = []
+
+    def apply(ctx: Context, config: Any) -> None:
+        applied.append(config)
+
+        def listen(fiber: Fiber, config: Any, next_: Callable[[], Any]) -> Any:
+            received.append(config)
+            return next_()
+
+        ctx.on("internal/update", listen)
+
+    fiber = root.use(config_component(apply), {"ok": True})
+    assert applied == [{"ok": True, "resolved": True}]
+
+    fiber.update({"ok": True, "extra": 1}).result()
+
+    assert received == [{"ok": True, "extra": 1, "resolved": True}]
+    assert fiber.config == {"ok": True, "extra": 1}
+
+
+@pytest.mark.upstream(
+    "fiber.spec.ts::Fiber: config validation::keep the source config when a listener "
+    "handles the update"
+)
+@pytest.mark.divergence("update-result")
+def test_a_listener_that_handles_an_update_keeps_the_source_config(
+    root: Context,
+) -> None:
+    received: list[Any] = []
+    applied: list[Any] = []
+
+    def apply(ctx: Context, config: Any) -> None:
+        applied.append(config)
+        ctx.on("internal/update", lambda fiber, config, next_: received.append(config))
+
+    fiber = root.use(config_component(apply), {"ok": True})
+    source = {"ok": True, "extra": 1}
+
+    updating = fiber.update(source)
+
+    assert updating.done()
+    updating.result()
+    assert received == [{"ok": True, "extra": 1, "resolved": True}]
+    assert len(applied) == 1
+    assert fiber.config is source
+
+    fiber.restart().result()
+    assert applied == [
+        {"ok": True, "resolved": True},
+        {"ok": True, "extra": 1, "resolved": True},
+    ]
