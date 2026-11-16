@@ -831,7 +831,33 @@ attribution, and the shadow and caller introspection.
 method-level init hooks and inherited `inject` mappings.
 **Files**: `logger.py` (~80), `registry.py` (~40), `test_logger.py`, `test_decorator.py`
 **Validation**: `uv run pytest tests/test_logger.py tests/test_decorator.py`
-**Status**: ⬜ Pending
+**Docs**: Docstrings of `pycordis.logger`, `Context.logger`, `Fiber.logger`, and `inject`; the divergence rows `stdlib-logging` and `logger-format`
+**Status**: ✅ Completed
+
+**Changed**:
+- `logger.py`: new; `LoggerService` (callable, `debug`/`info`/`warning`/`error`, `exporter`, `buffer`, `buffer_size`), `Logger` (a `LoggerAdapter` that adds the fiber and flattens an `ExceptionGroup`), `ColorFormatter`, `color_code`, `colorize`, and a router handler that fills the buffers
+- `context.py`: `Context.logger` gives the view of the root's `LoggerService` for the calling context
+- `fiber.py`: `Fiber.logger` is a `Logger`, so each record carries its fiber; `_apply` starts a fiber for each decorated method of a class instance, before it runs `cordis_init`
+- `registry.py`: `inject(name, config)` for classes and methods; `RegistryService.run_inject_methods`
+- `docs/architecture.md`: divergence rows `stdlib-logging` and `logger-format`
+- `conformance/ledger.toml`: 35 items reviewed (11 logger cases, the decorator case, the `@Inject` message, 22 `src/logger.ts` items, `src/registry.ts:Inject`); the `<rest>` and `setup` items of the two test files stay `pending`
+
+**Tests**:
+- `tests/test_logger.py` (23 pass), `tests/test_decorator.py` (10 pass)
+- Full suite: 537 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, and `tests/test_docstrings.py`
+- Review added tests for the level methods of the service, the `extra` of a caller, the default `buffer_size`, and a decorated method of a plain class. No test was removed, because no sibling test duplicated another
+
+**Deviations**:
+- The buffer is not an effect of the root fiber (user-approved to add a library handler): one router handler on `pycordis` gives each record to the buffer of the root of its fiber. A buffer effect on the root fiber would add an entry to `get_effects()` of every root, and a root `dispose` would end it
+- `Intercept.level` is not ported; the host sets levels with `logging` (row `logger-format`)
+- The logger name is `fiber.name`, not its hyphenated form
+- An error with a `cause` logs once; `logging` prints the cause chain
+- The upstream cases that log at `debug` or `info` set the level of the `pycordis` logger first
+- `Fiber.logger` gives a `Logger` in place of a `logging.Logger`
+- A decorated method runs when its own fiber loads, so it can run after `cordis_init`; only the start of the fiber comes before `cordis_init`
+
+**Manual validation**:
+- In `uv run python`, the buffer, the names, a colored exporter, a failed component, an `ExceptionGroup`, and the detach of an exporter gave the expected output (confirmed by the user)
 
 ### Increment 11: FramePumpScheduler, threading, host contract
 **Goal**: Bounded `pump()`, thread-safe `submit`, owner-thread assertions, the introspection
@@ -892,6 +918,7 @@ implements it.
 | `error-notes` | adaptation | `composeError` string changes | `BaseException.add_note` | — | Native Python mechanism |
 | `exception-group` | adaptation | `AggregateError` | `ExceptionGroup` | — | Native Python type |
 | `stdlib-logging` | adaptation | `LoggerService` (reggol) | `LoggerService` over stdlib `logging` | — | Integration with host logging |
+| `logger-format` | omission | `Logger.format`, formatters, `LoggerLevel`, exporter level table | Not ported | — | `logging` gives the same function |
 | `owner-thread` | improvement | Single-threaded runtime | Owner-thread assertion + `submit` | `REG-WELLFORMED` | Python hosts have worker threads; a call from a wrong thread fails at once instead of corrupting the registry. Test: `divergence("owner-thread")` in `test_threading.py` |
 | `host-introspection` | improvement | `state`, `uid`, `parent`, `getEffects()` are public; children live on `runtime.fibers` | Also `fiber.error`; `fiber.children` as a view over the runtime's fibers | `LIFE-FAILURE` | A host status view reads the failure cause and the fiber tree without the runtime registration internals. Test: `divergence("host-introspection")` |
 | `root-late-effect` | improvement | An effect registered on the root during root teardown stays, with no report | It stays and is logged at `DEBUG` with its label | `EFF-REVERT` | The host sees the one effect that root disposal does not revert. Test: `divergence("root-late-effect")` |

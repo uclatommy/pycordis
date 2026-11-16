@@ -17,8 +17,10 @@ the object:
   configuration of the service.
 """
 
+import inspect
 from collections.abc import Callable, ItemsView, Iterable, KeysView, ValuesView
 from dataclasses import dataclass
+from functools import partial
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -27,6 +29,7 @@ from pycordis.errors import CallSite
 from pycordis.fiber import Fiber
 from pycordis.keys import key_name
 from pycordis.scheduler import Scheduler
+from pycordis.traceable import get_traceable
 
 if TYPE_CHECKING:
     from pycordis.context import Context
@@ -86,6 +89,53 @@ def resolve_inject(inject: object) -> dict[str, object]:
     if isinstance(inject, str) or not isinstance(inject, Iterable):
         raise TypeError("inject must be a list of names or a dict")
     return {key_name(name): None for name in inject}
+
+
+def inject(name: str, config: object = None) -> Callable[[Any], Any]:
+    """Declare that a component class or one of its methods needs the service `name`.
+
+    On a class, the decorator adds `name` to the `inject` attribute of the class. A
+    subclass starts from the `inject` of its base class and never changes it. On a
+    method, the method runs in a fiber of its own that loads when `name` has a provider
+    and unloads before it loses its provider. The fiber starts when the component is
+    created, and the method runs when the fiber loads. The method can return an effect.
+    Decorators stack.
+
+    Args:
+        name: The service name.
+        config: The intercept configuration of the service, or `None`.
+
+    Returns:
+        A decorator that returns the class or the function that it gets.
+
+    Raises:
+        TypeError: When the decorator is applied to anything but a class or a function.
+
+    Examples:
+        ```python
+        >>> class Cache(Service):
+        ...     @inject("db")
+        ...     def warm(self):
+        ...         return lambda: print("cooled")
+        ```
+    """
+
+    def decorate(value: Any) -> Any:
+        if inspect.isclass(value):
+            inherited = resolve_inject(getattr(value, "inject", None))
+            value.inject = {**inherited, name: config}
+        elif inspect.isfunction(value):
+            deps = getattr(value, "cordis_inject", None)  # set by an earlier decorator
+            value.cordis_inject = {**(deps or {}), name: config}
+        else:
+            raise TypeError("@Inject() can only be used on class or class methods")
+        return value
+
+    return decorate
+
+
+def _call_method(instance: object, name: str, ctx: "Context") -> Any:
+    return getattr(get_traceable(ctx, instance), name)()
 
 
 def _invalid(component: object) -> TypeError:
@@ -273,6 +323,21 @@ class RegistryService:
     def unregister(self, runtime: Runtime) -> None:
         """Drop the record of a component that has no fiber."""
         del self._internal[runtime.callback]
+
+    def run_inject_methods(self, ctx: "Context", instance: object) -> None:
+        """Start a fiber for each method of `instance` that `inject` decorates.
+
+        The methods run in the order of their definition, the methods of a base class
+        first. A method that a subclass overrides without the decorator does not run.
+        Each method runs with `instance` as seen from the context of its own fiber.
+        """
+        members: dict[str, Any] = {}
+        for klass in reversed(type(instance).__mro__):
+            members.update(vars(klass))
+        for member, function in members.items():
+            deps = getattr(function, "cordis_inject", None)  # any class attribute
+            if deps is not None:
+                ctx.inject(deps, partial(_call_method, instance, member))
 
     def inject(
         self,

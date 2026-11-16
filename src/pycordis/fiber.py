@@ -28,6 +28,7 @@ from pycordis.traceable import get_traceable
 
 if TYPE_CHECKING:
     from pycordis.context import Context
+    from pycordis.logger import Logger
     from pycordis.reflect import Impl
     from pycordis.registry import Runtime
 
@@ -364,9 +365,11 @@ class Fiber:
             fiber = parent
 
     @property
-    def logger(self) -> logging.Logger:
+    def logger(self) -> "Logger":
         """The logger of the fiber. It reports errors of the fiber's work."""
-        return logging.getLogger(f"pycordis.{self.name}")
+        from pycordis.logger import Logger  # logger.py imports the service layer
+
+        return Logger(logging.getLogger(f"pycordis.{self.name}"), self)
 
     def assert_active(self) -> None:
         """Raise `CordisError` when the fiber is disposed."""
@@ -634,6 +637,7 @@ class Fiber:
         if not inspect.isclass(callback):
             return callback(self.ctx, config)
         instance = callback(self.ctx, config)
+        self.ctx.registry.run_inject_methods(self.ctx, instance)
         init = getattr(instance, "cordis_init", None)
         return None if init is None else init()
 

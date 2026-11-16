@@ -92,7 +92,8 @@ status = "ported"
 hash = "eb8e6af3e536e11b9e1eddf32dc865c6be52152002dfd397ecb4af9152d32e55"
 
 [items."decorator.spec.ts::Decorator::@Inject on class method"]
-status = "pending"
+status = "ported"
+hash = "dfab7f445444e466c2a98e4aa0aabf47a8b7ffb216674fd83af1e83c53715248"
 
 [items."dispose.spec.ts::Effects::async return 1"]
 status = "ported"
@@ -504,40 +505,63 @@ status = "ported"
 hash = "a3aab847b609ea9c3b50c848fff9d1104f7d904de8123cc205af3a936e060352"
 
 [items."logger.spec.ts::Logger::disposes the exporter that registered the disposer"]
-status = "pending"
+status = "adapted"
+hash = "9d32f32cdae2a8b10b993ab0b99bb91ddab99c9ce79ded2ea88ebc9a60d615ec"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::flattens an aggregate error into its members"]
-status = "pending"
+status = "adapted"
+hash = "d1ab956ee8aa11bc861cb54df0860d4dc46720aa94980744645327282c158427"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::honours explicit name argument"]
-status = "pending"
+status = "adapted"
+hash = "3af8bfd950a09ad074623558e23d3127954ff0a269de8450cab33185f26ba384"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::honours intercept name"]
-status = "pending"
+status = "adapted"
+hash = "54ec222ddc5b8e79497fb886134880bb9016114fab83f8b03b992a5180c0c87d"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::keeps the bounded buffer in place and chronological"]
-status = "pending"
+status = "adapted"
+hash = "67f4327ce5c7d6310923f791538e601ee24cc4a2330b7be577c19d8002af9ea9"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::logs an error whose errors array is empty"]
-status = "pending"
+status = "adapted"
+hash = "3c6dd1c2c224035696a12c8f8132f393278fcf8e67eb273a800019c25391e9bd"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::still lets outer caller intercept override the service-derived name"]
-status = "pending"
+status = "adapted"
+hash = "ad50b4c6b303a3d3a3d557cadb2dd9d8a60c75923b20b4f7e64bf5f088681d96"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::uses fiber name when called from outside any service"]
-status = "pending"
+status = "adapted"
+hash = "1e72761365b6f78ef8b613d17f7d57351c54bfd1ce07b91d4c81dc922e798499"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::uses service name when called from inside [Service.init] (unchanged behaviour)"]
-status = "pending"
+status = "adapted"
+hash = "e532d93575ee58b1d8371f30523a4d65163864e24706605ce19e719d02a8f2a8"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::uses service name when called from inside a Service method (regression)"]
-status = "pending"
+status = "adapted"
+hash = "7658c72efa81d3823c80305508ea86e4180c8877fea652e30dadaad56c0cfb38"
+divergence = "stdlib-logging"
 
 [items."logger.spec.ts::Logger::uses the innermost service name and restores the outer service"]
-status = "pending"
+status = "adapted"
+hash = "5d39a0fa2ea2d25d8c7f45f98ae309360d26f60ecc422e33169e61cfbdc3427c"
+divergence = "stdlib-logging"
 
 [items."message:@Inject() can only be used on class or class methods"]
-status = "pending"
+status = "ported"
+hash = "ed5dd36229c220d413e5b153becdbbdb13fe73147ce70bcf9a8373cbe0f89189"
 
 [items."message:Async config validation is not supported"]
 status = "pending"
@@ -1209,70 +1233,127 @@ divergence = "config-schema"
 status = "pending"
 
 [items."src/logger.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "8e5fa0ff854e4c583027f7ddc947dbcd645806c1b889b661b6f239462cb66cf3"
+note = "Imports of the TypeScript module."
 
 [items."src/logger.ts:Exporter"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.LoggerService.exporter"
+hash = "f03f4645d2560403984bc499b3916eaa56e69e7017a1ac50f166eaec14d9ed96"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:Formatter"]
-status = "pending"
+status = "diverged"
+hash = "6150be29522f606e5e925f75ee8c98c22a26de1404b49cb649c3468c0a7149d9"
+divergence = "logger-format"
 
 [items."src/logger.ts:Logger"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.Logger"
+hash = "bbcd0f9085bbafcbadf862b1ceb9d792cc7ca4b43da506f14a85a8a5caf65df4"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:Logger._method"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.Logger.log"
+hash = "357fff0950e0b600f981662fbc45c1f63e2c86bd991fc0e3ee12c1922125bc9e"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:Logger.code"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.color_code"
+hash = "02abc7ea7524a2904b94a9cd20a6c1896e5d6920531fd4ed708a07d06b7318c5"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:Logger.color"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.colorize"
+hash = "ec81760a691aa20c178349c8aff567f772de0b5506874b40d74e44f78a5e150d"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:Logger.constructor"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.Logger.__init__"
+hash = "86373dd5462dffd1f7b2981b9210745eef30fcd371a499829404ac44a7739703"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:Logger.format"]
-status = "pending"
+status = "diverged"
+hash = "210e75da13a68a7578e5b949c73a533d79cea449908b749cfc71b70c76f50c61"
+divergence = "logger-format"
 
 [items."src/logger.ts:LoggerLevel"]
-status = "pending"
+status = "diverged"
+hash = "898537bf84e07394983717d6a09f626c2b5b011cd50517c345ad1139b55b8396"
+divergence = "logger-format"
 
 [items."src/logger.ts:LoggerMethod"]
-status = "pending"
+status = "not-applicable"
+hash = "80f6c50d6702674e518dc8ba2b5e1128767a26dc16747ac654b793221f7e0d38"
+note = "A TypeScript type of the logging methods; `logging` defines them"
 
 [items."src/logger.ts:LoggerOptions"]
-status = "pending"
+status = "diverged"
+hash = "f027b674ad0e3d92ed3c10a1c1db211f93e763a8b7cb97053f0122ef7c43103f"
+divergence = "logger-format"
 
 [items."src/logger.ts:LoggerService"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.LoggerService"
+hash = "4b3ea491d778eeaa25cfa8714e5bac8a5fa2dd2432a1227bfe60534b4b4bee3b"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:LoggerService.[symbols.invoke]"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.LoggerService.cordis_invoke"
+hash = "5fb070fb5397ea53e22ce897cd040cc08db5cd89c92e7d712dde3a890b74afd7"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:LoggerService.constructor"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.LoggerService.__init__"
+hash = "58542e85c522d02a0472835a29743d5bbe12aebc805f56175ac964872e8cfc2a"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:LoggerService.exporter"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.LoggerService.exporter"
+hash = "a94a96eb48cebdd80b887a1241eba9ee016cd4a44aec30023d38d64438868633"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:LoggerType"]
-status = "pending"
+status = "not-applicable"
+hash = "5c7d49127c0dd95fe72e866c00c3d712de38f6d9025ff1864353362040f9a956"
+note = "A TypeScript union of the logging method names"
 
 [items."src/logger.ts:Message"]
-status = "pending"
+status = "not-applicable"
+hash = "1822aeaaa6541e29191a055c51f9fb6d728c1d7767dda5f07243e93f23e7ca12"
+note = "`logging.LogRecord` is the record"
 
 [items."src/logger.ts:c16"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.color_code"
+hash = "7dc279d84001a1252f3cbc3222932d051882182851d0528ecf281c2cd6e2ec80"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:c256"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.color_code"
+hash = "13907366b03a60e39f4beb74208d49ed5e732c85bf05495adaa2b9c62aa87390"
+divergence = "stdlib-logging"
 
 [items."src/logger.ts:defaultFormatters"]
-status = "pending"
+status = "diverged"
+hash = "cf248d762e1731e186679c8fecbe30cb8fcb3230438949819c0cfd0e79eb3cc0"
+divergence = "logger-format"
 
 [items."src/logger.ts:isAggregateError"]
-status = "pending"
+status = "adapted"
+target = "pycordis.logger.Logger.log"
+hash = "34968a9ec300e6f1e9b391e8943bddc704925b348f83e321811c09e11e32beb1"
+divergence = "exception-group"
 
 [items."src/reflect.ts:<rest>"]
 status = "not-applicable"
@@ -1397,7 +1478,9 @@ hash = "302c08dec9bf5fea2e32cbc24e66df1b2fbd975de1c82b843578edeaee4a566c"
 note = "A TypeScript type that infers the config type; the Python signature takes the config as object"
 
 [items."src/registry.ts:Inject"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.inject"
+hash = "897b905424154ea52dc427b305f135d8f652978d67c0f588b1e347d599d8e7d3"
 
 [items."src/registry.ts:InjectKey"]
 status = "not-applicable"

@@ -15,9 +15,11 @@ from pycordis.errors import CallSite
 from pycordis.events import EventName, EventOptions, EventsService, Listener
 from pycordis.fiber import EffectForm, EffectHandle, Fiber, resolve_config
 from pycordis.keys import Keyable
+from pycordis.logger import LoggerService
 from pycordis.reflect import Accessor, ReflectService
 from pycordis.registry import Component, RegistryService
 from pycordis.scheduler import Scheduler
+from pycordis.traceable import get_traceable
 
 
 def _run_update_hooks(fiber: Fiber, config: object, next_: Callable[[], Any]) -> Any:
@@ -79,6 +81,7 @@ class Context:
         self.reflect = ReflectService(scheduler)
         self.registry = RegistryService(scheduler)
         self.fiber = Fiber(self)
+        self._logger = LoggerService(self)
         self.events.install(
             self,
             "internal/config",
@@ -89,6 +92,15 @@ class Context:
 
     def __repr__(self) -> str:
         return f"Context <{self.fiber.name}>"
+
+    @property
+    def logger(self) -> LoggerService:
+        """The logging service of the root context, as this context sees it.
+
+        Call it to get a `Logger`, or log through it directly. A call from a service
+        method names the logger after the service. See `LoggerService`.
+        """
+        return get_traceable(self, self.root._logger)
 
     @staticmethod
     def _route_update_listener(
