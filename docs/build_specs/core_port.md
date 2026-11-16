@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 9 of 13 complete
+**Status**: 🔄 In progress — Increment 12 of 13 complete
 
 ## Goal
 
@@ -135,7 +135,11 @@ docs/
 └── architecture.md       # MODIFY: module map, divergence rows
 README.md                 # MODIFY: first release, usage pointer
 zensical.toml             # MODIFY: user guide nav entry
-pyproject.toml            # MODIFY: version 0.1.0
+GitVersion.yml            # NEW: version calculation from the branch structure
+.github/workflows/
+├── build.yml             # NEW: reusable: version, build, archive checks
+├── release.yml           # NEW: build, publish to PyPI, tag
+└── ci.yml                # MODIFY: calls build.yml
 conformance/ledger.toml   # MODIFY: entries for each ported upstream item
 ```
 
@@ -362,6 +366,58 @@ and is tested through it.
   these without private access. pycordis stores no host data on a fiber; a host that associates
   data with fibers keys its own table by the fiber.
 
+### Release
+
+- **GitVersion owns the version.** It calculates the version from the branch structure (GitFlow
+  workflow), never from commit messages. A branch `release/<version>` sets the version from its
+  name; `master` increments the patch number; `develop` and feature branches give pre-release
+  versions. The person who names the release branch decides the compatibility level: in `0.x`, a
+  breaking change to the public API (the names that `pycordis/__init__.py` exports) increments
+  the minor number, and any other change increments the patch number. `GitVersion.yml` sets
+  `next-version: 0.1.0`, because the repository has no tag yet.
+- **Pin GitVersion to an exact 6.x version** in the workflow. Defaults differ between major
+  versions, so the documented behavior applies only to the pinned version.
+- **A release pull request merges with a merge commit**, never squash or rebase. On `master`,
+  GitVersion reads the release version from the merge commit message
+  (`track-merge-message`); a squash or rebase merge removes the branch name from history, so
+  `master` gives a patch increment of the last tag.
+- **`pyproject.toml` keeps the placeholder `0.0.0`.** The publish job sets the calculated
+  version with `uv version <version> --frozen` on its checkout before `uv build`, and does not
+  commit the change. `--frozen` keeps `uv.lock` unchanged, so the repository's `uv lock --check`
+  stays valid. `pycordis.__version__` reads the installed distribution version, so it needs no
+  change; a development checkout reports `0.0.0`.
+- **One reusable build workflow.** `build.yml` (`on: workflow_call`) is the only place that
+  calculates the version and builds: it checks out with `fetch-depth: 0` (GitVersion needs the
+  history and the tags), runs GitVersion, sets the version, runs `uv build`, checks the
+  archives, uploads `dist/` as a workflow artifact, and gives the version as a job output. It
+  fails if the wheel has no `pycordis/py.typed`, if either archive has no license file, or if
+  the wheel contains `tests/`. `ci.yml` calls it on every push and pull request, so a broken
+  `GitVersion.yml` fails CI before a release needs it. It has `contents: read` only.
+- **One release workflow, three jobs, on push to `master`.** GitHub does not start a workflow
+  from a tag that `GITHUB_TOKEN` creates, so a `v*` tag cannot trigger the publish.
+  `release.yml` has a `build` job (calls `build.yml`), a `publish` job (downloads the artifact
+  and uploads it to PyPI), and a `tag` job that creates `vX.Y.Z` on the built commit only after
+  a successful upload. A failed upload leaves no tag. If the `tag` job fails after a successful
+  upload, re-run only the failed job: a full re-run calculates the same version, and PyPI
+  rejects a second upload of it.
+- **PyPI trusted publishing (OIDC).** No stored token. The upload step runs in `release.yml`
+  itself, not in `build.yml`, because PyPI does not accept a reusable workflow as a trusted
+  publisher. The `publish` job runs in the GitHub environment `pypi` with `id-token: write`;
+  only the `tag` job has `contents: write`; every other job has `contents: read`.
+- **Serialized runs.** One `concurrency` group for `release.yml` with
+  `cancel-in-progress: false`, so two merges cannot calculate the same version.
+- **Pull requests and `develop` never publish.** Only `release.yml` uploads, and it runs only
+  on `master`.
+- **Pin actions by commit SHA**, as `ci.yml` does.
+- **Verify before you write the config**, against the GitVersion documentation for the version
+  that the workflow installs: the version on `master` after a merge of `release/<version>`, the
+  version for a direct commit to `master`, and the behavior of a repository with no tag.
+- **Manual steps that no workflow can do**: make sure that the name `pycordis` is free on PyPI,
+  and register the pending trusted publisher for it (workflow `release.yml`, environment
+  `pypi`); create the `pypi` environment on GitHub; add the `build` job of `ci.yml` to the
+  required checks of `master`; and make sure that no tag ruleset blocks `GITHUB_TOKEN` from
+  creating `v*` tags.
+
 ## Integration
 
 - `pycordis/__init__.py` exports the public API: `__version__` (present), `Context`, `Fiber`,
@@ -377,8 +433,9 @@ and is tested through it.
 - `conformance/ledger.toml`: each increment changes the `pending` entries of the upstream items
   that it implements to their reviewed status, with the target, the divergence ID, the hash,
   and `mirror = true` for the fiber state machine and the epoch digest.
-- Release: zero `pending` ledger entries and an empty `[contract] pending`; version `0.1.0` in
-  `pyproject.toml`; tag `v0.1.0`.
+- Release: zero `pending` ledger entries and an empty `[contract] pending`. The merge of
+  `release/0.1.0` into `master` publishes `0.1.0` to PyPI and creates the tag `v0.1.0` (see
+  [Release](#release)).
 
 ## Testing
 
@@ -456,6 +513,27 @@ and is tested through it.
 
   Mark the module `slow` if a seed measures ≥ 0.1 s.
 - ⬜ The error note on a failed `apply` names the `ctx.use()` call site.
+- ⬜ The release pipeline is checked by its runs, not by pytest: the `build` job of `ci.yml`
+  passes on every push, the scratch-clone GitVersion check gives the versions in
+  [Release](#release), and the first merge to `master` publishes `0.1.0` and tags `v0.1.0`.
+
+## Documentation
+
+Each increment's **Docs** line names the pages and docstrings it changes; this section lists
+the pages as a whole.
+
+- **Docstrings**: every public module, class, and function that an increment adds or changes.
+  The API reference is generated from them, so `gen_ref_pages.py` adds the new modules to the
+  nav.
+- **`docs/architecture.md`**: one divergence row in the increment that implements each
+  divergence in [Appendix A](#appendix-a-divergences); the module map in Increment 13.
+- **`docs/user_guide.md`** (new, with a `zensical.toml` nav entry): Increment 13, as
+  [Integration](#integration) describes.
+- **`docs/developer_guide.md`** (Release section) and **`docs/getting_started.md`** (Install
+  section): Increment 12.
+- **`README.md`**: the usage pointer in Increment 13.
+- **Final review** (Increment 13): every guide agrees with the code, and every exported name
+  has a complete docstring.
 
 ## Dependencies
 
@@ -468,6 +546,8 @@ and is tested through it.
   validator (a class whose `model_validate` raises an exception carrying an `errors()` method),
   not a validator dependency.
 - **Docs**: `zensical`, `mkdocstrings[python]`, `pymdown-extensions` (present).
+- **Release (CI only)**: GitVersion, run by `build.yml`, and the PyPI publish action, run by
+  `release.yml`. Neither is a project dependency.
 
 ## Migration Strategy
 
@@ -896,14 +976,68 @@ for both.
 - In `uv run python`, a `FramePumpScheduler` root with a provider and a dependent, pumped once, gave `ACTIVE` for both fibers and the expected `get_effects()` and `children` (confirmed by the user)
 - A mutation that disables the dependents wait in `ReflectService._release` fails 4 tests of `test_reflect.py` and `test_service_dispose.py`: the guard is live code. The random invariant suite does not withdraw a single service, so fixed-order tests cover that path
 
-### Increment 12: First release
+### Increment 12: Automated release pipeline
+**Goal**: A merge to `master` calculates the version with GitVersion, publishes the build to
+PyPI, and creates the tag; `ci.yml` runs the same version calculation and build on every push.
+**Files**: `GitVersion.yml` (~20), `.github/workflows/build.yml` (~50),
+`.github/workflows/release.yml` (~45), `.github/workflows/ci.yml` (~5),
+`docs/developer_guide.md` (Release section), `docs/getting_started.md` (Install section)
+**Validation**: The `build` job of `ci.yml` passes on `develop` with a `0.1.0-alpha.<n>`
+version, and the archive check fails on a wheel that has no `py.typed`. The pinned GitVersion CLI, run in a scratch clone outside the
+repository, gives these versions: `develop` gives `0.1.0-alpha.<n>`; a `release/0.1.0` branch
+gives `0.1.0-beta.<n>`; `master` after a `--no-ff` merge with the GitHub pull request message
+(`Merge pull request #1 from <owner>/release/0.1.0`) gives `0.1.0`; and after the tag `v0.1.0`
+and one more commit, `master` gives `0.1.1`. `uv version 0.1.0 --frozen && uv build` in that
+clone gives `pycordis-0.1.0` archives, and `uv lock --check` still passes. `uv run python
+scripts/gen_ref_pages.py && uv run zensical build --strict` gives no warnings. The first real
+publish is the validation of Increment 13.
+**Docs**: The Release section of the developer guide (the release branch name sets the version;
+a release pull request merges with a merge commit; no manual tag; a direct fix on `master`
+publishes the next patch version; re-run only the failed `tag` job; the manual PyPI and GitHub
+steps); the Install section of the getting started guide (`pip install pycordis`; replace the
+git-pin instructions and the name-collision warning, which no longer match the facts once the
+name is published).
+**Status**: ✅ Completed
+
+**Changed**:
+- `GitVersion.yml`: GitFlow workflow, `next-version: 0.1.0`, `track-merge-message` and `mode: ContinuousDeployment` on `master`
+- `.github/workflows/build.yml`: reusable; pinned GitVersion 6.8.2, `uv version --frozen`, `uv build`, archive check, `dist` artifact, `version` output
+- `.github/workflows/release.yml`: `build`, `publish` (environment `pypi`, OIDC), and `tag` jobs on push to `master`; serialized by one concurrency group
+- `.github/workflows/ci.yml`: new `build` job that calls `build.yml`
+- `docs/developer_guide.md`: Release section and one-time setup list
+- `docs/getting_started.md`: Install section uses `pip install pycordis`
+
+**Tests**:
+- No pytest change. Scratch clone with GitVersion 6.8.2: `develop` gave `0.1.0-alpha.41`, `release/0.1.0` gave `0.1.0-beta.1`, `master` after the `--no-ff` merge gave `0.1.0`, after the tag `v0.1.0` plus one commit gave `0.1.1`, and a merge of `release/0.2.0` gave `0.2.0`
+- `uv version 0.1.0 --frozen && uv build` gave `pycordis-0.1.0` archives; `uv lock --check` passes
+- The archive check script of `build.yml` passes on the good wheel and exits 1 on a wheel without `py.typed`
+- `gen_ref_pages.py` and `zensical build --strict`: no warnings
+
+**Deviations**:
+- `master` needs `mode: ContinuousDeployment`: with the default mode the merge gave `0.1.0-43`, which PyPI reads as a post-release
+- The `build` job of `ci.yml` on `develop` is not run yet: it needs a push
+- The checkout action in `build.yml` is pinned by SHA (v7), not by tag as `ci.yml` does
+
+**Manual validation**:
+- The archive check fails on a wheel without `py.typed` (confirmed by the user)
+
+### Increment 13: First release
 **Goal**: The public exports, the user guide, the completed module map and divergence table, and
-tag `v0.1.0`.
+the first publish: the merge of `release/0.1.0` into `master` publishes `0.1.0` and tags
+`v0.1.0`.
 **Files**: `__init__.py`, `docs/user_guide.md`, `docs/architecture.md`, `zensical.toml`,
-`README.md`, `pyproject.toml`
+`README.md`
 **Validation**: `uv run pytest` (full suite, with zero `pending` ledger entries; the close-out
 check that marks every test the **unmarked slow tests** summary lists); `uv run python
-scripts/gen_ref_pages.py && uv run zensical build --strict` with no warnings.
+scripts/gen_ref_pages.py && uv run zensical build --strict` with no warnings. After the merge
+(merge commit) of `release/0.1.0` into `master`: the `release.yml` run is green,
+`pip install pycordis==0.1.0` in a clean environment gives `pycordis.__version__ == "0.1.0"`,
+and the tag `v0.1.0` exists. After the merge of `master` into `develop`, remove `next-version`
+from `GitVersion.yml`: the tag `v0.1.0` supplies the base version.
+**Docs**: `docs/user_guide.md` and its nav entry; the module map and the divergence table in
+`docs/architecture.md`; the usage pointer in `README.md`; a check that the developer guide and
+the getting started guide agree with the released workflow; and a docstring review of every
+public name that `pycordis/__init__.py` exports.
 **Status**: ⬜ Pending
 
 ## Code Standards

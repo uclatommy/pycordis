@@ -122,11 +122,38 @@ change is reviewed by behavior, not applied as a line diff. To move to a newer r
 ## Release
 
 pycordis uses SemVer `0.x`. A change to the public API increments the minor version; other
-changes increment the patch version.
+changes increment the patch version. GitVersion calculates the version from the branch
+structure, never from commit messages. `pyproject.toml` keeps the placeholder version `0.0.0`:
+do not edit it, and do not create a version tag by hand.
 
-1. Create `release/<version>` from `develop`, and set `version` in `pyproject.toml` there.
-2. Merge the branch into `master` through a pull request.
-3. Tag the merge commit on `master` `vX.Y.Z`, and push the tag.
+1. Create `release/<version>` from `develop`. The branch name sets the version, so the name
+   states the compatibility level that you decided.
+2. Merge the branch into `master` through a pull request. Use a **merge commit**. A squash or
+   rebase merge removes the branch name from the history, and `master` then gives only a patch
+   increment of the last tag.
+3. The merge starts `release.yml`. It calculates the version, publishes the build to PyPI, and
+   then creates the tag `vX.Y.Z` on the built commit.
 4. Merge `master` into `develop`.
 
-Projects that depend on pycordis pin the tag (see [Getting Started](getting_started.md#install)).
+A small fix that you commit directly to `master` publishes the next patch version.
+
+`ci.yml` runs the same version calculation and build on every push and pull request (the
+`build` job), so an error in `GitVersion.yml` fails CI before a release needs it. Only
+`release.yml` uploads to PyPI, and it runs only on `master`.
+
+If a release run fails, re-run the failed job:
+
+- If `publish` fails, no tag exists. Re-run the workflow.
+- If only `tag` fails, the upload is complete. Re-run **only** the failed job. A full re-run
+  calculates the same version, and PyPI rejects a second upload of it.
+
+### One-time setup
+
+These steps cannot run in a workflow:
+
+1. Make sure that the name `pycordis` is free on PyPI, and register a pending trusted
+   publisher for it (repository `uclatommy/pycordis`, workflow `release.yml`, environment
+   `pypi`).
+2. Create the GitHub environment `pypi`.
+3. Add the `build` job of `ci.yml` to the required checks of `master`.
+4. Make sure that no tag ruleset blocks `GITHUB_TOKEN` from creating `v*` tags.

@@ -1,0 +1,9 @@
+workflow: GitFlow/v1
+# The repository has no tag yet. Remove this line after the tag v0.1.0 exists.
+next-version: 0.1.0
+branches:
+  main:
+    regex: ^master$
+    track-merge-message: true
+    # A merge to master gives a clean version (0.1.0), not a pre-release count.
+    mode: ContinuousDeployment
