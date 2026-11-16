@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 2 of 12 complete
+**Status**: 🔄 In progress — Increment 3 of 12 complete
 
 ## Goal
 
@@ -552,7 +552,31 @@ restart, and call-site notes.
 `internal/*` event names, so that the core services can emit and run waterfalls.
 **Files**: `events.py` (~200), `test_events.py`
 **Validation**: `uv run pytest tests/test_events.py`
-**Status**: ⬜ Pending
+**Docs**: `docs/architecture.md` divergence rows; docstrings of `events.py` and the `Context` dispatch methods
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/events.py`: `EventsService` (`emit`, `bail`, `serial`, `parallel`, `waterfall`, `on`, `once`, `listener_counts`), `EventOptions`, `Hook`, `is_bailed`, and the `EventName`, `DispatchMode`, `Listener`, and `InternalEventName` aliases
+- `src/pycordis/context.py`: `Context.events`, shared by every derived context, and the methods `on`, `once`, `emit`, `bail`, `serial`, `parallel`, `waterfall`
+- `tests/conftest.py`: `event`, `Symbol`, `Recorder`, `Session`, `Filter`, `hook_snapshot`
+- `conformance/ledger.toml`: reviewed 29 `events.spec.ts` cases as ported and 2 as diverged, the `events.ts` items that are complete, the `events.types.ts` items, and the two event messages
+- `docs/architecture.md`: divergence rows `async-model`, `exception-group`, `event-dispatch-args`, `deprecated-aliases`
+
+**Tests**:
+- `tests/test_events.py`: 51 tests that carry the 29 runnable upstream cases, and Python-only tests for bail results, async `serial`, prepend, global listeners, `internal/dispatch`, and `internal/listener`
+- Full suite: 238 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, and `tests/test_docstrings.py`
+
+**Deviations**:
+- `this` is the keyword `this=` and an event name is any hashable object (user-approved). Listeners never receive `this`. This is the divergence `event-dispatch-args`
+- The listeners of `internal/update` (the fiber listener hook and the default waterfall step) and of `internal/config` are not registered yet: nothing dispatches those events until `Fiber.update` and config resolution exist (Increment 8 and 5). The ledger items `EventsService`, `EventsService.constructor`, `EventsService.on`, and `EventsService.once` stay `pending`
+- `EventsService.on` does not wrap the listener with the traceable view (`reflect.bind`): it needs `traceable.py` (Increment 9)
+- The events cases `skips a listener disposed by an earlier component during dispatch` and the five `internal/update` cases need `ctx.use` and `Fiber.update`, so they stay `pending`. The `tests/events.spec.ts` helper items stay `pending` for the same reason
+- `EventsService.listener_counts()` is added for tests and host status views, because the hook table is private. It is not in the plan
+- Only the `internal/dispatch` event item is reviewed; the other ten `event:internal/*` items stay `pending` until their events are emitted
+- `Context.on` and the other methods take `EventOptions | bool`, where the `bool` is `prepend`; `EventOptions.is_global` replaces `global`, which is a Python keyword
+
+**Manual validation**:
+- A root context registers a listener with `ctx.on`, dispatches with `emit`, runs a `waterfall` chain, and `listener_counts()` shows the removal (confirmed by the user)
 
 ### Increment 4: Reflect — provide, get, set, notify, isolation
 **Goal**: `ReflectService` with `Impl`, `locate`, checked and lenient access (with the

@@ -139,7 +139,8 @@ status = "pending"
 status = "pending"
 
 [items."event:internal/dispatch"]
-status = "pending"
+status = "ported"
+hash = "70c95e61a48f1087104821232e14e92f598d32e1344c6047bd53e0395dff0ee3"
 
 [items."event:internal/get"]
 status = "pending"
@@ -166,64 +167,86 @@ status = "pending"
 status = "pending"
 
 [items."events.spec.ts::Events::bail defers added listeners until the next dispatch"]
-status = "pending"
+status = "ported"
+hash = "ddabc03ba955108f0288306f16a7aae10e3b100d4d7f22b682f487b849868c6d"
 
 [items."events.spec.ts::Events::bail skips listeners removed during dispatch"]
-status = "pending"
+status = "ported"
+hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
 
 [items."events.spec.ts::Events::ctx.bail()"]
-status = "pending"
+status = "ported"
+hash = "1e1b12552735ea097824511bed2f2546b2033ec6525ed2e5faace9ad87c9056f"
 
 [items."events.spec.ts::Events::ctx.emit()"]
-status = "pending"
+status = "ported"
+hash = "025bfcf44786a44835b6de40da96eb292fd13acc60f2ecc2450bdf9024a3ec85"
 
 [items."events.spec.ts::Events::ctx.on()"]
-status = "pending"
+status = "ported"
+hash = "0a8bbd540074325c47cdaddbb9f2dfd03969d81b8609b3f1d40e5e4d4ac7c0d4"
 
 [items."events.spec.ts::Events::ctx.once()"]
-status = "pending"
+status = "ported"
+hash = "e83af78265f7af2ca7ba48fa2a37f50b566aa01822a3f7b6712530439b78b673"
 
 [items."events.spec.ts::Events::ctx.once() runs once across concurrent serial dispatches"]
-status = "pending"
+status = "ported"
+hash = "dceddd18dbd09c1fd9dabe5a399a2e9fb95b4cd81cc78bff0e1841cf87b2f809"
 
 [items."events.spec.ts::Events::ctx.once() runs once when an earlier listener emits recursively"]
-status = "pending"
+status = "ported"
+hash = "05805b72e711990ded3be3e3d0962e050150ab424e8bfc25be0261e84939c9d2"
 
 [items."events.spec.ts::Events::ctx.parallel()"]
-status = "pending"
+status = "ported"
+hash = "8a3730075df8cd2faf9579a4f5143bdcdccc8c357ed007b83e0bb45bc6ca4d04"
 
 [items."events.spec.ts::Events::ctx.parallel() labels symbol events"]
-status = "pending"
+status = "ported"
+hash = "dd6be552dd75c19f3b99b349d92c743c51fc58837999ee5b2627761611238d65"
 
 [items."events.spec.ts::Events::ctx.serial()"]
-status = "pending"
+status = "ported"
+hash = "e05e456a00f1f90538e2cc7077eda9f43b53fc3d9dd179156a28d6a9d40ea869"
 
 [items."events.spec.ts::Events::ctx.waterfall()"]
-status = "pending"
+status = "ported"
+hash = "8bbef567790572eeabc6073fa1f04ffd0984a0ec37a57fd4eae4fff2280ea9a9"
 
 [items."events.spec.ts::Events::ctx.waterfall() rejects continuations from outer frames"]
-status = "pending"
+status = "ported"
+hash = "e0e2907fe784a4b1c60bb597b7e6960fb0568516c926307ca8f1b5a37d93f83f"
 
 [items."events.spec.ts::Events::ctx.waterfall() rejects duplicate next()"]
-status = "pending"
+status = "ported"
+hash = "2f223f0091367b608ff9194a8319e520b873b999ce60b7f8898ce6af4004c1df"
 
 [items."events.spec.ts::Events::ctx.waterfall() rejects duplicate next() after awaiting"]
-status = "pending"
+status = "ported"
+hash = "821cd64c71da233f5644fde0b6b6e473e5e02e16de8e5aa71c29d42a876ca1a7"
 
 [items."events.spec.ts::Events::ctx.waterfall() supports nested async calls"]
-status = "pending"
+status = "ported"
+hash = "eb7b3539fa6487a253c6802ea34ac4f661acd09fb4139073bea05e9f273e296a"
 
 [items."events.spec.ts::Events::deprecated dispatch returns bound callbacks that respect later removal"]
-status = "pending"
+status = "diverged"
+hash = "69ea6609dac5de39ce0632c76dd23d92429f6df6d1a30f3f00165bee59e10457"
+divergence = "deprecated-aliases"
 
 [items."events.spec.ts::Events::deprecated waterfall dispatch continues past a removed callback"]
-status = "pending"
+status = "diverged"
+hash = "c8a14431815594cc957176283a696dc2b9bd45b9761ccf3134940311ce0d05be"
+divergence = "deprecated-aliases"
 
 [items."events.spec.ts::Events::emit defers added listeners until the next dispatch"]
-status = "pending"
+status = "ported"
+hash = "ddabc03ba955108f0288306f16a7aae10e3b100d4d7f22b682f487b849868c6d"
 
 [items."events.spec.ts::Events::emit skips listeners removed during dispatch"]
-status = "pending"
+status = "ported"
+hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
 
 [items."events.spec.ts::Events::internal/update continues past a removed fiber listener"]
 status = "pending"
@@ -241,40 +264,51 @@ status = "pending"
 status = "pending"
 
 [items."events.spec.ts::Events::parallel defers added listeners until the next dispatch"]
-status = "pending"
+status = "ported"
+hash = "ddabc03ba955108f0288306f16a7aae10e3b100d4d7f22b682f487b849868c6d"
 
 [items."events.spec.ts::Events::parallel skips listeners removed during dispatch"]
-status = "pending"
+status = "ported"
+hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
 
 [items."events.spec.ts::Events::removes empty event buckets after disposal"]
-status = "pending"
+status = "ported"
+hash = "c9a6f3ad4cd21873a3361544e5574716f53647c108946b2db0b4aa4221787c55"
 
 [items."events.spec.ts::Events::serial defers added listeners until the next dispatch"]
-status = "pending"
+status = "ported"
+hash = "ddabc03ba955108f0288306f16a7aae10e3b100d4d7f22b682f487b849868c6d"
 
 [items."events.spec.ts::Events::serial skips listeners removed during dispatch"]
-status = "pending"
+status = "ported"
+hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
 
 [items."events.spec.ts::Events::skips a listener disposed by an earlier component during dispatch"]
 status = "pending"
 
 [items."events.spec.ts::Events::supports symbol event names across dispatch modes"]
-status = "pending"
+status = "ported"
+hash = "c5dca1c084f462c97e15f0f6350c3454cda1cad2eb4bb1facdf9539acda43474"
 
 [items."events.spec.ts::Events::supports symbol event names with ctx.once()"]
-status = "pending"
+status = "ported"
+hash = "d69de37e6a6e405280c1a530b8eb00c00eb881121f3b038bc1cd6ddaf0c76f53"
 
 [items."events.spec.ts::Events::treats prototype property names as ordinary events"]
-status = "pending"
+status = "ported"
+hash = "484c39d471a8989d291bc8f30d1cb474e629d15b943e7ef5e6723e837af5bf6e"
 
 [items."events.spec.ts::Events::waterfall continues after a recursive dispatch has consumed a once listener"]
-status = "pending"
+status = "ported"
+hash = "d43a631e46b7d5845ac81b10c2bddd2d4d0bc6ea56922d8f83a67e67b10cbd78"
 
 [items."events.spec.ts::Events::waterfall continues past a removed listener"]
-status = "pending"
+status = "ported"
+hash = "1360b0e55115f7723f070c502a7ac8ef9bead0fddfa290067ef1bd2bd9a46ce2"
 
 [items."events.spec.ts::Events::waterfall defers added listeners until the next dispatch"]
-status = "pending"
+status = "ported"
+hash = "e0d2c45bb40a0ff24f402106afb3603a655fa4c985d19c9613a21e285aecea84"
 
 [items."fiber.spec.ts::Fiber: config validation::fail on first load"]
 status = "pending"
@@ -447,10 +481,12 @@ status = "pending"
 status = "pending"
 
 [items."message:next() called multiple times"]
-status = "pending"
+status = "ported"
+hash = "c169a6515735461739c1fd7897319bc0d802de1dde95af65d899716f92404460"
 
 [items."message:one or more listeners of event {} failed"]
-status = "pending"
+status = "ported"
+hash = "fbe478dc6723bc901fcf8bc85e52d4403b90eb104c3434d0f1607e70ba4eac0e"
 
 [items."message:property \"{}\" is already declared as {}"]
 status = "pending"
@@ -699,34 +735,53 @@ target = "pycordis.context.Context.isolate"
 hash = "3d3d5976fe96d44551383804e41f654b85e3e7a413f27fb97c76d000d4018eb3"
 
 [items."src/events.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "ebd4d5e1859a9095d72ad20ec2b54f1df9a95e662403e1c11f9050b16d698bae"
+note = "Imports of the TypeScript module."
 
 [items."src/events.ts:DispatchMode"]
-status = "pending"
+status = "ported"
+target = "pycordis.events.DispatchMode"
+hash = "2b6d88b8d2c9f30d63a24e2e11f3f33f4b2c7566e8a9c484c6770fe1bd822a0e"
 
 [items."src/events.ts:EventOptions"]
-status = "pending"
+status = "ported"
+target = "pycordis.events.EventOptions"
+hash = "dc89d297ec6e8f68c78ced26c67e21b99b3004f565514c9cd8930224a2676804"
 
 [items."src/events.ts:Events"]
-status = "pending"
+status = "not-applicable"
+hash = "1db8fa5905847edeb4ccd96c1e374d0cfd1c9444d2ca002a1e936733249d5ed2"
+note = "The TypeScript interface of typed event signatures. pycordis lists the internal event names in InternalEventName and types listeners as callables."
 
 [items."src/events.ts:EventsService"]
 status = "pending"
 
 [items."src/events.ts:EventsService._resolve"]
-status = "pending"
+status = "adapted"
+target = "pycordis.events.EventsService._resolve"
+hash = "d2ccec29b3b5a97deebfdf7a1c0c9acb8c63b560ff1bba42de278a1782948534"
+divergence = "event-dispatch-args"
 
 [items."src/events.ts:EventsService.bail"]
-status = "pending"
+status = "adapted"
+target = "pycordis.events.EventsService.bail"
+hash = "a6fba01a9c44384a2d33287ac26d2567886f8138d3aa0c14573fc3ad1570d669"
+divergence = "event-dispatch-args"
 
 [items."src/events.ts:EventsService.constructor"]
 status = "pending"
 
 [items."src/events.ts:EventsService.dispatch"]
-status = "pending"
+status = "diverged"
+hash = "85775376950f6b36ca38f5fe23386eba40ed36004a20dadac388ec9bd8612793"
+divergence = "deprecated-aliases"
 
 [items."src/events.ts:EventsService.emit"]
-status = "pending"
+status = "adapted"
+target = "pycordis.events.EventsService.emit"
+hash = "95cca3e8bfc71cdd6b09e85bad9f7b351263e558e9963cfbd512dc2eeee9ecc1"
+divergence = "event-dispatch-args"
 
 [items."src/events.ts:EventsService.on"]
 status = "pending"
@@ -735,37 +790,63 @@ status = "pending"
 status = "pending"
 
 [items."src/events.ts:EventsService.parallel"]
-status = "pending"
+status = "adapted"
+target = "pycordis.events.EventsService.parallel"
+hash = "216623de2429f4d2c91e673bc631c332557c5476360e09f17e7003e006e8e380"
+divergence = "exception-group"
 
 [items."src/events.ts:EventsService.register"]
-status = "pending"
+status = "ported"
+target = "pycordis.events.EventsService._register"
+hash = "6de5f373945721eeaf2b41a6bad8074b52ed5c10c989a5babd964e19ff1e7554"
 
 [items."src/events.ts:EventsService.serial"]
-status = "pending"
+status = "adapted"
+target = "pycordis.events.EventsService.serial"
+hash = "38820f6ffe4870e883a382e05804855c1d300a2fc1805b55c20ab11252a5d358"
+divergence = "async-model"
 
 [items."src/events.ts:EventsService.unregister"]
-status = "pending"
+status = "ported"
+target = "pycordis.events.EventsService._unregister"
+hash = "9cbd8d2f83493ee66aabc8ad2a80bf3b284e981dc21f8de086c382a62de13ec7"
 
 [items."src/events.ts:EventsService.waterfall"]
-status = "pending"
+status = "adapted"
+target = "pycordis.events.EventsService.waterfall"
+hash = "db657119512a33a46d1dc2b1d1e6aa4f8c06db967cc685ae5dc3de0cf805a8e1"
+divergence = "event-dispatch-args"
 
 [items."src/events.ts:Hook"]
-status = "pending"
+status = "ported"
+target = "pycordis.events.Hook"
+hash = "1a6c8bf1de6489e3e828b81447ccf4af23c4d63507881b9a74289bc45a0e3c17"
 
 [items."src/events.ts:Parameters"]
-status = "pending"
+status = "not-applicable"
+hash = "501b824a51b780bfe25eaaaa533f97fff1f5d1c82c66713b6cae0de57642b457"
+note = "A TypeScript utility type for typed event signatures. Listeners are typed as callables."
 
 [items."src/events.ts:ReturnType"]
-status = "pending"
+status = "not-applicable"
+hash = "83ab9c14fbe1e2d7435a7766a7c07f0d5b33b6e219ac4e81bf63f37c6874835a"
+note = "A TypeScript utility type for typed event signatures. Listeners are typed as callables."
 
 [items."src/events.ts:ThisType"]
-status = "pending"
+status = "not-applicable"
+hash = "6ab81278747c558d455d8499a4949623302c275780054c760bb3b14c06f23667"
+note = "A TypeScript utility type for typed event signatures. Listeners are typed as callables."
 
 [items."src/events.ts:isBailed"]
-status = "pending"
+status = "ported"
+target = "pycordis.events.is_bailed"
+hash = "72a6789f3887e71a16757b63ff2f4c4a21e87ae956cc8c699cca8a771262b059"
 
 [items."src/events.ts:module ./context.ts"]
-status = "pending"
+status = "adapted"
+target = "pycordis.context.Context"
+hash = "78b369bee0ef9f129ec1d434d64b24b5c65493cfb938d3b75c9bf51f27cfc137"
+divergence = "event-dispatch-args"
 
 [items."src/fiber.ts:<rest>"]
 status = "pending"
@@ -1313,19 +1394,29 @@ status = "pending"
 status = "pending"
 
 [items."tests/events.types.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "9b92ba2d545f826e1fe5078485968456769a9bcd9c5ba0788361f727971b8ce0"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
 
 [items."tests/events.types.ts:ctx"]
-status = "pending"
+status = "not-applicable"
+hash = "220d8189469a44c195efe689d4c2688e1855f95b1146e4e21767ebfb7639f9a8"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
 
 [items."tests/events.types.ts:dynamicEvent"]
-status = "pending"
+status = "not-applicable"
+hash = "ab79da64627ee02d1bffbad693ea6fd44cfd61420a13ae42df886d6cbfe27ce8"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
 
 [items."tests/events.types.ts:module ../src/events.ts"]
-status = "pending"
+status = "not-applicable"
+hash = "16d7b62a85416ae20881b2bb2e7929937c70ca9f77ed9b90bb5c8605433e66bc"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
 
 [items."tests/events.types.ts:ready"]
-status = "pending"
+status = "not-applicable"
+hash = "05549babc495ac32a955f92bd0fc25ac8bb3eb3d3b10724668acf1f02dd78966"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
 
 [items."tests/fiber.spec.ts:<rest>"]
 status = "pending"

@@ -72,6 +72,58 @@ class FakeClock:
         self.now = target
 
 
+event = "custom-event"
+"""The name of the event that the ported cases dispatch."""
+
+
+class Symbol:
+    """A private event name. `str()` gives `Symbol(<description>)`."""
+
+    def __init__(self, description: str) -> None:
+        self.description = description
+
+    def __str__(self) -> str:
+        return f"Symbol({self.description})"
+
+
+class Recorder:
+    """A listener that records its calls and runs `impl`, if there is one."""
+
+    def __init__(self, impl: Callable[..., Any] | None = None) -> None:
+        self.calls: list[tuple[Any, ...]] = []
+        self.impl = impl
+
+    def __call__(self, *args: Any) -> Any:
+        self.calls.append(args)
+        return self.impl(*args) if self.impl is not None else None
+
+
+class Session:
+    """A dispatch `this` object that filters by the `filter` meta value of a context."""
+
+    def __init__(self, flag: bool) -> None:
+        self.flag = flag
+
+    def cordis_filter(self, ctx: Context) -> bool:
+        accept = ctx.meta.get("filter")
+        return True if accept is None else bool(accept(self))
+
+
+class Filter:
+    """A context filter that accepts the sessions that have the same flag."""
+
+    def __init__(self, flag: bool) -> None:
+        self.flag = flag
+
+    def filter(self, session: Session) -> bool:
+        return session.flag == self.flag
+
+
+def hook_snapshot(ctx: Context) -> dict[str, int]:
+    """Return the number of listeners of each event of `ctx`, by event name."""
+    return {str(name): count for name, count in ctx.events.listener_counts().items()}
+
+
 @pytest.fixture
 def scheduler() -> ImmediateScheduler:
     """A scheduler that drains when the outermost call returns."""

@@ -8,9 +8,11 @@ and meta tables. Start with `Context(scheduler)` to create a root context.
 from collections import ChainMap
 from collections.abc import Callable, Mapping
 from types import MappingProxyType
-from typing import Self
+from typing import Any, Self
 
+from pycordis.deferred import Deferred
 from pycordis.errors import CallSite
+from pycordis.events import EventName, EventOptions, EventsService, Listener
 from pycordis.fiber import EffectForm, EffectHandle, Fiber
 from pycordis.scheduler import Scheduler
 
@@ -37,6 +39,8 @@ class Context:
         scheduler: The scheduler that runs the work of the root context.
         root: The root context.
         fiber: The fiber that owns the effects that this context registers.
+        events: The service that stores the listeners of the root context. Every
+            derived context shares it.
     """
 
     def __init__(self, scheduler: Scheduler) -> None:
@@ -45,6 +49,7 @@ class Context:
         self._isolates: ChainMap[str, object] = ChainMap()
         self._intercepts: ChainMap[str, object] = ChainMap()
         self._meta: ChainMap[str, object] = ChainMap()
+        self.events = EventsService(scheduler)
         self.fiber = Fiber(self)
 
     def __repr__(self) -> str:
@@ -117,6 +122,94 @@ class Context:
         with self.scheduler.call():
             return self.fiber.effect(execute, label, call_site=CallSite.capture(skip=1))
 
+    def on(
+        self,
+        name: EventName,
+        listener: Listener,
+        options: EventOptions | bool = False,
+    ) -> EffectHandle:
+        """Register `listener` for the event `name` on this context's fiber.
+
+        The fiber removes the listener when it unloads.
+
+        Args:
+            name: The event name.
+            listener: The function to call with the arguments of the event.
+            options: The `EventOptions`, or a `bool` for `prepend`.
+
+        Returns:
+            The handle of the effect. Call it to remove the listener.
+
+        Raises:
+            CordisError: If the fiber is disposed.
+
+        Examples:
+            ```python
+            >>> remove = ctx.on("greet", lambda who: print("hello", who))
+            >>> ctx.emit("greet", "world")
+            hello world
+            >>> remove()
+            ```
+        """
+        return self.events.on(self, name, listener, options)
+
+    def once(
+        self,
+        name: EventName,
+        listener: Listener,
+        options: EventOptions | bool = False,
+    ) -> EffectHandle:
+        """Register `listener` for the event `name`, and remove it after its first call.
+
+        The arguments and the result are those of `on`.
+        """
+        return self.events.once(self, name, listener, options)
+
+    def emit(self, name: EventName, *args: Any, this: object = None) -> None:
+        """Call every listener of `name` with `args`, and ignore the results.
+
+        Args:
+            name: The event name.
+            *args: The arguments for the listeners.
+            this: An object with a `cordis_filter(ctx)` method that selects the
+                listeners by the context that registered them.
+        """
+        self.events.emit(name, *args, this=this)
+
+    def bail(self, name: EventName, *args: Any, this: object = None) -> Any:
+        """Call the listeners in order, and return the first result that is not
+        `None` or `False`.
+
+        The arguments are those of `emit`.
+        """
+        return self.events.bail(name, *args, this=this)
+
+    def serial(self, name: EventName, *args: Any, this: object = None) -> Deferred[Any]:
+        """Call the listeners one after another, and wait for each result.
+
+        The arguments are those of `emit`. The result is a `Deferred` of the first
+        result that is not `None` or `False`.
+        """
+        return self.events.serial(name, *args, this=this)
+
+    def parallel(
+        self, name: EventName, *args: Any, this: object = None
+    ) -> Deferred[None]:
+        """Start every listener, and wait until all of them finish.
+
+        The arguments are those of `emit`. The `Deferred` rejects with an
+        `ExceptionGroup` when any listener fails.
+        """
+        return self.events.parallel(name, *args, this=this)
+
+    def waterfall(self, name: EventName, *args: Any, this: object = None) -> Any:
+        """Run the listeners as a chain around the final function in `args[-1]`.
+
+        Each listener receives the other arguments and a `next` function that runs the
+        rest of the chain. See `EventsService.waterfall`.
+        """
+        return self.events.waterfall(name, *args, this=this)
+
     def _derive(
         self,
         isolates: ChainMap[str, object],
@@ -127,6 +220,7 @@ class Context:
         child.scheduler = self.scheduler
         child.root = self.root
         child.fiber = self.fiber
+        child.events = self.events
         child._isolates = isolates
         child._intercepts = intercepts
         child._meta = meta

@@ -118,6 +118,10 @@ change removes the reason for a divergence, remove the divergence and its row.
 | `async-effects` | adaptation | `AsyncIterable`, `Promise<Disposable>`, thenable `AsyncDisposable` | Async generator / coroutine that awaits `Deferred`; `EffectHandle.__await__` | — | Same semantics without asyncio |
 | `fiber-wait` | adaptation | `ctx.use()` is `PromiseLike`; `fiber.await()` | `fiber.wait()` returns `Deferred[Fiber]`; `Fiber.__await__` | — | `await` is a keyword; explicit wait for sync code |
 | `hook-names` | adaptation | `Service.init`, `Context.filter`, `symbols.*`, `Context.is` | `cordis_*` attributes; `isinstance(value, Context)` | — | No symbols in Python; no new dunders |
+| `async-model` | adaptation | Promise, microtasks | `Deferred` + scheduler task trampoline | — | A GUI main thread with a frame loop has no event loop |
+| `exception-group` | adaptation | `AggregateError` | `ExceptionGroup` | — | Native Python type |
+| `event-dispatch-args` | adaptation | `emit(thisArg, name, ...args)` with the argument type deciding which is the `this` value; symbol event names; listeners run with `this` | `emit(name, *args, this=obj)`; any hashable event name; listeners never receive `this`; an internal event passes its receiver as the first argument | — | Python has no symbols and no way to tell a `this` value from an event name by type |
 | `root-late-effect` | improvement | An effect registered on the root during root teardown stays, with no report | It stays and is logged at `DEBUG` with its label | `EFF-REVERT` | The host sees the one effect that root disposal does not revert. Test: `divergence("root-late-effect")` |
+| `deprecated-aliases` | omission | `ctx.plugin` / `registry.plugin`, `events.dispatch` | Not ported | — | No vestigial API |
 
 A change that adds a divergence adds its row in the same change.
