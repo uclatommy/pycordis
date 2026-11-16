@@ -124,21 +124,24 @@ class _Buffer:
             del self.records[:overflow]
 
 
-class _BufferRouter(logging.Handler):
-    """The one handler that the library adds to the `pycordis` logger.
+class _BufferFilter(logging.Filter):
+    """Copy each record of a fiber to the buffer of the root context of that fiber.
 
-    It gives each record of a fiber to the buffer of the root context of that fiber.
-    The roots own their buffers, so a root that nothing refers to can be collected.
+    A filter, not a handler, so that the `pycordis` logger keeps no handler of the
+    library: Python prints a warning to `stderr` only when no handler exists, and the
+    host alone decides about handlers. The filter passes every record on. The roots own
+    their buffers, so a root that nothing refers to can be collected.
     """
 
-    def emit(self, record: logging.LogRecord) -> None:
+    def filter(self, record: logging.LogRecord) -> bool:
         # a record from a logger that is not a fiber logger has no fiber
         fiber: Fiber | None = getattr(record, _FIBER_ATTRIBUTE, None)
         if fiber is not None:
             fiber.ctx.root._logger._buffer.add(record)
+        return True
 
 
-_ROUTER = _BufferRouter()
+_BUFFER_FILTER = _BufferFilter()
 
 
 class _RootFilter(logging.Filter):
@@ -176,6 +179,7 @@ class Logger(logging.LoggerAdapter[logging.Logger]):
 
     def __init__(self, logger: logging.Logger, fiber: "Fiber") -> None:
         super().__init__(logger, {_FIBER_ATTRIBUTE: fiber})
+        logger.addFilter(_BUFFER_FILTER)  # `addFilter` ignores a filter that is present
 
     def process(self, msg: Any, kwargs: Any) -> tuple[Any, Any]:
         """Add the fiber to the `extra` of the record."""
@@ -215,9 +219,8 @@ class LoggerService(Service[LoggerIntercept]):
     `logging`; this service sets no level.
 
     The service keeps the newest records of its root context in `buffer`, as long as
-    the root context exists. To fill the buffers, the library adds one handler to the
-    `pycordis` logger, once for the process. It is the only handler that the library
-    adds.
+    the root context exists. The library adds no handler: a `Logger` copies each record
+    to the buffer before the handlers of the host see it.
 
     Attributes:
         ctx: The root context.
@@ -241,8 +244,6 @@ class LoggerService(Service[LoggerIntercept]):
         self.name = "logger"
         self.cordis_tracker = Tracker(property="ctx", no_shadow=True)
         self._buffer = _Buffer()
-        if _ROUTER not in PACKAGE_LOGGER.handlers:
-            PACKAGE_LOGGER.addHandler(_ROUTER)
 
     @property
     def buffer(self) -> list[logging.LogRecord]:

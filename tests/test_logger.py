@@ -193,6 +193,17 @@ def test_an_exporter_gets_only_the_records_of_its_own_root(
     assert [r.msg for r in root.logger.buffer] == ["a"]
 
 
+def test_the_library_adds_no_handler_to_the_package_logger(root: Context) -> None:
+    # With no handler, `logging` prints a warning or an error to stderr by itself.
+    root.logger.error("boom")
+
+    # Other tests attach exporters of their own, so check only for a handler class that
+    # the library defines.
+    handlers = logging.getLogger("pycordis").handlers
+    assert not [h for h in handlers if type(h).__module__.startswith("pycordis")]
+    assert [r.msg for r in root.logger.buffer] == ["boom"]
+
+
 @pytest.mark.upstream(
     "logger.spec.ts::Logger::logs an error whose errors array is empty"
 )
