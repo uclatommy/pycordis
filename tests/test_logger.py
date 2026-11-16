@@ -1,7 +1,7 @@
 """The logging service: names, exporters, the buffer, and colors."""
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any
 
 import pytest
@@ -33,10 +33,31 @@ def debug_level() -> Iterator[None]:
     package.setLevel(level)
 
 
+type Export = Callable[[Context, logging.Handler], None]
+
+
 @pytest.fixture
-def captured(root: Context) -> Capture:
+def export() -> Iterator[Export]:
+    """Attach an exporter to a root context, and detach it after the test.
+
+    An exporter is a handler on the `pycordis` logger, which every test shares, and a
+    test root context is never disposed. Without the detach, the handler stays for the
+    rest of the test run.
+    """
+    handles: list[Callable[[], None]] = []
+
+    def attach(ctx: Context, handler: logging.Handler) -> None:
+        handles.append(ctx.logger.exporter(handler))
+
+    yield attach
+    for detach in handles:
+        detach()
+
+
+@pytest.fixture
+def captured(root: Context, export: Export) -> Capture:
     capture = Capture()
-    root.logger.exporter(capture)
+    export(root, capture)
     return capture
 
 
@@ -177,12 +198,12 @@ def test_an_exporter_ends_with_the_fiber_that_registered_it(root: Context) -> No
 
 
 def test_an_exporter_gets_only_the_records_of_its_own_root(
-    root: Context, scheduler: Any
+    root: Context, scheduler: Any, export: Export
 ) -> None:
     other = Context(scheduler)
     mine, theirs = Capture(), Capture()
-    root.logger.exporter(mine)
-    other.logger.exporter(theirs)
+    export(root, mine)
+    export(other, theirs)
     logging.getLogger("pycordis.host").warning("not from a fiber")
 
     root.logger.info("a")
@@ -197,10 +218,7 @@ def test_the_library_adds_no_handler_to_the_package_logger(root: Context) -> Non
     # With no handler, `logging` prints a warning or an error to stderr by itself.
     root.logger.error("boom")
 
-    # Other tests attach exporters of their own, so check only for a handler class that
-    # the library defines.
-    handlers = logging.getLogger("pycordis").handlers
-    assert not [h for h in handlers if type(h).__module__.startswith("pycordis")]
+    assert logging.getLogger("pycordis").handlers == []
     assert [r.msg for r in root.logger.buffer] == ["boom"]
 
 
