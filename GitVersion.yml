@@ -7,3 +7,7 @@ branches:
     track-merge-message: true
     # A merge to master gives a clean version (0.1.0), not a pre-release count.
     mode: ContinuousDeployment
+  pull-request:
+    # The default label, PullRequest<N>, is not a PEP 440 pre-release label, and
+    # `uv version` rejects it. A pull-request build is never published.
+    label: alpha
