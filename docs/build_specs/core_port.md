@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 12 of 13 complete
+**Status**: 🔄 In progress — Increment 13 is complete except the release (merge to `master`, publish, and tag)
 
 ## Goal
 
@@ -439,7 +439,7 @@ and is tested through it.
 
 ## Testing
 
-- ⬜ Each of the 17 upstream `packages/core/tests/*.spec.ts` files (associate, component,
+- ✅ Each of the 17 upstream `packages/core/tests/*.spec.ts` files (associate, component,
   decorator, dispose, events, fiber, intercept, invoke, isolate, logger, reflect, replace,
   service-dispose, service, shadow, update, utils) has a `tests/test_<name>.py` whose tests carry
   the `upstream` markers of the cases they translate. An upstream case that pycordis does not
@@ -452,7 +452,7 @@ and is tested through it.
   `test_invoke.py` by Increment 9, and `test_logger.py` and `test_decorator.py` by Increment 10.
   A module shared before its upstream dependencies exist holds the subset that runs and grows in
   the increment that unblocks the rest.
-- ⬜ The upstream test helpers (`tests/utils.ts`: `withTimers`, `sleep`, `event`, `Counter`,
+- ✅ The upstream test helpers (`tests/utils.ts`: `withTimers`, `sleep`, `event`, `Counter`,
   `getHookSnapshot`, `Filter`, `Session`; and the `Events` entries of `events.types.ts`) port
   into fixtures and small classes in `tests/conftest.py`, not into a separate helpers module.
   A `FakeClock` fixture replaces `withTimers`: `sleep(ms) -> Deferred[None]`, and `advance(ms)`
@@ -460,41 +460,41 @@ and is tested through it.
   port of `vi.advanceTimersByTimeAsync` / `vi.runAllTimersAsync`). A `run` fixture drives an
   async upstream test body as a task to quiescence. `vi.fn` / `mock.fn` become small recording
   fakes. No wall-clock waiting.
-- ⬜ Effect forms: a disposer, a sync iterator, an async generator that awaits a `Deferred`, and
+- ✅ Effect forms: a disposer, a sync iterator, an async generator that awaits a `Deferred`, and
   a coroutine each register and dispose in LIFO order, and awaiting each form's `EffectHandle`
   resolves when its setup finishes. An invalid return (including a context manager) raises
   `TypeError`. Awaiting an object that is not a `Deferred`, `Fiber`, or `EffectHandle` raises
   `TypeError` (parametrized).
-- ⬜ A disposer called twice runs once. An exception in one disposer is logged, and the other
+- ✅ A disposer called twice runs once. An exception in one disposer is logged, and the other
   disposers still run. Dropping the handle returned by `ctx.effect()` does not dispose the
   effect.
-- ⬜ Root disposal reverts every root effect (`contract("EFF-REVERT")`). An effect that an
+- ✅ Root disposal reverts every root effect (`contract("EFF-REVERT")`). An effect that an
   inverse registers on the root during that teardown stays registered and is logged at level
   `DEBUG` (`divergence("root-late-effect")`).
-- ⬜ Inside a task, `ctx.use()` returns before the child's `apply` runs. `ImmediateScheduler`
+- ✅ Inside a task, `ctx.use()` returns before the child's `apply` runs. `ImmediateScheduler`
   reaches quiescence when the outermost call returns. `fiber.wait()` resolves with the fiber
   while it waits in `PENDING` for a provider.
-- ⬜ `FramePumpScheduler.pump(n)` runs at most `n` steps. `pump()` on an empty queue returns `0`
+- ✅ `FramePumpScheduler.pump(n)` runs at most `n` steps. `pump()` on an empty queue returns `0`
   in constant time. A `tracemalloc` check supports the no-allocation intent: after a warm-up
   call, a window containing only `pump()` reports no new traces. If the interpreter adds noise
   on a platform, that check warns and the timing assertion still gates.
-- ⬜ A call from a second thread raises `WRONG_THREAD` (`divergence("owner-thread")`). A
+- ✅ A call from a second thread raises `WRONG_THREAD` (`divergence("owner-thread")`). A
   `Deferred` completed on a worker thread resumes its parked task at the next owner-thread step.
   `submit` from a worker thread runs its function on the owner thread.
-- ⬜ A provider stays `UNLOADING`, with its effects in place, until the teardown of its dependent
+- ✅ A provider stays `UNLOADING`, with its effects in place, until the teardown of its dependent
   finishes reading the service. Then the provider's inverses run (`contract("LIFE-ORDER")`).
-- ⬜ A dependent in `LOADING` whose provider is replaced exits through `UNLOADING` and reloads
+- ✅ A dependent in `LOADING` whose provider is replaced exits through `UNLOADING` and reloads
   against the new provider. No iteration runs against two resolutions
   (`contract("LIFE-COHERENT")`).
-- ⬜ An `apply` that raises gives `FAILED` through `UNLOADING`, with `fiber.error` set, every
+- ✅ An `apply` that raises gives `FAILED` through `UNLOADING`, with `fiber.error` set, every
   effect collected before the raise disposed, and no state change in the parent or siblings.
   `update()` recovers the fiber (`contract("LIFE-FAILURE")`, `divergence("host-introspection")`).
-- ⬜ `RegistryService.replace(old, new)` moves live fibers to the new component and reloads them;
+- ✅ `RegistryService.replace(old, new)` moves live fibers to the new component and reloads them;
   the inverses of the old component run first.
-- ⬜ Introspection: `get_effects()` returns the label tree in registration order, and
+- ✅ Introspection: `get_effects()` returns the label tree in registration order, and
   `fiber.children` covers the live fibers of each runtime across reloads
   (`divergence("host-introspection")`).
-- ⬜ Invariant suite (`test_invariants.py`, seeded `random.Random`, parametrized over seeds):
+- ✅ Invariant suite (`test_invariants.py`, seeded `random.Random`, parametrized over seeds):
   random interleavings of `use` / `dispose` / provider replacement over a small component pool
   whose `apply` functions do not raise satisfy all of these, each test marked with its contract
   ID:
@@ -512,7 +512,7 @@ and is tested through it.
     `fiber.parent` names a live fiber.
 
   Mark the module `slow` if a seed measures ≥ 0.1 s.
-- ⬜ The error note on a failed `apply` names the `ctx.use()` call site.
+- ✅ The error note on a failed `apply` names the `ctx.use()` call site.
 - ⬜ The release pipeline is checked by its runs, not by pytest: the `build` job of `ci.yml`
   passes on every push, the scratch-clone GitVersion check gives the versions in
   [Release](#release), and the first merge to `master` publishes `0.1.0` and tags `v0.1.0`.
@@ -1038,7 +1038,31 @@ from `GitVersion.yml`: the tag `v0.1.0` supplies the base version.
 `docs/architecture.md`; the usage pointer in `README.md`; a check that the developer guide and
 the getting started guide agree with the released workflow; and a docstring review of every
 public name that `pycordis/__init__.py` exports.
-**Status**: ⬜ Pending
+**Status**: 🔄 Code, tests, and docs complete; the release steps wait for the maintainer
+
+**Changed**:
+- `src/pycordis/__init__.py`: exports the public API with a module docstring that names the start points
+- `src/pycordis/fiber.py`: `resolve_config` raises `TypeError("Async config validation is not supported")` for an awaitable result
+- `src/pycordis/reflect.py`: one helper builds the `already declared as <kind>` error
+- `conformance/ledger.toml`: all 77 `pending` entries reviewed; 0 `pending` remain
+- `docs/user_guide.md`: concepts, schedulers, host contract, and the binding rule; nav entry in `zensical.toml`
+- `docs/architecture.md`: Module Map section; `docs/README.md` and `README.md`: user guide link, install, usage
+- `docs/api/index.md`: module table and the map from the paper's definitions to pycordis names, with LaTeX math
+- `zensical.toml`, `docs/javascripts/mathjax.js`, and `docs/javascripts/vendor/mathjax/`: `pymdownx.arithmatex` with a vendored MathJax 3.2.2 `tex-svg.js`; `.gitattributes` marks the vendor folder
+
+**Tests**:
+- `test_events.py`: one upstream case ported (a listener that an earlier listener disposed is skipped)
+- `test_component.py`: a parametrized test for an awaitable validator result; it fails without the `fiber.py` change
+- `test_package.py`: `__all__` equals the pinned public API and `import *` gives it; each exported class and function has a docstring
+- `test_doc_examples.py`: the Python examples of `README.md` and `docs/user_guide.md` run in order; an example with a wrong signature fails it
+- Full suite: 826 passed; no unmarked slow tests; `ruff check` and `ruff format --check` clean; `zensical build --strict` has no warnings
+
+**Deviations**:
+- `Issue` is also exported: `ValidationError.issues` holds `Issue` objects
+- The API overview page covers the paper's formal model (added at the maintainer's request); the site serves its own MathJax copy, so math needs no outside host
+- The async validator check and the ported event case close two items that the ledger listed as `pending`
+- `CordisError.constructor` is `not-applicable`: the Python error has no `code`. This is a public-surface difference without a divergence row; it needs your decision
+- The release steps are not done: they are your actions (release branch, pull request, merge, `next-version` removal, install check)
 
 ## Code Standards
 
