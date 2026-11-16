@@ -52,6 +52,9 @@ class Impl:
         dependents: The fibers that read the service. The provider's removal waits
             until they leave.
         release: Called when the last dependent leaves, while a removal waits.
+        check: Called with no argument when a fiber that injects the service looks for
+            its provider. A fiber does not use the provider when the call returns a
+            false value or raises.
     """
 
     uid: int
@@ -61,6 +64,7 @@ class Impl:
     isolate: object
     dependents: set[Any] = field(default_factory=set)
     release: Callable[[], None] | None = None
+    check: Callable[[], bool] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,9 +74,12 @@ class Located:
     Attributes:
         impl: The provider that the access reaches, or `None` when the fiber that
             declares the service is not loaded.
+        fiber: The fiber that declares the service in `inject`, or `None` when the
+            fiber provides the service itself.
     """
 
     impl: Impl | None
+    fiber: Fiber | None = None
 
 
 def locate(ctx: "Context", name: str) -> Located | None:
@@ -95,7 +102,7 @@ def locate(ctx: "Context", name: str) -> Located | None:
             return None
         impl = None if fiber.committed is None else fiber.committed.get(name)
         if impl is not None or name in fiber.inject:
-            return Located(impl)
+            return Located(impl, fiber)
         if fiber.runtime is None:
             return None
         fiber = fiber.parent.fiber
@@ -201,9 +208,17 @@ class ReflectService:
         impl.value = value
 
     def provide(
-        self, ctx: "Context", key: Keyable[Any], value: Any = None
+        self,
+        ctx: "Context",
+        key: Keyable[Any],
+        value: Any = None,
+        check: Callable[[], bool] | None = None,
     ) -> EffectHandle:
         """Register `value` as the service `key` on the fiber of `ctx`.
+
+        A fiber that injects `key` uses this provider only while `check()` returns a
+        true value. A `check` that raises is logged, and the fiber does not use the
+        provider.
 
         Returns:
             The handle of the effect. Its removal waits until every dependent of the
@@ -227,7 +242,7 @@ class ReflectService:
                     f'service "{name}" has been registered at <{taken.ctx.fiber.name}>'
                 )
             self._impl_counter += 1
-            impl = Impl(self._impl_counter, name, ctx, value, realm)
+            impl = Impl(self._impl_counter, name, ctx, value, realm, check=check)
             self._store[realm] = impl
             fiber.provisions.add(impl)
             if fiber.state == FiberState.ACTIVE:

@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 5 of 12 complete
+**Status**: 🔄 In progress — Increment 6 of 12 complete
 
 ## Goal
 
@@ -658,7 +658,33 @@ and resolve.
 **Files**: `service.py` (~100), `test_service.py`, `test_intercept.py`, `test_component.py`
 **Validation**: `uv run pytest tests/test_service.py tests/test_intercept.py
 tests/test_component.py`
-**Status**: ⬜ Pending
+**Docs**: `docs/architecture.md` divergence row; docstrings of `service.py`
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/service.py`: `Service` (constructor that provides `self` under its name or its `provide` attribute, `cordis_filter`, `cordis_merge_intercept`, `cordis_resolve_intercept(caller=None)`); an optional `cordis_check` and `cordis_init` are read from the subclass
+- `src/pycordis/reflect.py`: `Impl.check`, the `check` argument of `ReflectService.provide`, and `Located.fiber`
+- `src/pycordis/fiber.py`: `Fiber._check_impl` calls `Impl.check`; a false result or an exception hides the provider, and an exception is logged
+- `src/pycordis/context.py`: the `check` argument of `Context.provide`, and `Context.intercept_layers`
+- `conformance/ledger.toml`: reviewed `Fiber._checkImpl`, `Service.[symbols.filter]`, `.[symbols.mergeIntercept]`, `.[symbols.resolveIntercept]`, 3 `service.spec.ts` cases, 2 `hasInstance` cases, and 6 `intercept.spec.ts` cases
+- `docs/architecture.md`: divergence row `intercept-caller`
+
+**Tests**:
+- `tests/test_service.py` (16 pass: 5 upstream cases, and Python-only tests of the name, the `check` hook with its log, and `cordis_filter`), `tests/test_intercept.py` (7 pass: 6 upstream cases and the default caller)
+- Full suite: 363 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, and `tests/test_docstrings.py`
+- A reversed order of intercept layers, a `check` result that is ignored, and an `inject` configuration for the fiber's own provision each fail a test
+
+**Deviations**:
+- `cordis_resolve_intercept` takes an explicit `caller` context (user-approved, divergence `intercept-caller`). Increment 9 removes the argument when the traceable view supplies the caller, and removes the divergence row
+- `intercept.spec.ts` `take injected config from the def site` stays `pending`: it needs the use-site view of Increment 9. Its test goes in `tests/test_intercept.py` then
+- `service.spec.ts` `traceable effect (with inject)` and `(without inject)` wait for Increment 9, and `dispose dependents before provider`, `... restarts`, and `... isolated provider` wait for Increment 8; they stay `pending`
+- The tracker, the callable form (`cordis_invoke`), `cordis_extend`, and `Service.[Symbol.hasInstance]` are not added: they belong to the traceable view (Increment 9). Ledger items `Service`, `Service.constructor`, `.[symbols.extend]`, `.[Symbol.hasInstance]`, `Impl`, and `ReflectService.provide` stay `pending`
+- `Fiber._check_impl` logs a failed check to the fiber logger of the provider; `LoggerService` is Increment 10
+- `Service` is not exported from `pycordis/__init__.py` yet (release increment)
+- The `test_component.py` file needed no change: its `Service.init` case was ported in Increment 5
+
+**Manual validation**:
+- A root context provides a `Service` subclass, resolves intercept configuration from two `intercept` layers, and resolves the `inject` configuration inside an `inject` callback (confirmed by the user)
 
 ### Increment 7: Fiber lifecycle semantics
 **Goal**: `FAILED` from a raising `apply` (through `UNLOADING`), reload on a provider change,
@@ -683,7 +709,7 @@ tests/test_service_dispose.py tests/test_fiber.py`
 ### Increment 9: Traceable views
 **Goal**: Def-site / use-site views with `cordis_tracker`, `isinstance`, use-site effect
 attribution, and the shadow and caller introspection.
-**Files**: `traceable.py` (~220), `test_associate.py`, `test_shadow.py`, `test_invoke.py`
+**Files**: `traceable.py` (~220), `service.py` (remove the `caller` argument of `cordis_resolve_intercept`), `test_associate.py`, `test_shadow.py`, `test_invoke.py`, `test_intercept.py` (the def-site case; the other cases read the view)
 **Validation**: `uv run pytest` (the view changes effect attribution for every earlier module)
 **Status**: ⬜ Pending
 

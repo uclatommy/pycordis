@@ -401,25 +401,37 @@ status = "pending"
 status = "pending"
 
 [items."intercept.spec.ts::Intercept::custom merge"]
-status = "pending"
+status = "adapted"
+hash = "1ae2ca48cd5f2c0e38d273babb23ed1c0ca518f69b95451d1f4b9bb2f7ffc636"
+divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::merge context intercepts from outer to inner"]
-status = "pending"
+status = "adapted"
+hash = "ac774fce05b11ccec869eb915a8f8f873e57b44fc062dd9681fb337f972e6158"
+divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::merge injected config under context intercepts"]
-status = "pending"
+status = "adapted"
+hash = "9fa35a6049053a57d40071435576de4963f64f2ef90192ca488d054710aa54c6"
+divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::stop looking for injected config at an isolation boundary"]
-status = "pending"
+status = "adapted"
+hash = "ae1f121917b78d71a8027ba39c30c5cab8111801bd8cd61895bb4bf4fdfb676f"
+divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::take injected config from the declaring fiber"]
-status = "pending"
+status = "adapted"
+hash = "68f9abfec6d959cb50e797c1caadfbb51b2cb16681909c1ec6befe7c2401ff51"
+divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::take injected config from the def site"]
 status = "pending"
 
 [items."intercept.spec.ts::Intercept::take no injected config for own provisions"]
-status = "pending"
+status = "adapted"
+hash = "fc6211222beaec1cfaf8145d46f0ab54379bf1c083b741288d6de83fef7a2556"
+divergence = "intercept-caller"
 
 [items."invoke.spec.ts::Functional Service::functional service"]
 status = "pending"
@@ -675,7 +687,8 @@ status = "pending"
 status = "pending"
 
 [items."service.spec.ts::Service::compare snapshot"]
-status = "pending"
+status = "ported"
+hash = "8b38682a0cc4295fffe0f3b858861aa6b479578bb66a133a4a66ca7b50af93b2"
 
 [items."service.spec.ts::Service::dispose dependents before isolated provider"]
 status = "pending"
@@ -687,10 +700,14 @@ status = "pending"
 status = "pending"
 
 [items."service.spec.ts::Service::multiple injects"]
-status = "pending"
+status = "adapted"
+hash = "ae4d3e0ca56033f8cfce0a0e5c048e6d340a55d2b100f82ba4c7bbe23880391a"
+divergence = "hook-names"
 
 [items."service.spec.ts::Service::pending inject"]
-status = "pending"
+status = "adapted"
+hash = "f031b152772e9d4494441b16bf1a5a630841d2595a778118005187824a8c8945"
+divergence = "hook-names"
 
 [items."service.spec.ts::Service::traceable effect (with inject)"]
 status = "pending"
@@ -699,10 +716,12 @@ status = "pending"
 status = "pending"
 
 [items."service.spec.ts::Service[Symbol.hasInstance]::answers for a plain object after walking to the end of the chain"]
-status = "pending"
+status = "ported"
+hash = "9b446aaddfd3f7d28442a040b4756e8c57902faca61b28ec7ed01efe41798e9c"
 
 [items."service.spec.ts::Service[Symbol.hasInstance]::answers for null and undefined"]
-status = "pending"
+status = "ported"
+hash = "0f044e31c64c50295c98798d52e023f47e34f09d09cea02a62a5ac6316888cf4"
 
 [items."shadow.spec.ts::Traceable caller::applies the service inject when entered from root"]
 status = "pending"
@@ -926,7 +945,9 @@ hash = "df1a6fdf989153608f231d8280f09c51887915dfa44aadb109b535a73c936ef1"
 status = "pending"
 
 [items."src/fiber.ts:Fiber._checkImpl"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._check_impl"
+hash = "bfe64666519f6188e3b4693ee3a5e807f3cfdcf1bbd8817332be01f0b4cf5e46"
 
 [items."src/fiber.ts:Fiber._execute"]
 status = "ported"
@@ -1350,13 +1371,22 @@ status = "pending"
 status = "pending"
 
 [items."src/service.ts:Service.[symbols.filter]"]
-status = "pending"
+status = "adapted"
+target = "pycordis.service.Service.cordis_filter"
+hash = "e831067f59c0463cf20e924dfea0789800239c084868c9d3ad42647ea63ae7cf"
+divergence = "hook-names"
 
 [items."src/service.ts:Service.[symbols.mergeIntercept]"]
-status = "pending"
+status = "adapted"
+target = "pycordis.service.Service.cordis_merge_intercept"
+hash = "2ec28c37dd0fa8865b2c12ca5e338e26a59ec13f0beb19102a9bb44b079514fa"
+divergence = "hook-names"
 
 [items."src/service.ts:Service.[symbols.resolveIntercept]"]
-status = "pending"
+status = "adapted"
+target = "pycordis.service.Service.cordis_resolve_intercept"
+hash = "b8af0f76bab0a623b7eef09565f438e95587091f9c3ff5b88ae888975ddd9a39"
+divergence = "intercept-caller"
 
 [items."src/service.ts:Service.constructor"]
 status = "pending"

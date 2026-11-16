@@ -94,6 +94,15 @@ class Context:
         extra = len(self._isolates.maps) - len(ancestor._isolates.maps)
         return any(name in layer for layer in self._isolates.maps[:extra])
 
+    def intercept_layers(self, name: str) -> list[object]:
+        """Return the intercept configurations of `name`, from the outermost context in.
+
+        Each context that called `intercept` for `name` adds one entry.
+        """
+        return [
+            layer[name] for layer in reversed(self._intercepts.maps) if name in layer
+        ]
+
     def bind_fiber(self, fiber: Fiber) -> Self:
         """Return a child context whose fiber is `fiber`.
 
@@ -257,7 +266,12 @@ class Context:
         """
         self.reflect.set(self, key, value)
 
-    def provide[T](self, key: Keyable[T], value: T | None = None) -> EffectHandle:
+    def provide[T](
+        self,
+        key: Keyable[T],
+        value: T | None = None,
+        check: Callable[[], bool] | None = None,
+    ) -> EffectHandle:
         """Make `value` available as the service `key`.
 
         The service belongs to this context's fiber: the fiber removes it when it
@@ -267,6 +281,9 @@ class Context:
         Args:
             key: The service key.
             value: The service value. Replace it later with `set`.
+            check: Called with no argument when a fiber that injects `key` looks for
+                its provider. The fiber does not use this provider while the call
+                returns a false value or raises.
 
         Returns:
             The handle of the effect. Call it to remove the service.
@@ -283,7 +300,7 @@ class Context:
             >>> remove()
             ```
         """
-        return self.reflect.provide(self, key, value)
+        return self.reflect.provide(self, key, value, check)
 
     def accessor(
         self,

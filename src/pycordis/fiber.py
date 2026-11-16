@@ -641,6 +641,16 @@ class Fiber:
 
     def _check_impl(self, name: str) -> None:
         impl = self.ctx.reflect.find(self.ctx, name, True)
+        if impl is not None and impl.check is not None:
+            try:
+                accepted = impl.check()
+            except Exception as error:
+                impl.ctx.fiber.logger.error(
+                    "error while checking service %r", name, exc_info=error
+                )
+                accepted = False
+            if not accepted:
+                impl = None
         if impl is None:
             self._store.pop(name, None)
         else:
