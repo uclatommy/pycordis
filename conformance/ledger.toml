@@ -1096,34 +1096,53 @@ status = "pending"
 status = "pending"
 
 [items."src/utils.ts:DisposableList"]
-status = "pending"
+status = "ported"
+target = "pycordis.disposables.DisposableList"
+hash = "b58c7501dd168230e67f51ee4c3ca797ff8ba2fc271d67a0a20ee2f939fd262f"
 
 [items."src/utils.ts:DisposableList.[Symbol.for('nodejs.util.inspect.custom')]"]
-status = "pending"
+status = "not-applicable"
+hash = "e66d04512e277748b3c2afb2901ca5f4e08c6e926a4e1ff384fd4de61dd35edd"
+note = "A Node.js inspector hook. Python shows an object through its own repr."
 
 [items."src/utils.ts:DisposableList.[Symbol.iterator]"]
-status = "pending"
+status = "ported"
+target = "pycordis.disposables.DisposableList.__iter__"
+hash = "c03fe6db6ce7171eacfd80c27580e11fcdf01d9a8f0070cc398451d09584dcd6"
 
 [items."src/utils.ts:DisposableList.clear"]
-status = "pending"
+status = "ported"
+target = "pycordis.disposables.DisposableList.clear"
+hash = "40b172331bc5e2c4261fe498876a0d6367d528509539f291d668a8350eb8b885"
 
 [items."src/utils.ts:DisposableList.delete"]
-status = "pending"
+status = "ported"
+target = "pycordis.disposables.DisposableList.delete"
+hash = "1f350f6cbabb5da4be4c22692d975ceabee5094fe35a75ab5e8809963ce7844e"
 
 [items."src/utils.ts:DisposableList.length"]
-status = "pending"
+status = "ported"
+target = "pycordis.disposables.DisposableList.__len__"
+hash = "b924051c09520728af143d576a823c860c26284c3cbc08aba6adc075eeba9cb5"
 
 [items."src/utils.ts:DisposableList.push"]
-status = "pending"
+status = "ported"
+target = "pycordis.disposables.DisposableList.push"
+hash = "2275e039351761c402f25d7be4d42ed090cc1ef495bde9835a251a689ac14e09"
 
 [items."src/utils.ts:DisposableList.unshift"]
-status = "pending"
+status = "ported"
+target = "pycordis.disposables.DisposableList.unshift"
+hash = "135c7a92988b38dfa06f0d4cd8dffec3ad3c242976422ecdc7e6dac05b55c32b"
 
 [items."src/utils.ts:GeneratorFunction"]
 status = "pending"
 
 [items."src/utils.ts:StackInfo"]
-status = "pending"
+status = "adapted"
+target = "pycordis.errors.CallSite"
+hash = "3dc7d6da73da48ebd72dd630f230b0b664ed85545b812d25db52506a8954dd03"
+divergence = "error-notes"
 
 [items."src/utils.ts:Tracker"]
 status = "pending"
@@ -1132,10 +1151,16 @@ status = "pending"
 status = "pending"
 
 [items."src/utils.ts:buildOuterStack"]
-status = "pending"
+status = "adapted"
+target = "pycordis.errors.CallSite.capture"
+hash = "ddb23ed852fd950c361d614036fa17e57f975ee14ed2656ef9da22828e764c12"
+divergence = "error-notes"
 
 [items."src/utils.ts:composeError"]
-status = "pending"
+status = "adapted"
+target = "pycordis.errors.CallSite.annotate"
+hash = "00a131b163081f5f3fcc1f34e855fc70425ee9ac17e2b9de30044588cc270297"
+divergence = "error-notes"
 
 [items."src/utils.ts:createCallable"]
 status = "pending"
@@ -1156,7 +1181,10 @@ status = "pending"
 status = "pending"
 
 [items."src/utils.ts:handleError"]
-status = "pending"
+status = "adapted"
+target = "pycordis.errors.CallSite.annotate"
+hash = "74b54d6601c1f259bb29c4dcf1e1699dfbdc1f9161fbd36a53b536e34af33404"
+divergence = "error-notes"
 
 [items."src/utils.ts:isConstructor"]
 status = "pending"
@@ -1375,20 +1403,26 @@ status = "pending"
 status = "pending"
 
 [items."utils.spec.ts::DisposableList::clear removes every entry and returns them in order"]
-status = "pending"
+status = "ported"
+hash = "d4192743db2ded5567a8ac08346c84ad4e49a637a709292f260a1e0bbb658fc2"
 
 [items."utils.spec.ts::DisposableList::delete removes an unshifted entry"]
-status = "pending"
+status = "ported"
+hash = "b80001d2f99a8ac51382492b2f9a5938ec647b5366d40ea88e0a02d680146b58"
 
 [items."utils.spec.ts::DisposableList::delete removes the entry it was given"]
-status = "pending"
+status = "ported"
+hash = "dcbcafd940fc4ee03a66b90cec44f6bb9da05f8b379cfd64988ce9e1ec4e42b3"
 
 [items."utils.spec.ts::DisposableList::disposer removes its own entry after a later push"]
-status = "pending"
+status = "ported"
+hash = "3a80f8cc41e7e2a8fce8e4779cac3d05bee534e534dce6f1096877dbc3281527"
 
 [items."utils.spec.ts::DisposableList::disposer removes its own entry after a later unshift"]
-status = "pending"
+status = "ported"
+hash = "6765f67f83b4f1fe71e8504f38675af450aa9c34291beae67731091e3355f74e"
 
 [items."utils.spec.ts::DisposableList::iterates unshifted entries before pushed ones"]
-status = "pending"
+status = "ported"
+hash = "13566b9774f236be37e91bdbfc9177c8effae848ba2cc05ee16315d08c7a2c02"
 

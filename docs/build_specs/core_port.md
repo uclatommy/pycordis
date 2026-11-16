@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: ⬜ Not started — reviewed (2026-11-15), awaiting execution approval
+**Status**: 🔄 In progress — Increment 1 of 12 complete
 
 ## Goal
 
@@ -480,7 +480,34 @@ it implements.
 **Files**: `disposables.py` (~70), `deferred.py` (~90), `scheduler.py` (~150), `errors.py`
 (~60), `tests/conftest.py` (`FakeClock`, `run`), `test_utils.py`, `test_scheduler.py`
 **Validation**: `uv run pytest tests/test_utils.py tests/test_scheduler.py`
-**Status**: ⬜ Pending
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/errors.py`: `CordisError`, and `CallSite` (`capture`, `format`, `annotate`) that adds a call site to an exception as a note
+- `src/pycordis/disposables.py`: `DisposableList` with `push`, `unshift`, `delete`, `clear`, `len`, and snapshot iteration
+- `src/pycordis/deferred.py`: `Deferred` with `resolve`, `reject`, `result`, `done`, `add_done_callback`, `resolved`, `from_future`, and `__await__` (always one scheduler step)
+- `src/pycordis/scheduler.py`: `Scheduler` base class (`submit`, `call`, `hold`, `release`), `ImmediateScheduler` (`run_until_quiet`), the task trampoline, and `spawn`
+- `tests/conftest.py`: `FakeClock`, and the `scheduler`, `clock`, and `run` fixtures
+- `conformance/ledger.toml`: the 12 `DisposableList` and call-site items and the 6 `utils.spec.ts` cases are reviewed
+- `docs/architecture.md`: divergence row `error-notes`
+
+**Tests**:
+- `tests/test_utils.py` (11 tests) and `tests/test_scheduler.py` (25 tests): 36 pass
+- Re-run for regression: `tests/test_conformance.py`, `tests/test_inventory.py`, `tests/test_docstrings.py` (139 pass in all)
+- The task-hold test fails when `Scheduler.hold` is disabled
+
+**Deviations**:
+- `ValidationError` is not in `errors.py`. Config validation needs it, so it is added with the registry
+- `CallSite` stores `(code, line number)` pairs, not frame objects, so it does not keep local variables alive
+- `Scheduler` is an abstract base class, not a `Protocol`: it holds the parked tasks that keep a suspended coroutine alive. `call()` is the span of an outermost call, which `ImmediateScheduler` uses to drain
+- `scheduler.py` imports `deferred.py`, because the task trampoline must recognize a `Deferred`. This differs from the rule that runtime modules import only `errors`. `deferred.py` imports only `errors`, so there is no cycle
+- Divergence rows `async-model`, `async-effects`, and the other adaptation rows are not added yet: no ledger entry names them, and the divergence check rejects a row that nothing names. Each row is added with the first item that it covers
+- `run` returns the task's `Deferred`, so a test can advance the clock before it reads the result
+- Owner-thread checks are not added yet (planned for the threading increment)
+- `ImmediateScheduler.run_until_quiet` documents the owner-thread rule but does not assert it
+
+**Manual validation**:
+- A task that awaits a `Deferred` parks in an `ImmediateScheduler`, and resolving the `Deferred` resumes it (confirmed by the user)
 
 ### Increment 2: Context and effects
 **Goal**: `Context` with `extend` / `isolate` / `intercept`, the root `Fiber`, the fiber logger,

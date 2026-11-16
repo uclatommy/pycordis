@@ -114,5 +114,6 @@ change removes the reason for a divergence, remove the divergence and its row.
 
 | ID | Kind | Upstream | pycordis | Contract | Reason and evidence |
 |---|---|---|---|---|---|
+| `error-notes` | adaptation | `composeError` string changes | `BaseException.add_note` | — | Native Python mechanism |
 
-The table has no rows yet. A change that adds a divergence adds its row in the same change.
+A change that adds a divergence adds its row in the same change.
