@@ -75,7 +75,7 @@ class Context:
         self._meta: ChainMap[str, object] = ChainMap()
         self.events = EventsService(scheduler)
         self.reflect = ReflectService(scheduler)
-        self.registry = RegistryService()
+        self.registry = RegistryService(scheduler)
         self.fiber = Fiber(self)
         self.events.install(
             self,

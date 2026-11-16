@@ -716,6 +716,26 @@ class Fiber:
         else:
             self._store[name] = impl
 
+    def _replace(self, runtime: "Runtime", inject: dict[str, object]) -> None:
+        """Move the fiber to `runtime` and `inject`, and run it again.
+
+        The registry calls it for each live fiber of a replaced component. The fiber
+        keeps its identity. A failed fiber recovers, as it does through `update`.
+        """
+        if runtime is not self.runtime:
+            assert self.runtime is not None
+            self.runtime.fibers.delete(self)
+            runtime.fibers.push(self)
+            self.runtime = runtime
+        self.inject = inject
+        self.ctx.emit("internal/replace", self)
+        self._store = {}
+        for name in self.inject:
+            self._check_impl(name)
+        self._error = None
+        self._revision += 1
+        self._refresh()
+
     def _refresh(self) -> None:
         if self._uid is None:
             return

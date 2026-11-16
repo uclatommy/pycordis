@@ -171,7 +171,8 @@ status = "ported"
 hash = "14cd354a0b2e377a20c8079dbe8adbf4185891acbb9aa3b54c4fc1b86ed14f33"
 
 [items."event:internal/replace"]
-status = "pending"
+status = "ported"
+hash = "dcc5fccc1f476a38972af12c8e6be45743c3215a3884ba9e27abcd65347d625c"
 
 [items."event:internal/service"]
 status = "adapted"
@@ -599,52 +600,68 @@ hash = "e8da60f9c0172d92f35717b41ce993134cf1f01366a3d8935ee1d6d0d19c4eb3"
 divergence = "service-access"
 
 [items."replace.spec.ts::registry.replace()::emits internal/replace for each moved fiber"]
-status = "pending"
+status = "ported"
+hash = "d42731a8f99df6636fe8171255d1d92160f1c74761db6d2d7feb10ce3e96d730"
 
 [items."replace.spec.ts::registry.replace()::follows a chain of replacements"]
-status = "pending"
+status = "ported"
+hash = "691724c6e6ba883ada87a1f4e9d10efe904be370aabc1dc574723894b2df651f"
 
 [items."replace.spec.ts::registry.replace()::forwards a component that is not registered"]
-status = "pending"
+status = "ported"
+hash = "961bcc3f038917c8faf09ea7a7a29a704cd1813e899bfcd48578cef52a73e151"
 
 [items."replace.spec.ts::registry.replace()::forwards the old component to the new one"]
-status = "pending"
+status = "ported"
+hash = "fcf96df7b372b33bb22b2808cd35e374535b3cd325b948c3d806f91a0e2d9188"
 
 [items."replace.spec.ts::registry.replace()::leaves a fiber failed when the new component fails to apply"]
-status = "pending"
+status = "ported"
+hash = "3485da7b53d7fb78f6d89fe890039adfc393af71054f54acbcbe9261f095b18e"
 
 [items."replace.spec.ts::registry.replace()::merges the fibers into a registered component"]
-status = "pending"
+status = "ported"
+hash = "9ec7acae33bfdee27f770096141d690f1bc8e59f31f4e45ef7ed840f8f6622a7"
 
 [items."replace.spec.ts::registry.replace()::reloads a consumer of a replaced service"]
-status = "pending"
+status = "ported"
+hash = "e95b31ab13a9215cec2b3b4d0ddfea9e13eb43919fd9d3d1984e0d8ed2a595bb"
 
 [items."replace.spec.ts::registry.replace()::restarts a failed fiber"]
-status = "pending"
+status = "ported"
+hash = "c1eef2682996ee31731ac95d4d1a11830e21bc26106256c3d1fbb819328d8d09"
 
 [items."replace.spec.ts::registry.replace()::starts a pending fiber when the new component drops the missing dependency"]
-status = "pending"
+status = "ported"
+hash = "55415059b6f3a262a7b35c1cfab41ca7d345da49d01ccfb19b5532a23ee9c2b5"
 
 [items."replace.spec.ts::registry.replace()::starts a pending fiber when the new component injects an available service"]
-status = "pending"
+status = "ported"
+hash = "5870789c5b64e4642e66a626c70bdc52ab787a80be744bb1111ea6aadbc80d74"
 
 [items."replace.spec.ts::registry.replace()::stops depending on a dependency that the new component drops"]
-status = "pending"
+status = "ported"
+hash = "7b52ac738dc6d629b9180de6198dc18a3161dc08380b661668d91d9b8fd914ad"
 
 [items."replace.spec.ts::registry.replace()::swaps the implementation behind a fiber in place"]
-status = "pending"
+status = "ported"
+hash = "f0e6cd32d26c8cdad338723d87afbfdd13aab5a654a0abc106216fc22332d0b1"
 
 [items."replace.spec.ts::registry.replace()::switches back to a replaced component"]
-status = "pending"
+status = "ported"
+hash = "6c0498187a2c5ead6b5d94662deb082acdacfd2b8a84b34425deb14f7e64d10e"
 
 [items."replace.spec.ts::registry.replace()::takes the dependencies of the new component"]
-status = "pending"
+status = "ported"
+hash = "a4e796d491258fbb5aff70e6a619ca5b93be93c2e14919185da349e4d123532b"
 
 [items."replace.spec.ts::registry.replace()::unregisters the new component when its last fiber is disposed"]
-status = "pending"
+status = "ported"
+hash = "952365bb32c50a44b9bb1073cc81ef5c4e94e0dd55b582c2e9aababb935cb995"
 
 [items."replace.spec.ts::registry.replace()::validates the config with the new schema"]
-status = "pending"
+status = "ported"
+hash = "d236d2417c81116d24431ea597d518ff9a4f8ad7c77562e7fd1fb5f29df9cf6b"
 
 [items."service-dispose.spec.ts::Service disposal::allows unrelated providers and sibling effects to clean up concurrently"]
 status = "ported"
@@ -1044,7 +1061,9 @@ hash = "6682be41383a6c0e2f4dd813638eb3fab8c04b5409d2721294ef4af1ea92b7d6"
 mirror = true
 
 [items."src/fiber.ts:Fiber._replace"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._replace"
+hash = "ffc342f6940b5a3bfd10723c4047fa0b2104fa215360e5e095a6a70c6a2896dc"
 
 [items."src/fiber.ts:Fiber._resolve"]
 status = "ported"
@@ -1352,12 +1371,14 @@ note = "A TypeScript type of the service names that have metadata"
 status = "pending"
 
 [items."src/registry.ts:RegistryService._create"]
-status = "not-applicable"
+status = "ported"
+target = "pycordis.registry.RegistryService._create"
 hash = "4feabe47655f9b193d3bf512434440a23b58019c9845ccf28bf2e2a9e263e8db"
-note = "RegistryService.use creates the Runtime where it is needed"
 
 [items."src/registry.ts:RegistryService._forward"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService._forward"
+hash = "b8b27b147d4eadd42068b95170c026b1e9b30938939913464b640a3edf02582a"
 
 [items."src/registry.ts:RegistryService._unregister"]
 status = "ported"
@@ -1383,10 +1404,14 @@ target = "pycordis.registry.RegistryService.for_each"
 hash = "2ba3b246508a868c50a73a869159b45fc7494cb875e1500d0ba40aaa6fd73d87"
 
 [items."src/registry.ts:RegistryService.get"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.get"
+hash = "7afa2fb1f7050085fd492b2b104d5b51e3e7f958ac50e24cd7df9081f5a4282a"
 
 [items."src/registry.ts:RegistryService.has"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.has"
+hash = "1fe103515278b37d31fd8c163899b04de0fd32efd700fe775fd04e211e707ccb"
 
 [items."src/registry.ts:RegistryService.inject"]
 status = "adapted"
@@ -1405,7 +1430,9 @@ hash = "a78413f5b5b5c6e3da145a496788a11523afe139dd838727a9a9e313747a1840"
 divergence = "deprecated-aliases"
 
 [items."src/registry.ts:RegistryService.replace"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.replace"
+hash = "f8496cbb695d109aed9f59f1ffe5c91cfc015cf09c3f72cf780759331896e7af"
 
 [items."src/registry.ts:RegistryService.resolve"]
 status = "ported"
@@ -1418,7 +1445,9 @@ target = "pycordis.registry.RegistryService.__len__"
 hash = "e96d7a660c471339d7c2cb8b907fad8c703fb326532388e482ce3b5c3a07fafa"
 
 [items."src/registry.ts:RegistryService.use"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.use"
+hash = "68ec31e3ca7e962edf4ea6e946161f98712f90e1be1b5b5f9ad671586f129405"
 
 [items."src/registry.ts:RegistryService.values"]
 status = "ported"

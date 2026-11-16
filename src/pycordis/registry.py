@@ -26,6 +26,7 @@ from pycordis.disposables import DisposableList
 from pycordis.errors import CallSite
 from pycordis.fiber import Fiber
 from pycordis.keys import key_name
+from pycordis.scheduler import Scheduler
 
 if TYPE_CHECKING:
     from pycordis.context import Context
@@ -119,9 +120,14 @@ class RegistryService:
         ```
     """
 
-    def __init__(self) -> None:
+    def __init__(self, scheduler: Scheduler) -> None:
+        self._scheduler = scheduler
         self._counter = 0
         self._internal: dict[Callable[..., Any], Runtime] = {}
+        # The runner of a replaced component, and the component that took its place.
+        # The table holds the old runners strongly: a bound `apply` method has no
+        # lifetime of its own that a weak reference could follow.
+        self._aliases: dict[Callable[..., Any], Component] = {}
 
     def __len__(self) -> int:
         return len(self._internal)
@@ -146,14 +152,106 @@ class RegistryService:
             # a property of the component raised: the component is not valid
             return None
 
+    def _forward(
+        self, component: Component
+    ) -> tuple[Callable[..., Any], Component] | None:
+        """Follow the replacements of `component` to the component that runs now.
+
+        Returns:
+            The runner and the component that it belongs to, or `None` if `component`
+            is not valid.
+        """
+        key = self.resolve(component)
+        while key is not None:
+            successor = self._aliases.get(key)
+            if successor is None:
+                return key, component
+            component = successor
+            key = self.resolve(successor)
+        return None
+
+    def _create(self, callback: Callable[..., Any], component: Component) -> Runtime:
+        runtime = Runtime(
+            _name_of(component),
+            callback,
+            DisposableList[Fiber](),
+            getattr(component, "Config", None),
+        )
+        self._internal[callback] = runtime
+        return runtime
+
     def get(self, component: Component) -> Runtime | None:
-        """Return the record of `component`, or `None` if it has no live fiber."""
-        callback = self.resolve(component)
-        return None if callback is None else self._internal.get(callback)
+        """Return the record of `component`, or `None` if it has no live fiber.
+
+        A component that `replace` has replaced gives the record of its replacement.
+        """
+        forwarded = self._forward(component)
+        return None if forwarded is None else self._internal.get(forwarded[0])
 
     def has(self, component: Component) -> bool:
-        """Return whether `component` has a live fiber."""
+        """Return whether `component`, or its replacement, has a live fiber."""
         return self.get(component) is not None
+
+    def replace(self, old: Component, new: Component) -> list[Fiber]:
+        """Move the live fibers of `old` to `new`, and run them again.
+
+        Each moved fiber keeps its identity, its config, and its place in the fiber
+        tree. It takes the `inject` of `new`, validates its config with the `Config`
+        of `new`, and runs the effects of `old` back before it loads `new`. A failed
+        fiber loads again. The `internal/replace` event fires for each fiber, after the
+        fiber has its new record. If `new` has live fibers, the moved fibers join them.
+
+        Afterwards `get`, `has`, and `Context.use` treat `old` as `new`, also when
+        `old` had no fiber. Replacements chain: the `old` of a later call can be any
+        component of an earlier call, and `old` is its own component again when it is
+        the `new` of a later call.
+
+        Args:
+            old: The component to replace. A replaced component stands for its
+                replacement.
+            new: The component that takes its place.
+
+        Returns:
+            The fibers that moved, in the order of their creation. The list is empty
+            when `old` has no live fiber. Call `Fiber.wait` on a fiber to wait for its
+            new load.
+
+        Raises:
+            TypeError: If `old` or `new` is neither a function, a class, nor an object
+                with an `apply` method.
+
+        Examples:
+            ```python
+            >>> fiber = ctx.use(old_component)
+            >>> _ = ctx.registry.replace(old_component, new_component)
+            >>> fiber.runtime is ctx.registry.get(new_component)
+            True
+            ```
+        """
+        source = self._forward(old)
+        if source is None:
+            raise _invalid(old)
+        key = self.resolve(new)
+        if key is None:
+            raise _invalid(new)
+        with self._scheduler.call():
+            # `new` is a component of its own again
+            self._aliases.pop(key, None)
+            old_key = source[0]
+            runtime = self._internal.get(old_key)
+            target = self._internal.get(key)
+            if old_key != key:
+                self._internal.pop(old_key, None)
+                self._aliases[old_key] = new
+            fibers = [] if runtime is None else list(runtime.fibers)
+            if not fibers:
+                return fibers
+            if target is None:
+                target = self._create(key, new)
+            inject = resolve_inject(getattr(new, "inject", None))
+            for fiber in fibers:
+                fiber._replace(target, inject)
+            return fibers
 
     def keys(self) -> KeysView[Callable[..., Any]]:
         """Return a view of the functions that run the loaded components."""
@@ -212,7 +310,8 @@ class RegistryService:
 
         Args:
             ctx: The context that owns the new fiber.
-            component: The component to run.
+            component: The component to run. A component that `replace` has replaced
+                runs as its replacement.
             config: The raw config. The component's `Config` validates it when the
                 fiber loads.
             call_site: Where the call came from, for the note of a failed load.
@@ -226,18 +325,13 @@ class RegistryService:
                 with an `apply` method.
             CordisError: If the fiber of `ctx` is disposed.
         """
-        callback = self.resolve(component)
-        if callback is None:
+        forwarded = self._forward(component)
+        if forwarded is None:
             raise _invalid(component)
         ctx.fiber.assert_active()
+        callback, target = forwarded
         runtime = self._internal.get(callback)
         if runtime is None:
-            runtime = Runtime(
-                _name_of(component),
-                callback,
-                DisposableList[Fiber](),
-                getattr(component, "Config", None),
-            )
-            self._internal[callback] = runtime
-        inject = resolve_inject(getattr(component, "inject", None))
+            runtime = self._create(callback, target)
+        inject = resolve_inject(getattr(target, "inject", None))
         return Fiber(ctx, config, inject, runtime, call_site)

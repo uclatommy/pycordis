@@ -757,7 +757,24 @@ tests/test_service.py tests/test_events.py tests/test_fiber.py`
 **Files**: `registry.py`, `fiber.py` (~80 total), `test_replace.py`
 **Validation**: `uv run pytest tests/test_replace.py tests/test_component.py tests/test_fiber.py`
 **Docs**: Docstrings of `RegistryService.replace` and the `internal/replace` event
-**Status**: ⬜ Pending
+**Status**: ✅ Completed
+
+**Changed**:
+- `registry.py`: `RegistryService` takes the scheduler; `replace` moves the live fibers of a component to a new one inside one scheduler call; `_forward` follows the alias table for `get`, `has`, and `use`; `_create` builds a `Runtime`
+- `fiber.py`: `Fiber._replace` moves a fiber to a new runtime and `inject`, emits `internal/replace`, clears the error, and refreshes the epoch
+- `context.py`: the root passes its scheduler to `RegistryService`
+- `conformance/ledger.toml`: 24 items reviewed as `ported` (the 16 `replace.spec.ts` cases, `Fiber._replace`, `RegistryService.replace`, `._forward`, `._create`, `.use`, `.get`, `.has`, and `event:internal/replace`)
+
+**Tests**:
+- `tests/test_replace.py` (20 pass): the 16 upstream cases (the two pending-fiber cases are one parametrized test), a parametrized test of the `TypeError` for an invalid `old` or `new`, a test of a replace with the same component, and a test that a disposed fiber does not move
+- Full suite: 464 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, and `tests/test_docstrings.py`; `tests/test_component.py` and `tests/test_fiber.py` re-run with no change
+- With `self._error = None` removed from `Fiber._replace`, the test of a failed fiber fails
+
+**Deviations**:
+- `RegistryService.__init__` takes a `Scheduler` (the plan did not list it), so that `replace` moves all fibers before the scheduler drains, as the synchronous loop of upstream does
+- The alias table is a `dict`, not a weak map: a bound `apply` method has no lifetime that a weak reference can follow, so the table holds replaced runners strongly
+- `Fiber._replace` is not `mirror = true`: it is a short sequence that does not carry the epoch algorithm
+
 
 ### Increment 9: Traceable views
 **Goal**: Def-site / use-site views with `cordis_tracker`, `isinstance`, use-site effect
