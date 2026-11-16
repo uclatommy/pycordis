@@ -6,9 +6,9 @@
    the Cordis paper. The [semantic contract](#semantic-contract) states the paper's guarantees in
    Python terms, and each guarantee has tests. Code that breaks a contract property is wrong,
    also when upstream has the same code.
-2. **Upstream is the reference implementation**: the Cordis core package (`packages/core`) at
-   the tracked revision supplies the observable behavior, the state names, the event names, and
-   the error messages. The [conformance ledger](#conformance) records how each upstream test and
+2. **Upstream is the reference implementation**: the Cordis core package (`packages/core`) and
+   the other upstream packages that pycordis ports (`packages/loader`) at the tracked revision
+   supply the observable behavior, the state names, the event names, and the error messages. The [conformance ledger](#conformance) records how each upstream test and
    symbol maps to pycordis, and an automatic check finds every upstream change that has not been
    reviewed.
 3. **Python first at the surface**: where a Python feature gives a better API or a stronger
@@ -87,7 +87,12 @@ The conformance data is in `conformance/`:
 
 - `upstream.json` is a generated inventory of the tracked upstream revision. It lists each
   upstream test case, each exported symbol, and the error messages, event names, and state
-  names, with a hash of each item's normalized source. It holds no upstream code.
+  names, with a hash of each item's normalized source. It holds no upstream code. The inventory
+  always covers core, and it covers each other package that the `[inventory] packages` list of
+  `ledger.toml` names. An ID of core has no prefix (`src/fiber.ts:Fiber._unload`,
+  `fiber.spec.ts::Fiber::title`). An ID of another package starts with the package directory:
+  `loader/src/config/entry.ts:Entry.update`, `loader/group.spec.ts::Group: basic
+  support::initialize`, `loader/message:…`.
 - `ledger.toml` has one entry for each inventory item. An entry gives the item's status
   (`pending` before review; `ported`, `adapted`, `diverged`, or `not-applicable` after it), the
   pycordis symbol that covers it (a `target`; a test case is linked by its `upstream` marker),

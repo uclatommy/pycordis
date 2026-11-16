@@ -1,6 +1,8 @@
 """Tests of the upstream inventory scanner on inline TypeScript snippets."""
 
 import importlib.util
+import json
+import subprocess
 import sys
 import tomllib
 from collections import Counter
@@ -164,6 +166,31 @@ SNIPPETS = [
         },
         id="template-title-function-callback-negative-row",
     ),
+    pytest.param(
+        "tests/a.spec.ts",
+        "describe('T', () => {\n"
+        "  it.each([undefined, null, -1, ['a', 1, -2], []])('r (%s)', () => {})\n"
+        "  it.each([{ code: 'E1', n: 2 }])('o $code $n', () => {})\n"
+        "  it.runIf(process.platform === 'win32')('win', () => {})\n"
+        "})\n",
+        {
+            "a.spec.ts::T::r (undefined)": "case",
+            "a.spec.ts::T::r (null)": "case",
+            "a.spec.ts::T::r (-1)": "case",
+            "a.spec.ts::T::r ([ 'a', 1, -2 ])": "case",
+            "a.spec.ts::T::r ([])": "case",
+            "a.spec.ts::T::o E1 2": "case",
+            "a.spec.ts::T::win": "case",
+            "tests/a.spec.ts:<rest>": "rest",
+        },
+        id="it-each-undefined-array-object-rows-and-run-if",
+    ),
+    pytest.param(
+        "src/a.ts",
+        "export class Foo {}\nexport default Foo\n",
+        {"src/a.ts:Foo": "symbol", "src/a.ts:default": "symbol"},
+        id="default-export-of-a-name",
+    ),
 ]
 
 
@@ -214,7 +241,17 @@ def test_overloads_and_merged_declarations_are_one_item() -> None:
 
 @pytest.mark.parametrize(
     "table",
-    ["rows", "[...rows]", "[1, mode]", "[[1], [2]]", "[]"],
+    [
+        "rows",
+        "[...rows]",
+        "[1, mode]",
+        "[[[1]]]",
+        "[[1,, 2]]",
+        "[{ a: [1] }]",
+        "[{ a }]",
+        "[{ , a: 1 }]",
+        "[]",
+    ],
 )
 def test_scanner_rejects_it_each_table_that_is_not_a_literal(table: str) -> None:
     text = f"it.each({table})('does %s', () => {{}})"
@@ -229,6 +266,13 @@ def test_scanner_rejects_it_each_table_that_is_not_a_literal(table: str) -> None
         "it.each(['a'])('no placeholder', () => {})",
         "it.each(['a'])('%d', () => {})",
         "it.each(['a'])('%s %s', () => {})",
+        "it.runIf(ok)",
+        "it.runIf",
+        "it.each",
+        "it.runIf(ok)(title, () => {})",
+        "it.each([{ a: 1 }])('$b', () => {})",
+        "it.each([{ a: 1 }])('%s', () => {})",
+        "it.each([{ a: 1 }])('no key', () => {})",
         "it.skip('x', () => {})",
         "it(name, () => {})",
         "describe('A', () => { it('x', () => {}); it('x', () => {}) })",
@@ -326,14 +370,15 @@ VOCABULARY_KINDS = ("message:", "state:", "event:")
 
 
 def test_inventory_lists_hashes_and_vocabulary_but_no_code(tmp_path: Path) -> None:
-    (tmp_path / "src").mkdir()
-    (tmp_path / "tests").mkdir()
-    (tmp_path / "src" / "a.ts").write_text(
+    core = tmp_path / "packages" / "core"
+    (core / "src").mkdir(parents=True)
+    (core / "tests").mkdir()
+    (core / "src" / "a.ts").write_text(
         "export function f() { throw new Error('secret body text') }\n"
         "export const enum FiberState { PENDING }\n",
         encoding="utf-8",
     )
-    (tmp_path / "tests" / "a.spec.ts").write_text(
+    (core / "tests" / "a.spec.ts").write_text(
         "describe('A', () => { it('x', () => {}) })\n", encoding="utf-8"
     )
 
@@ -362,3 +407,54 @@ def test_ledger_stubs_are_pending_entries_for_missing_items_only() -> None:
     assert stubs == {
         "items": {"b.ts:B": {"status": "pending"}, tricky: {"status": "pending"}}
     }
+
+
+def test_package_items_take_the_package_directory_as_prefix(tmp_path: Path) -> None:
+    core = tmp_path / "packages" / "core"
+    pkg = tmp_path / "packages" / "loader"
+    for root in (core, pkg):
+        (root / "tests").mkdir(parents=True)
+    (core / "src").mkdir()
+    (pkg / "src" / "config").mkdir(parents=True)
+    (core / "src" / "a.ts").write_text("export const x = 1\n", encoding="utf-8")
+    (core / "tests" / "a.spec.ts").write_text(
+        "it('same name', () => {})\n", encoding="utf-8"
+    )
+    (pkg / "src" / "config" / "a.ts").write_text(
+        "export function f() { throw new Error('pkg message') }\n", encoding="utf-8"
+    )
+    (pkg / "tests" / "a.spec.ts").write_text(
+        "it('same name', () => {})\n", encoding="utf-8"
+    )
+
+    items = inventory.build_inventory(tmp_path, "abc", ["loader"])["items"]
+
+    assert set(items) == {
+        "src/a.ts:x",
+        "a.spec.ts::same name",
+        "loader/src/config/a.ts:f",
+        "loader/a.spec.ts::same name",
+        "loader/message:pkg message",
+    }
+
+
+def test_main_reads_the_package_list_from_the_ledger(tmp_path: Path) -> None:
+    clone = tmp_path / "clone"
+    for package in ("core", "loader"):
+        (clone / "packages" / package / "src").mkdir(parents=True)
+        (clone / "packages" / package / "tests").mkdir()
+    (clone / "packages" / "loader" / "src" / "a.ts").write_text(
+        "export const x = 1\n", encoding="utf-8"
+    )
+    git = ["git", "-C", str(clone), "-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run([*git, "init", "-q"], check=True)
+    subprocess.run([*git, "add", "."], check=True)
+    subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+    ledger = tmp_path / "ledger.toml"
+    ledger.write_text('[inventory]\npackages = ["loader"]\n', encoding="utf-8")
+    out = tmp_path / "upstream.json"
+
+    status = inventory.main([str(clone), "--out", str(out), "--ledger", str(ledger)])
+
+    assert status == 0
+    assert list(json.loads(out.read_text("utf-8"))["items"]) == ["loader/src/a.ts:x"]

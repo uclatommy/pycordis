@@ -92,7 +92,8 @@ change is reviewed by behavior, not applied as a line diff. To move to a newer r
 
 1. Clone upstream into a scratch directory outside this repository.
 2. Set the new revision in `README.md`. Generate the inventory of that revision into
-   `conformance/upstream.json` with `uv run python scripts/upstream_inventory.py <clone>`. Add
+   `conformance/upstream.json` with `uv run python scripts/upstream_inventory.py <clone>` (it
+   reads the packages that `[inventory] packages` of `conformance/ledger.toml` lists). Add
    `--ledger-stubs` to print `pending` ledger entries for the new items, and append them to
    `conformance/ledger.toml`. The conformance check now lists every new, removed, or changed
    upstream item: a missing ledger entry, a stale ledger entry, or a stale hash.
@@ -115,9 +116,11 @@ change is reviewed by behavior, not applied as a line diff. To move to a newer r
 
 ## Release
 
-pycordis uses SemVer `0.x`. A change to the public API increments the minor version; other
-changes increment the patch version. GitVersion calculates the version from the branch
-structure, never from commit messages. `pyproject.toml` keeps the placeholder version `0.0.0`:
+pycordis uses SemVer `0.x`. The public API is the names that `pycordis/__init__.py` exports and
+the public modules `pycordis.loader`, `pycordis.timer`, and `pycordis.hmr`. A breaking change to
+the public API (a public name, its signature, or its documented behavior) increments the minor
+version; other changes, including a new public name, increment the patch version. GitVersion
+calculates the version from the branch structure, never from commit messages. `pyproject.toml` keeps the placeholder version `0.0.0`:
 do not edit it, and do not create a version tag by hand.
 
 1. Create `release/<version>` from `develop`. The branch name sets the version, so the name

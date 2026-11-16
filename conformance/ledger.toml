@@ -5,9 +5,16 @@
 # pending ID that is not in the contract table, and a contract ID that is neither
 # covered by a running test nor pending.
 #
+# [inventory] lists the upstream packages other than core that the inventory covers. Core
+# is always covered. An ID of another package starts with the package directory:
+# `loader/src/config/entry.ts:Entry.update`, `loader/group.spec.ts::Group::title`.
+#
 # [items."<inventory ID>"] records the review of one upstream item. Add entries for new
 # items with `scripts/upstream_inventory.py <clone> --ledger-stubs`, and copy a hash only
 # after the review of the upstream item.
+
+[inventory]
+packages = ["loader"]
 
 [contract]
 pending = []
@@ -2163,4 +2170,983 @@ hash = "6765f67f83b4f1fe71e8504f38675af450aa9c34291beae67731091e3355f74e"
 [items."utils.spec.ts::DisposableList::iterates unshifted entries before pushed ones"]
 status = "ported"
 hash = "13566b9774f236be37e91bdbfc9177c8effae848ba2cc05ee16315d08c7a2c02"
+
+
+[items."loader/commit.spec.ts::EntryGroup.remove: file-driven moves::keeps an entry that another group adopted"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree disposal::does not persist child disposal while the tree loses its loader"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::create reports a created entry with its id assigned"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::does not mistake a child fiber disposing itself for the entry (#19)"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::does not report anything for reads"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::fiber.update from inside the component reports a config change"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::move reports the target group"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::remove reports the removed entry"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::update in place does not report a move"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::update reports the new options together with the previous ones"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::rejects a move onto an id that the target tree already uses"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::reports a removal to the source tree and a creation to the target tree"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::transfers the entry to the store of the target tree"]
+status = "pending"
+
+[items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::transfers the members of a moved group"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service outside every inject in config"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service outside the parent context and the entry inject in disabled"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service provided by a sibling in an inject value"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::disposes the component when intercept stops evaluating on an update"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::does not evaluate intercept while disabled"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::does not start the component when intercept cannot be evaluated"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::evaluates config with the component inject"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::stops a group whose intercept stops evaluating on an update"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::caches the verdict independently of reads and service mutations (group=false)"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::caches the verdict independently of reads and service mutations (group=true)"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::cannot read the entry inject from an inject value"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::creates no outer fiber for an entry without inject"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::decides disabled before the component dependencies"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::disposes both fibers when the entry is removed"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::disposes the outer fiber when the component disposes itself"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::does not repeat a failing disabled expression when its verdict is read"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops an activation whose dependency is lost during the import"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops entries removed or disabled during import"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops entries removed or disabled during patch"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates a changed disabled expression once in either direction"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates disabled with the entry inject"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates inject values in the parent context"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates intercept with the entry inject, for the component only"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::invalidates the verdict before an asynchronous dependency unload"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps a disabled group verdict undecided when its dependency disappears"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps a group structural and passes its verdict to the children"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps an inject value on the outer fiber when the component declares the service itself"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the entry isolate without an inject"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the options when a dependency is lost and recovered"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::nests the inner fiber under the outer fiber"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates a failing inject value on refresh"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates disabled in the new parent context after a move"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates inject in the new parent context after a move"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates the verdict after changing the entry isolation"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::rebuilds the entry when inject changes"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::rebuilds without a write-back when inject is added"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::reloads the outer fiber when the verdict changes"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::treats a failing expression as disabled"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::updates intercept in place"]
+status = "pending"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::waits for the entry inject while it is missing"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: awaited reconciliation::config update settles children"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: awaited reconciliation::initialize"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: basic support::disable inner"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: basic support::disable outer"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: basic support::enable inner"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: basic support::enable outer"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: basic support::initialize"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: intercept::initialize"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: transfer::disabled -> disabled"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: transfer::disabled -> enabled"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: transfer::enabled -> disabled"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: transfer::enabled -> enabled"]
+status = "pending"
+
+[items."loader/group.spec.ts::Group: transfer::initialize"]
+status = "pending"
+
+[items."loader/import.spec.ts::Loader: component import::keep the hints of Node after the first line"]
+status = "pending"
+
+[items."loader/import.spec.ts::Loader: component import::leave a module imported by another one to Node"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: basic support::component self-dispose"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: basic support::component self-update"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: basic support::loader initiate"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: basic support::loader update"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: config interpolation::evaluate after dependencies are ready"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: config interpolation::keep the source config unevaluated"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: config interpolation::re-evaluate when dependencies reload"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: config interpolation::wait for dependencies"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: disabled js expression::evaluates the expression instead of treating the node as truthy"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: entry failure::on an id containing the separator"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: entry failure::on config update"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: entry failure::on load"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: failed entry recovery::fail with dependencies available"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: failed entry recovery::recover through update"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: intercept config::pending"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: intercept config::resolved"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: nested component config::skip nested components"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: parent teardown::keep children enabled when the parent loses a dependency"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: pending entry update::persist an update to a pending fiber"]
+status = "pending"
+
+[items."loader/index.spec.ts::Loader: replaced component::keeps the entry of a component replaced in place"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::does not delete another realm when one impl moves"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps a provider pinned by an isolated context when its entry moves"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps an impl that reused the abandoned symbol"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps impls on intermediate symbols across repeated moves"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps self access while the provision context changes realms"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::notifies the retained realm on fiber disposal after a blocked move"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::notifies the retained realm on provide disposal after a blocked move"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::reloads a self-provider after an isolate-only move"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::reports the service of each realm when a provider moves"]
+status = "pending"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::retains a moved provider until its consumers finish cleanup"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on injector (irrelevant)"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on injector (relevant)"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on provider (irrelevant)"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on provider (relevant)"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::initiate"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on injector (irrelevant)"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on injector (relevant)"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on provider (irrelevant)"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on provider (relevant)"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: migration::keeps the committed views of a parent and a pinned child across a realm move"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::add isolate group"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::realm reference"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::special case: change injector"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::special case: change provider"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::special case: nested realms"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::update isolate group (no change)"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::initiate"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::transfer injector into group"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::transfer injector out of group"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::transfer provider into group"]
+status = "pending"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::transfer provider out of group"]
+status = "pending"
+
+[items."loader/message:cannot resolve entry {}"]
+status = "pending"
+
+[items."loader/message:entry {} already exists in the target tree"]
+status = "pending"
+
+[items."loader/message:entry {} is not a group"]
+status = "pending"
+
+[items."loader/message:entry {} is waiting for its dependencies"]
+status = "pending"
+
+[items."loader/message:expected service {} to be implemented"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::does not apply a fiber removed while rebuild is disposing"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::joins a second inject update while the first rebuild is disposing"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::keeps a rebuild started during apply until its disposer settles"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::keeps the new outer fiber pending and drops the old listener when inject is missing"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::reapplies when inject gains a service that is already provided"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::starts a pending entry when inject is cleared"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending context patch"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending failed import"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending import"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::applies nothing when the entry is removed during the disposal"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::joins a second rename while the first disposal is pending (inject=[ 'settings' ])"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::joins a second rename while the first disposal is pending (inject=undefined)"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds an active entry when its name changes (inject=[ 'settings' ])"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds an active entry when its name changes (inject=undefined)"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds when the component renames its own entry"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::uses the new name when it changes during the import"]
+status = "pending"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::uses the new name when it changes during the patch"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::EntryTree.import without internals::accepts a drive-letter path"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::EntryTree.import without internals::routes bare specifiers to the project helper"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::EntryTree.import without internals::still resolves relative specifiers against the base url"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::bareImporter::anchors the helper at the package.json, not at the base url"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::bareImporter::declines when there is no project to anchor to"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::bareImporter::keeps subpath imports and self references working"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::bareImporter::makes the helper directory ignore itself"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::bareImporter::resolves bare specifiers against the project, not the loader"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::bareImporter::reuses one helper per scope"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::helper preparation::cleans up after EBUSY and recovers on a later call"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::helper preparation::cleans up after ENOSPC and recovers on a later call"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::helper preparation::retries a stale helper after EACCES"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::helper preparation::retries a stale helper after EBUSY"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::helper preparation::retries a stale helper after EPERM"]
+status = "pending"
+
+[items."loader/resolve.spec.ts::helper preparation::reuses an identical helper without attempting rename"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:<rest>"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._applyIntercept"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._blocked"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._dispose"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._evaluationContext"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._hasOuter"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._import"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._init"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._parentDisabled"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._patchContext"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._reconcile"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._registered"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._reportImport"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._resolveDisabled"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._resolveInject"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry._start"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.constructor"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.context"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.disabled"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.dispose"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.evaluate"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.getLocation"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.id"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.init"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.isOuter"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.locateExpr"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.merge"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.refresh"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.traceValidation"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:Entry.update"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:EntryOptions"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:outer"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:sortKeys"]
+status = "pending"
+
+[items."loader/src/config/entry.ts:takeEntries"]
+status = "pending"
+
+[items."loader/src/config/group.ts:<rest>"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup._reject"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup.constructor"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup.context"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup.create"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup.getOuterStack"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup.remove"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup.stop"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup.unlink"]
+status = "pending"
+
+[items."loader/src/config/group.ts:EntryGroup.update"]
+status = "pending"
+
+[items."loader/src/config/group.ts:Group"]
+status = "pending"
+
+[items."loader/src/config/group.ts:Group.[Service.init]"]
+status = "pending"
+
+[items."loader/src/config/group.ts:Group.constructor"]
+status = "pending"
+
+[items."loader/src/config/isolate.ts:<rest>"]
+status = "pending"
+
+[items."loader/src/config/isolate.ts:LocalRealm"]
+status = "pending"
+
+[items."loader/src/config/isolate.ts:LocalRealm.access"]
+status = "pending"
+
+[items."loader/src/config/isolate.ts:LocalRealm.constructor"]
+status = "pending"
+
+[items."loader/src/config/isolate.ts:accessGlobal"]
+status = "pending"
+
+[items."loader/src/config/isolate.ts:module ./entry.ts"]
+status = "pending"
+
+[items."loader/src/config/isolate.ts:patchIsolate"]
+status = "pending"
+
+[items."loader/src/config/isolate.ts:quote"]
+status = "pending"
+
+[items."loader/src/config/isolate.ts:within"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:<rest>"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryChange"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.await"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.commit"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.constructor"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.context"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.create"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.ensureId"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.entries"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.getLocation"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.getTasks"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.import"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.locateExpr"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.remove"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.resolve"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.resolveGroup"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:EntryTree.update"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:ModuleNotFoundError"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:ModuleNotFoundError.constructor"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:driveLetter"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:members"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:parseNotFound"]
+status = "pending"
+
+[items."loader/src/config/tree.ts:toPath"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:<rest>"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:EntryValidationError"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:EntryValidationError.constructor"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:ExprTrace"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:Issue"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:JsExpr"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:Locate"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:SourceLocation"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:WRAPPER"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:counter"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:evaluate"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:formatIssue"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:formatIssues"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:formatLocation"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:framePattern"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:interpolate"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:isJsExpr"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:isPlainObject"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:parseFrame"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:relocate"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:swap"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:toOffset"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:traceEvaluation"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:validateOptions"]
+status = "pending"
+
+[items."loader/src/config/utils.ts:wrapper"]
+status = "pending"
+
+[items."loader/src/index.ts:<rest>"]
+status = "pending"
+
+[items."loader/src/index.ts:Loader"]
+status = "pending"
+
+[items."loader/src/index.ts:Loader.[Service.check]"]
+status = "pending"
+
+[items."loader/src/index.ts:Loader.commit"]
+status = "pending"
+
+[items."loader/src/index.ts:Loader.constructor"]
+status = "pending"
+
+[items."loader/src/index.ts:Loader.locate"]
+status = "pending"
+
+[items."loader/src/index.ts:Loader.showLog"]
+status = "pending"
+
+[items."loader/src/index.ts:Loader.unwrapExports"]
+status = "pending"
+
+[items."loader/src/index.ts:default"]
+status = "pending"
+
+[items."loader/src/index.ts:module cordis"]
+status = "pending"
+
+[items."loader/src/internal.ts:<rest>"]
+status = "pending"
+
+[items."loader/src/internal.ts:InternalLoader"]
+status = "pending"
+
+[items."loader/src/internal.ts:getInternalLoader"]
+status = "pending"
+
+[items."loader/src/internal.ts:unwrapExports"]
+status = "pending"
+
+[items."loader/src/resolve.ts:<rest>"]
+status = "pending"
+
+[items."loader/src/resolve.ts:HELPER_FILES"]
+status = "pending"
+
+[items."loader/src/resolve.ts:RENAME_BACKOFF"]
+status = "pending"
+
+[items."loader/src/resolve.ts:RENAME_RETRIES"]
+status = "pending"
+
+[items."loader/src/resolve.ts:Resolve"]
+status = "pending"
+
+[items."loader/src/resolve.ts:_createResolve"]
+status = "pending"
+
+[items."loader/src/resolve.ts:cache"]
+status = "pending"
+
+[items."loader/src/resolve.ts:createResolve"]
+status = "pending"
+
+[items."loader/src/resolve.ts:findScope"]
+status = "pending"
+
+[items."loader/src/resolve.ts:isTransientRenameError"]
+status = "pending"
+
+[items."loader/src/resolve.ts:resolveScope"]
+status = "pending"
+
+[items."loader/src/resolve.ts:write"]
+status = "pending"
+
+[items."loader/tests/commit.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/evaluate.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/group.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/import.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/index.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/isolate-provide.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/isolate-provide.spec.ts:Slot"]
+status = "pending"
+
+[items."loader/tests/isolate-provide.spec.ts:boot"]
+status = "pending"
+
+[items."loader/tests/isolate-provide.spec.ts:module cordis"]
+status = "pending"
+
+[items."loader/tests/isolate-provide.spec.ts:slots"]
+status = "pending"
+
+[items."loader/tests/isolate-provide.spec.ts:started"]
+status = "pending"
+
+[items."loader/tests/isolate.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/rebuild.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/rebuild.spec.ts:module cordis"]
+status = "pending"
+
+[items."loader/tests/resolve.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/resolve.spec.ts:fixture"]
+status = "pending"
+
+[items."loader/tests/resolve.spec.ts:roots"]
+status = "pending"
+
+[items."loader/tests/utils.ts:<rest>"]
+status = "pending"
+
+[items."loader/tests/utils.ts:MockLoader"]
+status = "pending"
+
+[items."loader/tests/utils.ts:MockLoader.commit"]
+status = "pending"
+
+[items."loader/tests/utils.ts:MockLoader.constructor"]
+status = "pending"
+
+[items."loader/tests/utils.ts:MockLoader.expectDisable"]
+status = "pending"
+
+[items."loader/tests/utils.ts:MockLoader.expectEnable"]
+status = "pending"
+
+[items."loader/tests/utils.ts:MockLoader.expectFiber"]
+status = "pending"
+
+[items."loader/tests/utils.ts:MockLoader.import"]
+status = "pending"
+
+[items."loader/tests/utils.ts:MockLoader.mock"]
+status = "pending"
+
+[items."loader/tests/utils.ts:MockLoader.read"]
+status = "pending"
+
+[items."loader/tests/utils.ts:module ../src/index.ts"]
+status = "pending"
+
+[items."loader/tests/utils.ts:sleep"]
+status = "pending"
+
+[items."loader/tests/validate.spec.ts:<rest>"]
+status = "pending"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::accept an expression only for disabled"]
+status = "pending"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::accept valid options"]
+status = "pending"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::check the entries of a group passed at runtime as a whole"]
+status = "pending"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::reject a missing or invalid field"]
+status = "pending"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::reject invalid options at runtime before they are committed"]
+status = "pending"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::unload an entry whose options turn invalid, and reload it once fixed"]
+status = "pending"
 

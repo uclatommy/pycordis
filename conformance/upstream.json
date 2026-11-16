@@ -483,6 +483,1315 @@
       "hash": "a3aab847b609ea9c3b50c848fff9d1104f7d904de8123cc205af3a936e060352",
       "kind": "case"
     },
+    "loader/commit.spec.ts::EntryGroup.remove: file-driven moves::keeps an entry that another group adopted": {
+      "hash": "68f212fae63e0181f08c985990c67e668d43196d00415922df13baaf4a5f194a",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree disposal::does not persist child disposal while the tree loses its loader": {
+      "hash": "b0078593593c4ecb408a6f8ae0328a2d8bad16b7ec34066ab7e74c153ce723c5",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.commit: change reports::create reports a created entry with its id assigned": {
+      "hash": "59aefd3a5019e8098757b2e38a1410f270f3cfc33d9ca6cfa2516e5b2c07584f",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.commit: change reports::does not mistake a child fiber disposing itself for the entry (#19)": {
+      "hash": "9350ed71b80b2776fb8716049aa736723736298ffcb8966e14905584c9feda61",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.commit: change reports::does not report anything for reads": {
+      "hash": "9096ac95a71971409e643c98c16ab5e20212ae251c23568a7d814014b2fd047a",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.commit: change reports::fiber.update from inside the component reports a config change": {
+      "hash": "189741458d4d95d8f9508dc2254c089a6ee4cd24e24563adc1ed80f2d7f6f777",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.commit: change reports::move reports the target group": {
+      "hash": "b1c75d39859472d1396dedf040781b1f432666af7865c0b50754f30fb0777062",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.commit: change reports::remove reports the removed entry": {
+      "hash": "f0fc06d080604affc5848a58a2b00291fd05375e69a39b9428e87484204421ed",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.commit: change reports::update in place does not report a move": {
+      "hash": "10f320b1e8fbda8c0ec08698f63f4f6bf69246016ad65f86280ee03955d2be0e",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.commit: change reports::update reports the new options together with the previous ones": {
+      "hash": "342d12e3e95a209fc3181c609d79172d6f5356e1bf9dc692a7d11fa2c098e6c2",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.update: cross-tree moves::rejects a move onto an id that the target tree already uses": {
+      "hash": "f42bd030b2f9617d237027b227f2deccad86a54ce48dcb6c12d66a4e2b406a5a",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.update: cross-tree moves::reports a removal to the source tree and a creation to the target tree": {
+      "hash": "7f58e52c25d27ef7de8fd0f6c094c83763b7748d2e7aaf93f004dd8b83dcaf2e",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.update: cross-tree moves::transfers the entry to the store of the target tree": {
+      "hash": "e8e2d1d12d2a3bb3ebe4ff49686591d342262661c2161a2d93c93e8608d23a07",
+      "kind": "case"
+    },
+    "loader/commit.spec.ts::EntryTree.update: cross-tree moves::transfers the members of a moved group": {
+      "hash": "bbaa7778280a79c5833942e5db59f78f11901acd4d7ab9499ac62db9b0203c75",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service outside every inject in config": {
+      "hash": "6544e8cb81d68ab33278e1f2126f110564ae8cf8edb6828fbd06367423cee63e",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service outside the parent context and the entry inject in disabled": {
+      "hash": "a3e7ab81381f4c83127c2732bdd104e3a01c9d5ac950338b1dd40f18fc7d3cdc",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service provided by a sibling in an inject value": {
+      "hash": "ae421d615b5989ddcc9e4e8c3f9fd6ed3d1cad61f97276f6787e2705d967aabe",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation boundaries::disposes the component when intercept stops evaluating on an update": {
+      "hash": "348daa8853784b457f7590eb459abd3a40bf28e2a0fd1786fd6762484bfbcc0d",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation boundaries::does not evaluate intercept while disabled": {
+      "hash": "2c96efb4a8e663ad0d422243ca1fc0ea3b02d09f513241516d386ff0cff6979c",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation boundaries::does not start the component when intercept cannot be evaluated": {
+      "hash": "df9358a6f498273d008cdea896c1a782a35ca5b810e30fcc806c0c98acb5d20e",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation boundaries::evaluates config with the component inject": {
+      "hash": "a64a190198e552b84987724ecf462d83c8434680b86030a64b0b5d6cbd41b649",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation boundaries::stops a group whose intercept stops evaluating on an update": {
+      "hash": "a3b5685d2beacb6dd203b49daf492f629ba0fe5b081e66806ab8441a465b691c",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::caches the verdict independently of reads and service mutations (group=false)": {
+      "hash": "e0734c798fe9741847fc441a489845b0b47634441cb6c1723e8abe706c9ee5e2",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::caches the verdict independently of reads and service mutations (group=true)": {
+      "hash": "e0734c798fe9741847fc441a489845b0b47634441cb6c1723e8abe706c9ee5e2",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::cannot read the entry inject from an inject value": {
+      "hash": "ff1b8dc9e6e8567b9c9caadcddbd887e9d10910dc65e9e59eb8313b3b027127b",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::creates no outer fiber for an entry without inject": {
+      "hash": "d9420b47a64b51cdfe4b6f26f8ae61846037d502a96ecd09f1c1a25b59036bc5",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::decides disabled before the component dependencies": {
+      "hash": "90af6f125ef7e9d59de8b297f2486cf7d4193ed0da423c3eb5780fa22702bee7",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::disposes both fibers when the entry is removed": {
+      "hash": "3d3788b49b751ac39c5266069d0c93c588101b3b4a9a2002acf49ae83606004b",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::disposes the outer fiber when the component disposes itself": {
+      "hash": "a80042d107e3d28a236ace218bf1036ffc8e7a780f492105d1c63941fe266fbb",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::does not repeat a failing disabled expression when its verdict is read": {
+      "hash": "56b9d2fadfd0c184e7f391b948661d2086e0123e2b4c22d7487ab6f7b1ef9438",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::drops an activation whose dependency is lost during the import": {
+      "hash": "e05f32bb3c7c74175767f2684fb20c13fff876aadb4e9532d33f3959eab3555c",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::drops entries removed or disabled during import": {
+      "hash": "0446209e3df2b92e79b5f10e8113fd5b3de670d31131d8bd1b29af6c75c6ba27",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::drops entries removed or disabled during patch": {
+      "hash": "0446209e3df2b92e79b5f10e8113fd5b3de670d31131d8bd1b29af6c75c6ba27",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates a changed disabled expression once in either direction": {
+      "hash": "83f9e1bedaf082eee16a105ce1738b064f7b376f0f38a7f4a0e3ce931df8a18f",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates disabled with the entry inject": {
+      "hash": "aaef0bb57b59949fcda1868ac173725876df9c74e707bc05c82381d43f36dad4",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates inject values in the parent context": {
+      "hash": "6356ff23c0677c780bfa1e8bab83ce822e3452451202fbc53bd69c343a390e78",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates intercept with the entry inject, for the component only": {
+      "hash": "da64fc97b7c62977b67aebbccefc8bf8d55927e3c2379aed6f5add4193ce82fa",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::invalidates the verdict before an asynchronous dependency unload": {
+      "hash": "be3a2be0746ae3b4acb4c3a757f6f3b0d4a3fbce6f8925603ec82700b9e2a9c1",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::keeps a disabled group verdict undecided when its dependency disappears": {
+      "hash": "8849841c8c31b661d96d745dbb002d4a9a2798094363b105cc67ed1112f63b74",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::keeps a group structural and passes its verdict to the children": {
+      "hash": "6bfb320b54df84e4ed183b5612e0b1258e59e11c0c2b8225ad1b1622974f8c0d",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::keeps an inject value on the outer fiber when the component declares the service itself": {
+      "hash": "d2e96d152eaa0a79e1a1ebdc26492bc6c6d1ace68c5dd3728e781f8fc22e79cc",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the entry isolate without an inject": {
+      "hash": "adfe13f899fbe91e96bec418533edf34141d30378dabd569e2a5524d88760d88",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the options when a dependency is lost and recovered": {
+      "hash": "742ff79f304fae1fe8c02be3a34f03f688fb9ccc05168ee7fb1f3d62731a88ee",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::nests the inner fiber under the outer fiber": {
+      "hash": "d3f6ec445287a1dd5d3902580ba1d3e0d92547bd5f84e3b3c3915270507c3ac2",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates a failing inject value on refresh": {
+      "hash": "ee0d9ce810f6d9e8a940ae59706347bf59afe7c9b1b5a9d59d2dc2f827bc2094",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates disabled in the new parent context after a move": {
+      "hash": "608c3c3c9b86bc5a3371f917340586378c8aae25cb7ce847978026c40eff9ff9",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates inject in the new parent context after a move": {
+      "hash": "608c3c3c9b86bc5a3371f917340586378c8aae25cb7ce847978026c40eff9ff9",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates the verdict after changing the entry isolation": {
+      "hash": "0f5595803fdb5297250e5b6723933c28052c838512394d817340086110d75f11",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::rebuilds the entry when inject changes": {
+      "hash": "360021d4ae32ed7c8d6c396fa77b5cc52291f304784548dcc4142fa466325bb5",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::rebuilds without a write-back when inject is added": {
+      "hash": "faa14c0bde470044684a58563c881f1e921b658d638eca85edd0c9450fffb3be",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::reloads the outer fiber when the verdict changes": {
+      "hash": "fa816a40122eefe1c49ec24d56743017703cc003a62e7f0335199b169b8cd0eb",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::treats a failing expression as disabled": {
+      "hash": "cdf54b8d3b65c2330784cd38aca6022777af2f31ea93d7424e7f3378f2fafaea",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::updates intercept in place": {
+      "hash": "30ad0cdc5a1f1c988b2ca6e562a075dd825e8757e93c7ed6d542a53cade24933",
+      "kind": "case"
+    },
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::waits for the entry inject while it is missing": {
+      "hash": "45e93fe37e083f086421d3a8d7048d4ff643a9b5b1fa0309be9b18041435a1bb",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: awaited reconciliation::config update settles children": {
+      "hash": "3453b7afbbf30c1a1e9aef3252e30df26efd361c9ea93a52b9d6fd06adf93f91",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: awaited reconciliation::initialize": {
+      "hash": "65e5a85befac4c5f964f26730e1e757e1ab0ab227bb25615651468176ba2f965",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: basic support::disable inner": {
+      "hash": "526160fc14b30c57e567498d4955ddcae28a965afe15bcdb754face9e49ac4c5",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: basic support::disable outer": {
+      "hash": "2ba04859cbafbe9aba474a1bcf923c93fa45d121f2cdd71d64ed83dc1d94def3",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: basic support::enable inner": {
+      "hash": "eb8371c00996a2c0be70b93f97cab7dd47c05e864dd63eec64742b99088f9dc5",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: basic support::enable outer": {
+      "hash": "dd2d9b971f75a3e87d55db0d32381c35137cb747ae3642f4983b5e0586b07ebd",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: basic support::initialize": {
+      "hash": "d7941348fba206b56ac1bd1d525b28f13c3767ab83603f0a193877deff0d5bea",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: intercept::initialize": {
+      "hash": "03e2a1585fa3c3ef8a84a008e82921f90ffec001bd430b77b299b5c9f3485534",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: transfer::disabled -> disabled": {
+      "hash": "7b91e1ce470f62e7017d0db2c49d9491bfa7a47931c6b4f0fd721e59b1aa2d07",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: transfer::disabled -> enabled": {
+      "hash": "c64b8c282e5da2bd54dd5f2d35e8e5ca72cc46d4106e5d890b1b6a80434f5784",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: transfer::enabled -> disabled": {
+      "hash": "23875d827f561cd0ed361ea31ec8c6726de86192698e4f7d6d24247dfe56eded",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: transfer::enabled -> enabled": {
+      "hash": "64858c2060b4bb2023ef4fe446da1f2615a810218d1ec771df8fba654146eb53",
+      "kind": "case"
+    },
+    "loader/group.spec.ts::Group: transfer::initialize": {
+      "hash": "cd31b0cf813bd6d1a7b4116f2b87b68a37acc89b260152dc08683f98379075bf",
+      "kind": "case"
+    },
+    "loader/import.spec.ts::Loader: component import::keep the hints of Node after the first line": {
+      "hash": "c6a0326e592d60e6421d399dfbba735f0b27b5c37787960fdec56ca15b0b30b4",
+      "kind": "case"
+    },
+    "loader/import.spec.ts::Loader: component import::leave a module imported by another one to Node": {
+      "hash": "72836f4ee635e65d0260509c9f9de89bc4e117871665d12791989fcbe8e97f37",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: basic support::component self-dispose": {
+      "hash": "66931d4238d86f8109584e2e0daa3edb06fc8b31c4dfb1f8413d19f973aa73d0",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: basic support::component self-update": {
+      "hash": "4ecf20a4fd547da9cd59b01b3cfcb0563704e35cb9935ac3046d7576337e7339",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: basic support::loader initiate": {
+      "hash": "a752a86a3b558ab22c18d52eac9a15dfa040a46b997e604877c286887800c2a3",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: basic support::loader update": {
+      "hash": "4a35e59da966228b72591d1d95998f709e2c0335780ac8918ff704faa9b81a65",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: config interpolation::evaluate after dependencies are ready": {
+      "hash": "1fbb89f865436eb5d9ec111c5a51f0b68c46871b8789d8d52f45e3f2d85064da",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: config interpolation::keep the source config unevaluated": {
+      "hash": "50d9653bf1ed0fb5374df43b0d77886ec73e81a6bac20834493ce02c949fa759",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: config interpolation::re-evaluate when dependencies reload": {
+      "hash": "ad0eb1be9d38745859869c92d9db63dbcea3ae13a9d2180424b781d760928350",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: config interpolation::wait for dependencies": {
+      "hash": "6945ef440323e360f2ea744c389a0bcd4092b0a7bd1001fcbe64b134b507bc36",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: disabled js expression::evaluates the expression instead of treating the node as truthy": {
+      "hash": "00a59c5b704d3b9325de67c8112cc56b4eb5e56e426ec1042fc0bd10a44ca8cb",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: entry failure::on an id containing the separator": {
+      "hash": "5d8410cac0b56da62ca2b9f1aec817fcb8a57e27b321932452cbedd47b80dbf7",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: entry failure::on config update": {
+      "hash": "489c68ddfb3c720bdad3e2186f1fc37662374169fecf9460abc29a28dcbef46f",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: entry failure::on load": {
+      "hash": "48dce97b8817506dce09d8ee1f6b1eaaf32f6fb21c441c4e00741ff32bcc9955",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: failed entry recovery::fail with dependencies available": {
+      "hash": "0da2b220e7f5b6b0779b568d9d27c3d8d12bf402beb1dfd9b7d339052f1bd6d9",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: failed entry recovery::recover through update": {
+      "hash": "f52c23b591123ff3cd2e4f006f7234ac03b3e858ecee2410e7dec09e82c96e68",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: intercept config::pending": {
+      "hash": "1c0f7129d9ef22c35a011b0231d11c2b663149619b0d810b9486678c76560863",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: intercept config::resolved": {
+      "hash": "7809417e16db25a1918c9c4fbb83a941ca8d3d86814f4fc40588db8383eff31c",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: nested component config::skip nested components": {
+      "hash": "a175c6484bfc098f6344ae3e60ebb1facbc693be5fe22ffc35914b0fb03fa4ae",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: parent teardown::keep children enabled when the parent loses a dependency": {
+      "hash": "8589edd0f0dbcd4fd352836e5ed6693fbd491286ea2f1a8a2968791b0c28d602",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: pending entry update::persist an update to a pending fiber": {
+      "hash": "5c25bb672caba5631ca0321f6e48316a4528152ff1658c015bd0781339046a93",
+      "kind": "case"
+    },
+    "loader/index.spec.ts::Loader: replaced component::keeps the entry of a component replaced in place": {
+      "hash": "48b4cfeffeb9ee67f15b02772f16060058d6dfc0b779f01db1bf0a83d3f72075",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::does not delete another realm when one impl moves": {
+      "hash": "8123c0748be2b1f237539ece8f16468a304ce755968dcbee64fdbd9576837669",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps a provider pinned by an isolated context when its entry moves": {
+      "hash": "f9f1191a610f510aa2a8e5adbf21099bddde593658913d9422cb183fe031fd7c",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps an impl that reused the abandoned symbol": {
+      "hash": "394efcebe2de5c4ee3a8e0eb89de6d4f7068402fedf9d592e7d5ef8dafd05233",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps impls on intermediate symbols across repeated moves": {
+      "hash": "4719fcfd12d4434bc4229b0afeb8f3127c4b3167f29c8c5a5524bcf039519b33",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps self access while the provision context changes realms": {
+      "hash": "4ff384cb5891ebe6498e3e0fe2a9c4f183eb4870356aa9baf5bf175ddd863763",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::notifies the retained realm on fiber disposal after a blocked move": {
+      "hash": "750da8e08bb9fed6e4030e6c1cd996e274c1e814a78333c9deb1ac885f769457",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::notifies the retained realm on provide disposal after a blocked move": {
+      "hash": "750da8e08bb9fed6e4030e6c1cd996e274c1e814a78333c9deb1ac885f769457",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::reloads a self-provider after an isolate-only move": {
+      "hash": "d4d777b0c1c61aff53b4ec593919eaa1140e48444bb636c448f1edef5ac02512",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::reports the service of each realm when a provider moves": {
+      "hash": "170ad3b48f8a14c502633abeee8a222a4d91bc7c883a3c6a9e9c06668142be7e",
+      "kind": "case"
+    },
+    "loader/isolate-provide.spec.ts::Service Isolation: provide migration::retains a moved provider until its consumers finish cleanup": {
+      "hash": "6b5e0258678acc1e7fa4da9526cd2eaec6b3e226456efabc2f09539ec15da7eb",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: basic::add isolate on injector (irrelevant)": {
+      "hash": "432edb8172d3afe294827431e0e53d8bfa3f216d3c4ad6cc0f653204f1658428",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: basic::add isolate on injector (relevant)": {
+      "hash": "36802636c98b93445ec327fd899b74d9935ef2d67d2f862f4611f4c7d7929725",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: basic::add isolate on provider (irrelevant)": {
+      "hash": "df135171012216c37781d91446b59522e2ccd3f7902f472240e2955a2b143e2c",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: basic::add isolate on provider (relevant)": {
+      "hash": "4acf8f275c54b495d323c442a551f475b88292d5eb1166030a7a6dee20a8b7f6",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: basic::initiate": {
+      "hash": "3b78d2b0371e88a39bf8ef6d6c0bb4584f3740e8f587c03d25bcc5df47688437",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: basic::remove isolate on injector (irrelevant)": {
+      "hash": "95b09e78155e88063aac7e4576fe929b19886bc877cab76dca9a5c9fd23421d9",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: basic::remove isolate on injector (relevant)": {
+      "hash": "352320973838eef899a0ccdeb184263651b32aa8e7a1bdd55184c996c4dd0f98",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: basic::remove isolate on provider (irrelevant)": {
+      "hash": "819dcf6e5ff6b7b3348ba692d84489c8dba16a4f35795528bc3218d8ae886c82",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: basic::remove isolate on provider (relevant)": {
+      "hash": "c46b3440b8e4b9e5ae6a689ada1e5c51564770f805d717b6a368bd04f548165e",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: migration::keeps the committed views of a parent and a pinned child across a realm move": {
+      "hash": "6a65d0c33d9b2a31b10295bdb88d283527aa55936f8fbbea953f2f894d2edb6d",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: realm::add isolate group": {
+      "hash": "3aca8c6babbbb01c6599df3b3e68d955653cad64b6a1c9dfb006e489c8642660",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: realm::realm reference": {
+      "hash": "a4cff737e287fd729efad9b62fc6b7f0466da9a268df4917e4ef39af22e2e682",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: realm::special case: change injector": {
+      "hash": "7d4ddf3ea91cb119bf5357121b97c28cc5e28693b38d981cca28416c052d4dab",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: realm::special case: change provider": {
+      "hash": "7bb3588472bb6e26036410571ade046384f2b09cad2437075a962d0f50508198",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: realm::special case: nested realms": {
+      "hash": "5856e2199205d1567893413edb43551bf6b51ca4b10da80c6cb875194b197a01",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: realm::update isolate group (no change)": {
+      "hash": "73b957996d2f8ef4ce36e224a2e4e87e8e4b420ffa1343aa3827aad112ea4084",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: transfer::initiate": {
+      "hash": "0607136e41a0610ba739db7a3fbae16ff83b7c5b680e35a19f447da9a511da76",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: transfer::transfer injector into group": {
+      "hash": "25a1caf1a7150116e17b8326e8937888f9af963a3ae38fdf7adabd22289f27d6",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: transfer::transfer injector out of group": {
+      "hash": "b201a3d66e76757a39f3141c5cd38d311185a00938b08736af6b9ad2980f6b90",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: transfer::transfer provider into group": {
+      "hash": "23b8d6a5fd50c3cb50f00f42e896e68e20c9516f3d642fe5dbf490d13aa7b512",
+      "kind": "case"
+    },
+    "loader/isolate.spec.ts::Service Isolation: transfer::transfer provider out of group": {
+      "hash": "2d4b5958526c19a4154b4a9c86bfe7b78ab134540ed418d69d0fe3813c24e359",
+      "kind": "case"
+    },
+    "loader/message:cannot resolve entry {}": {
+      "hash": "09947aede842815efea3f4815c4bda89afa6fe9d067e3ce4cb9c07c51fc1f8d0",
+      "kind": "message",
+      "text": "cannot resolve entry {}"
+    },
+    "loader/message:entry {} already exists in the target tree": {
+      "hash": "d107bf0c082014ae87cb536ecbaa3b99051e98a79a2e1bce84f1c321c7bd8815",
+      "kind": "message",
+      "text": "entry {} already exists in the target tree"
+    },
+    "loader/message:entry {} is not a group": {
+      "hash": "1071c0c2903019b9ca35ef528eb2b491adc03421075d5acce455038d4a98e5ec",
+      "kind": "message",
+      "text": "entry {} is not a group"
+    },
+    "loader/message:entry {} is waiting for its dependencies": {
+      "hash": "c3160337004c194343165177061236e35852d3b4c3b7149e34da3edcca55b719",
+      "kind": "message",
+      "text": "entry {} is waiting for its dependencies"
+    },
+    "loader/message:expected service {} to be implemented": {
+      "hash": "0843f13e185e194553ab26f61ef20ab470b6c6a6715ff037a327d639976ec397",
+      "kind": "message",
+      "text": "expected service {} to be implemented"
+    },
+    "loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::does not apply a fiber removed while rebuild is disposing": {
+      "hash": "4274b8f56a97c824430ca0883823544e80957af231c8c457ef1d11e514dab04e",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::joins a second inject update while the first rebuild is disposing": {
+      "hash": "400a4c76e041e73c4dc7d2810cadc65a426d6b6170918d1f0000ef362b0b3b93",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::keeps a rebuild started during apply until its disposer settles": {
+      "hash": "0829ec2eb789be11d9407ca169b635903783f517398d1ff65279d935aeaaab7b",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::keeps the new outer fiber pending and drops the old listener when inject is missing": {
+      "hash": "edb208ae96fab8b99036f156a826511228d576fc61cdd6fbdd7993e44ac85874",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::reapplies when inject gains a service that is already provided": {
+      "hash": "484d8bca9956e873c0ab915a2391efa08d6d5df1357eb559f61636267f5bae0a",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::starts a pending entry when inject is cleared": {
+      "hash": "ae492e99d47fc88ab7d28ba4d1b547dc04d4ccd97830248f7efc7a384a4e07ac",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending context patch": {
+      "hash": "1303acce7046d9f55bb13bc4d6ecb7b4f3913ee74008a6d207c990e2caedc5d9",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending failed import": {
+      "hash": "1303acce7046d9f55bb13bc4d6ecb7b4f3913ee74008a6d207c990e2caedc5d9",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending import": {
+      "hash": "1303acce7046d9f55bb13bc4d6ecb7b4f3913ee74008a6d207c990e2caedc5d9",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: entry rebuild::applies nothing when the entry is removed during the disposal": {
+      "hash": "fd5c771e85065edf7567a221bd08472f80ff7c947f479d4855ed6180df60fb5e",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: entry rebuild::joins a second rename while the first disposal is pending (inject=[ 'settings' ])": {
+      "hash": "71db9c77751f1efb094bf9eecfeed3db7133253c48373e4e5c590eb606671d17",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: entry rebuild::joins a second rename while the first disposal is pending (inject=undefined)": {
+      "hash": "71db9c77751f1efb094bf9eecfeed3db7133253c48373e4e5c590eb606671d17",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds an active entry when its name changes (inject=[ 'settings' ])": {
+      "hash": "36fbe39313cafdc4168f7a468fab49a5eac8944e2da40c29341e8e9e54020a7f",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds an active entry when its name changes (inject=undefined)": {
+      "hash": "36fbe39313cafdc4168f7a468fab49a5eac8944e2da40c29341e8e9e54020a7f",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds when the component renames its own entry": {
+      "hash": "3b5ed858c8f6fcff4b084d0ccc22b55822dd577c871f9c5176d8775d93709e7d",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: entry rebuild::uses the new name when it changes during the import": {
+      "hash": "ace9bda900ad4dea461ef7098a4859ff1c238a3a2d5339338c10823be011731a",
+      "kind": "case"
+    },
+    "loader/rebuild.spec.ts::Loader: entry rebuild::uses the new name when it changes during the patch": {
+      "hash": "ace9bda900ad4dea461ef7098a4859ff1c238a3a2d5339338c10823be011731a",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::EntryTree.import without internals::accepts a drive-letter path": {
+      "hash": "a7a362553eef795d3ff344a7938cd2cc6344eeed36f45a992b9ef9f7adb19477",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::EntryTree.import without internals::routes bare specifiers to the project helper": {
+      "hash": "04cee3a556f4042dbf0fd176599f13ff1338a6c1fb7c9217ad8cab5e405dcd04",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::EntryTree.import without internals::still resolves relative specifiers against the base url": {
+      "hash": "acd08dd16d2383df1f72090a4db5721d4fc494f6bb7c663717036ac571dcc845",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::bareImporter::anchors the helper at the package.json, not at the base url": {
+      "hash": "b0ba4eb62e6916fd34ecf7624995b286b0373884edb667629cb10b08aee6868a",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::bareImporter::declines when there is no project to anchor to": {
+      "hash": "557d31daa674aa9efb46a16359d52ae179e457c717321d371186ec9c0927dc87",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::bareImporter::keeps subpath imports and self references working": {
+      "hash": "d004cdb7215b2051091c0536fda06ed7a7447c0957f6d1526b0ff9b438ee6823",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::bareImporter::makes the helper directory ignore itself": {
+      "hash": "1a6f9cc9272d91637164e24e262839f547d55174cf6c6f2bd33436ec51b92166",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::bareImporter::resolves bare specifiers against the project, not the loader": {
+      "hash": "638aec2ea48afc8e856ab4e673e3a41e307c75076ca0951e24307aafe481cfad",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::bareImporter::reuses one helper per scope": {
+      "hash": "5fb7707665cb149066befe52803655d3fe1a37618c2a8deeeffe6ec5ac45e2e9",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::helper preparation::cleans up after EBUSY and recovers on a later call": {
+      "hash": "9e27e60d322f7c8e2e6e7b5ea7ee198a05cf4e1c68f4033d4237cd9041a015e7",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::helper preparation::cleans up after ENOSPC and recovers on a later call": {
+      "hash": "9e27e60d322f7c8e2e6e7b5ea7ee198a05cf4e1c68f4033d4237cd9041a015e7",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::helper preparation::retries a stale helper after EACCES": {
+      "hash": "f702f225193ee83fbe7483dca3d69a2b0c90e7b4a399d7d0e6df0d7a7f80ef6e",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::helper preparation::retries a stale helper after EBUSY": {
+      "hash": "f702f225193ee83fbe7483dca3d69a2b0c90e7b4a399d7d0e6df0d7a7f80ef6e",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::helper preparation::retries a stale helper after EPERM": {
+      "hash": "f702f225193ee83fbe7483dca3d69a2b0c90e7b4a399d7d0e6df0d7a7f80ef6e",
+      "kind": "case"
+    },
+    "loader/resolve.spec.ts::helper preparation::reuses an identical helper without attempting rename": {
+      "hash": "157539e5f88805e292e134e0a88e91565aa346020024b7162de2b909a99101f7",
+      "kind": "case"
+    },
+    "loader/src/config/entry.ts:<rest>": {
+      "hash": "1aaec72ae06f8ecbec80ecf47bb955c42f85eb36431aa0b69b088ee4175137b3",
+      "kind": "rest"
+    },
+    "loader/src/config/entry.ts:Entry": {
+      "hash": "89dc9b564f9b4e29330a2fc85f35aba2edebd9a8c4a52ad534fdf849589e1a83",
+      "kind": "symbol"
+    },
+    "loader/src/config/entry.ts:Entry._applyIntercept": {
+      "hash": "659a58efc69f6494bf1c82aeb8cfb0b4706207e747c2cf19c80347a5cdb80847",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._blocked": {
+      "hash": "60e7149f4ac3abe6c405a6f979bb0b27dfe74011e127dd8e0912274486c9febe",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._dispose": {
+      "hash": "89aff48b1b14ca8bf25ff63b4f008b756d4069f7cc6061ffe06598e6bfefca52",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._evaluationContext": {
+      "hash": "e3c261f67ca6e2bda3a401dcfddf825ba98fac0d0106f4f4a58635a2ad4a6514",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._hasOuter": {
+      "hash": "d089f7def214ab8606d5df2c18b9c0960b6322f7fad459c01aa4ba28353dc3aa",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._import": {
+      "hash": "406d066bf0558c1d1352cae857b3335a213d8cba04c59d69cb94aa7e1ff18a62",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._init": {
+      "hash": "1184582f12022870eb19f1211a310eccc95f297d258d6a6b9385ba983b358f8f",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._parentDisabled": {
+      "hash": "80a26fecd8f18e072fd9be52d26e03bdf0247ff0de73c120749c82ea00bfe7ef",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._patchContext": {
+      "hash": "8fc8c613d581071ba99ca88aa4a8878873888664d7a58c8411f0ceed1a35c225",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._reconcile": {
+      "hash": "80086f5e1c7bf1910fbe2b1d99d659bebda5d25715dd95dba310a5afefbb4e7b",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._registered": {
+      "hash": "4ee4269ae94d145039ad9146b485c4b2ebb968cbdca7562774fcc078158009ad",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._reportImport": {
+      "hash": "a4862d990537d8d7ccbe75db52ae1101681ac5dfdfaf337d6052f058d166c1f5",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._resolveDisabled": {
+      "hash": "db7f0d8ff9ac385e33bacc73ccfd240cefce5cc305e47ea8723cd099fad209df",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._resolveInject": {
+      "hash": "766d238cbf7fec2961ab25d7c7ff71e9ffe6a7ce88e5f5c1cb0c346b503c2857",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry._start": {
+      "hash": "af0b17ce7596d43759932ee95b0072775aa6707ab5a936ef031ef98b8c4b95a4",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.constructor": {
+      "hash": "b95fd8b67ad49b7d6731b93cb6be85b23b005672cb016d16aa9b6b26c2c81fe4",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.context": {
+      "hash": "f27cfd16c65658e751d9cee4122b2d0bd40cffe15169fdc7a9974baf9c0eacec",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.disabled": {
+      "hash": "706fd7a11af84d5b201ae4203d38dba8be483dc8d06715ed8aa738b652bcce45",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.dispose": {
+      "hash": "98373290081e998b6ecae2bafe0b0dd22a8dd40af91334984d0477340fddcd6c",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.evaluate": {
+      "hash": "9d18bba068e4f6490e45cf7a50a8b1a4fe5f50ec38816110d2cbc8a6a15b5b66",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.getLocation": {
+      "hash": "078a8c66bd8be41675dce03c780070bf0f6d928bd5e099525a8481882a0afbb8",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.id": {
+      "hash": "38d4d5dcf82c18f2b0480cf690fbe94441daecb229f531a01bd1d975d1003e5e",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.init": {
+      "hash": "8a8df3ece52cd32403f59d98f9a30ef679d70fbaa5218de0ef25d97a481623dd",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.isOuter": {
+      "hash": "4478b5ac3dcc6c8ed68fdbb062ec6a136ff03ad475424e4892e1bdeb3fa6a40b",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.locateExpr": {
+      "hash": "3f432755da34e18060490177be726eab26d31831fcb2c2bb3b61ab0a5acd7c05",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.merge": {
+      "hash": "bc2f6acaea29d58dd228d14df615517b7a8abef87a9888eb5ac64efbc3a99aa4",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.refresh": {
+      "hash": "550cd8d535538073291e2bca0d937bc11f19035f6be32c86e953fcd8448e23bd",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.traceValidation": {
+      "hash": "8990a6c2897ea013c62b53c037ceab30b2e14484516a4e3f6017acc26353b63a",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:Entry.update": {
+      "hash": "fc15b9d9b8cfcee1376f3cf088e375866bc6977465bce7166518b0f51f483e0f",
+      "kind": "member"
+    },
+    "loader/src/config/entry.ts:EntryOptions": {
+      "hash": "3dab699e4b67c3df2c8f8ab7243f7c8239a4b9902f1e543015c3bfce9397ee20",
+      "kind": "symbol"
+    },
+    "loader/src/config/entry.ts:outer": {
+      "hash": "2e0c79b424dd042c6bb4676944c8cdd7b19c568611293a4b2c296fe25ed896b0",
+      "kind": "symbol"
+    },
+    "loader/src/config/entry.ts:sortKeys": {
+      "hash": "512115af3d74079e18cdc64f2856adb3c361f2a8b305db5785e7927820128650",
+      "kind": "symbol"
+    },
+    "loader/src/config/entry.ts:takeEntries": {
+      "hash": "dc6b9831fe342a0041036135e1f6708a542402e0f3584bc0afb4653348a33c8f",
+      "kind": "symbol"
+    },
+    "loader/src/config/group.ts:<rest>": {
+      "hash": "2bd4251be8aafce8964edba16d8717a7613eb4bad1592b8c357e43002c88df39",
+      "kind": "rest"
+    },
+    "loader/src/config/group.ts:EntryGroup": {
+      "hash": "7b2f1e7f634b63c2d028798741ae016e1b91d29d0aa15149b910ab31ee76bee2",
+      "kind": "symbol"
+    },
+    "loader/src/config/group.ts:EntryGroup._reject": {
+      "hash": "800b084371672b5807e4c2d607440a5099229c8f685edf3827df9830c6ca69a8",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:EntryGroup.constructor": {
+      "hash": "12608bb9fc445d9680f8a34aa1e032c97d8cc23c8f94e792acefacbd5df53510",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:EntryGroup.context": {
+      "hash": "f27cfd16c65658e751d9cee4122b2d0bd40cffe15169fdc7a9974baf9c0eacec",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:EntryGroup.create": {
+      "hash": "b39e2f9b8659a69e015f3d5e0bdaf23fa16756561b09da80edd67c17b951277a",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:EntryGroup.getOuterStack": {
+      "hash": "0375bb6e6530a659460cc673c06ff4c740b7a3bb3d39136cbe6027e14bf46814",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:EntryGroup.remove": {
+      "hash": "59cc8091c6cdf564fc88bd88227fdbcd4511a3fab21182cd7a21b6178026a9c3",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:EntryGroup.stop": {
+      "hash": "a5e7a4dcda3ea1dc86712d0042098a2d35b57c9d053d5a7fc9cff59f9304e3c0",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:EntryGroup.unlink": {
+      "hash": "a786aa783faf760ba2a056b181e4294a13f15575e6e798e0bf07c691899488a2",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:EntryGroup.update": {
+      "hash": "acd0f292b8791e974025dc0785ac9fcc43d092c727ba4a3db84d136bf5beff82",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:Group": {
+      "hash": "e20b03c7e099738ec28a77d9d8c33d418a57cd1c7b29fdb8619ab5cc0af1ebed",
+      "kind": "symbol"
+    },
+    "loader/src/config/group.ts:Group.[Service.init]": {
+      "hash": "f862ddd2fec80f285ba3e32b88d7bdb5b29a73b523368d5f874c0916c32f7409",
+      "kind": "member"
+    },
+    "loader/src/config/group.ts:Group.constructor": {
+      "hash": "905c1880cfd126ca450cda6ffa5618c2df7e3bb4a9a0c6cc23e900bdaaf30f49",
+      "kind": "member"
+    },
+    "loader/src/config/isolate.ts:<rest>": {
+      "hash": "828571beb32a484bf24c3a2135b747d169f91c80324b14e7578ca2b4d070b927",
+      "kind": "rest"
+    },
+    "loader/src/config/isolate.ts:LocalRealm": {
+      "hash": "ba4ef4429dd4b12f11acaf01f5fcd1ec8f4b1e3067975492a4c0256ed0fef424",
+      "kind": "symbol"
+    },
+    "loader/src/config/isolate.ts:LocalRealm.access": {
+      "hash": "f7c43d660c4d7916abbdf6eb48cd430ae5e03e7de594167d11e260ff3bee2e98",
+      "kind": "member"
+    },
+    "loader/src/config/isolate.ts:LocalRealm.constructor": {
+      "hash": "02e37c2dae57ccf0c20f940daff8102ef79e8b1cb9a2fbf6e874a8ebe71bd99a",
+      "kind": "member"
+    },
+    "loader/src/config/isolate.ts:accessGlobal": {
+      "hash": "659e75f359bc598e327b3b8b985fc5cb922da59e44a05a2725ce48c945e29f20",
+      "kind": "symbol"
+    },
+    "loader/src/config/isolate.ts:module ./entry.ts": {
+      "hash": "3337fba5ba03f948171c360a9b298b7d9d430c056f733fda563072dbaaa3e27c",
+      "kind": "symbol"
+    },
+    "loader/src/config/isolate.ts:patchIsolate": {
+      "hash": "d5b69c152f82378234004a3ae85c8fdcfe4fe8d4bd181ef33bac8f3968f45afb",
+      "kind": "symbol"
+    },
+    "loader/src/config/isolate.ts:quote": {
+      "hash": "d655bac515e9c6ae3bc5640432583b1520c22e5231cfb45cb19b68177952e4dd",
+      "kind": "symbol"
+    },
+    "loader/src/config/isolate.ts:within": {
+      "hash": "77b0dd8c1bc64cdf49670e1ff9ed08bf436b5a4bc7b2cd4a94c7889458dfe355",
+      "kind": "symbol"
+    },
+    "loader/src/config/tree.ts:<rest>": {
+      "hash": "69d9893bdb0e70e5cd9cf1b80a17e3148f66fb3c3e5dedabd0c26a0fcb1a75cd",
+      "kind": "rest"
+    },
+    "loader/src/config/tree.ts:EntryChange": {
+      "hash": "e547e3babc6fc2ce2cc2a73caac9de53c1cecf336767dd9e8a650f4bf19eb59e",
+      "kind": "symbol"
+    },
+    "loader/src/config/tree.ts:EntryTree": {
+      "hash": "17cafc606e55041df2f7d056370b66e61738d8cd8d1d86afe03237d62f0f047f",
+      "kind": "symbol"
+    },
+    "loader/src/config/tree.ts:EntryTree.await": {
+      "hash": "098c9e028d943ee49f860f24e9c4f6a12e80bd2abcbfbb9c0e5629c7fdbce748",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.commit": {
+      "hash": "9277045a24be1637162d14a53a9ef4f467a2ded5f32415c969f250dbb13e07fe",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.constructor": {
+      "hash": "1da45b0bda63646c433a0de975ba48e0da4c9d91d7a27321e045acba7ff42368",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.context": {
+      "hash": "f27cfd16c65658e751d9cee4122b2d0bd40cffe15169fdc7a9974baf9c0eacec",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.create": {
+      "hash": "b2618afc5fc653de6684c8fc62e0f50b315d0178fde081d20d7aa05fb892ca82",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.ensureId": {
+      "hash": "322e97222f0a695e9a964135f908a40d0bb9c02c2112cc4ba18d0048eefcf2df",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.entries": {
+      "hash": "3d4aeb5f5f66d90d1294d62d8fb3515a32254546cdfd6c92f0a6f39559cafd8b",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.getLocation": {
+      "hash": "88b1275968754b14e4afc6fe327691d5ffdaf6bcd36a230ee431071a79fabe84",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.getTasks": {
+      "hash": "4b4fd56a42c106def437ff326a0d7607d64e0ecb3583527ef199aebb76313860",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.import": {
+      "hash": "473be46ad94a2b91c63b50b0e8714a4f79ddeb8464f02ac35ce5ac179a6034f6",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.locateExpr": {
+      "hash": "1e5d9b9efa14ea8e5803d1222d1e782e9dc05b8ba048ac64d13b8bd9c3f2bd6c",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.remove": {
+      "hash": "9f4bd63577a3f9087750ec275d31e5452d20c8fdc7339a47581b1bb18ed84911",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.resolve": {
+      "hash": "630f2a472522cff3dd5921827b3ece3ef1de1cbd0f8ca3158eed9299601a0ab5",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.resolveGroup": {
+      "hash": "b8044241d79511941f5c8fb9ee7d927e45bc636c0b17260786642ceb90f4f101",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:EntryTree.update": {
+      "hash": "80e41ccfb7204c8bd35e364852ed4130935c41615ca028dfb89119a7391898dd",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:ModuleNotFoundError": {
+      "hash": "f50f5f8aa3231160cdde3a1e4373ae02b9929ba3ca6aa91b20f1f6ce06a1a8e4",
+      "kind": "symbol"
+    },
+    "loader/src/config/tree.ts:ModuleNotFoundError.constructor": {
+      "hash": "947e8d9c63285e21f40fa6a5ebf41cf0872d3a1a3f5b74ea3b1c7244e82c6912",
+      "kind": "member"
+    },
+    "loader/src/config/tree.ts:driveLetter": {
+      "hash": "800e1149b15a4b33ddbac21f03f35a914be93454259dca250c5ddbe720f564f1",
+      "kind": "symbol"
+    },
+    "loader/src/config/tree.ts:members": {
+      "hash": "ac5167b04f99dcdada0f1d3f8cb1ef04b658ebe4e621c7c55deb4cc85e3c253d",
+      "kind": "symbol"
+    },
+    "loader/src/config/tree.ts:parseNotFound": {
+      "hash": "57c996157cb73949617febe437043ba330de9dc224f8b821c81c4f4b87232679",
+      "kind": "symbol"
+    },
+    "loader/src/config/tree.ts:toPath": {
+      "hash": "120b125329ed7616ec0e31c61a5a4c3e0d4b4d170ac51a2608d20e715ed186eb",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:<rest>": {
+      "hash": "9ea8675b8a67a1e7f2c20a1a404a88aed2e59f565d2be14e5fdfef68b885bf5a",
+      "kind": "rest"
+    },
+    "loader/src/config/utils.ts:EntryValidationError": {
+      "hash": "8447a3c9aea6d14ae12209dff794858486980f34298634eb823802a899bf50e3",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:EntryValidationError.constructor": {
+      "hash": "cd644803c9310254cbba2fe58dc582fb17933d3551117a054f3a13b0fcd6b6a0",
+      "kind": "member"
+    },
+    "loader/src/config/utils.ts:ExprTrace": {
+      "hash": "190b395ac95fb188a18ed40de48f9773f6aed4783d2f247932c6d4e5d6f0bbe8",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:Issue": {
+      "hash": "15110bdfe1e595f4f434cbc8f6bc131291a7417fd20a54fce0b99e8a39ff5ef2",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:JsExpr": {
+      "hash": "9e8eaf7cb0091248107f8cc86ca36e2bf45e007b46eca5f56faf3c8b57501adb",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:Locate": {
+      "hash": "aabae7542354cff5ff04ad2b558fb8f7d9fefad4bd67a2981253857adec3f480",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:SourceLocation": {
+      "hash": "d3403700a2ea44d345ab16ecefc9ab86b2aa51d8fd382623ceace1688fe832a9",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:WRAPPER": {
+      "hash": "adec67cca1200fc366dff4cea47e4f0464d293098a6d706ea6e4eb48c5454d84",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:counter": {
+      "hash": "97a3464990d24f4d743810f715b2bc255e26ab1011e5508a43f9ab70fca50c4b",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:evaluate": {
+      "hash": "0c749e5cb967000fba7ef556c45bfdbcc34b18835a998785b2fffa8762e20248",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:formatIssue": {
+      "hash": "0dd4c908696b48b12e702a708f8b5afbdf78ba23e22e6b9fe7edb14336f10a42",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:formatIssues": {
+      "hash": "e54c474b2db426ab09109bffa4d49fc3043f3bf60883be15206b1b407d2b5df2",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:formatLocation": {
+      "hash": "ec8f283b2f6e30e0de8738d5c19866f825a8a0caa16fb847a069b7e1c9e0480a",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:framePattern": {
+      "hash": "865f0dc546f2003a8670f87cb0756a954095243404eeba0d3ab06db9670dc77b",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:interpolate": {
+      "hash": "19ca055eca20178f4b4deb06714a2fd454eabbe9bc28fb69462df6afce146762",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:isJsExpr": {
+      "hash": "a145ea01a4122e6af22eb054c9e87a4d1fd7b2fcc0e498ae50c6a80d011fb7b5",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:isPlainObject": {
+      "hash": "abc0111a6d8fa7a94567e982b4b00d94956e6ce26ac925825fa46d2a41ba50de",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:parseFrame": {
+      "hash": "0b895b3886b1b5b197d89cd3eac55e20ea90be850a08aab6124d92252bf7a349",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:relocate": {
+      "hash": "1d47929502600a977408ab09f24f90c350925aa7a9d15ba3a062cedd9188920c",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:swap": {
+      "hash": "e77c45ac97259afe6d95f29ccc5ae0d13e8223d03fcc6d103f1093a6e32458b1",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:toOffset": {
+      "hash": "49e0968c89756408970f774f81803d05d34dc43d2cfd39c3098bf84f71928fc1",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:traceEvaluation": {
+      "hash": "d6fda576328144653232cce76c58be32ff049d0c7557e8176437cea4d2f0745a",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:validateOptions": {
+      "hash": "f094b8ee8e9e1ec7ff1ee3d15866e0015675a302519a49a3333d5708813672fb",
+      "kind": "symbol"
+    },
+    "loader/src/config/utils.ts:wrapper": {
+      "hash": "aee7059c0a87a64efbe580de505f4bef8d25c091768c7aa52ecbc2234135cfe1",
+      "kind": "symbol"
+    },
+    "loader/src/index.ts:<rest>": {
+      "hash": "378890017d6a433e8634cfa87aa3334aa755a2f5dd94f5d47719b2c0e8af2ab0",
+      "kind": "rest"
+    },
+    "loader/src/index.ts:Loader": {
+      "hash": "156fd041b463127ce407f96ef48e8ec4d60bc3bc10d7c2e756f17b5ec5494a5f",
+      "kind": "symbol"
+    },
+    "loader/src/index.ts:Loader.[Service.check]": {
+      "hash": "b697088ab938c1e18de60b7e158a83e4db97b7c1aa62d3a3e4f0f39b5313e38a",
+      "kind": "member"
+    },
+    "loader/src/index.ts:Loader.commit": {
+      "hash": "9279ca5c8c5089c797b2c0b6842ccacc79d2cd58c8f21e9c56bbedb55e14926c",
+      "kind": "member"
+    },
+    "loader/src/index.ts:Loader.constructor": {
+      "hash": "ddd1adb3775ff77ca6e6d158f39fd582b8de4568a2f271df0cbf676e06d3d7de",
+      "kind": "member"
+    },
+    "loader/src/index.ts:Loader.locate": {
+      "hash": "c58a25a459f5cba3042186e340dd04e928afeedf04579a5b9281502c90697970",
+      "kind": "member"
+    },
+    "loader/src/index.ts:Loader.showLog": {
+      "hash": "4149dd24b5027ce5c62cb89c84061152202e7e04f748b8397c38780e78b78818",
+      "kind": "member"
+    },
+    "loader/src/index.ts:Loader.unwrapExports": {
+      "hash": "b755e28ff413fb36026781d866912e91b832cd1da905d2ce14e1015c3389dbae",
+      "kind": "member"
+    },
+    "loader/src/index.ts:default": {
+      "hash": "50164f26e6f6ff846f1f7749a041b84dadc755f8c11cc742a14256ec928e8c5c",
+      "kind": "symbol"
+    },
+    "loader/src/index.ts:module cordis": {
+      "hash": "96dcd593aca89bcb6b1143b9b281f497cae89614f98b0810d0424ec234d43426",
+      "kind": "symbol"
+    },
+    "loader/src/internal.ts:<rest>": {
+      "hash": "de46728aafc5a0080d42fe84d93cf644f02cb5ceebca447444e4d53ccbeb00c9",
+      "kind": "rest"
+    },
+    "loader/src/internal.ts:InternalLoader": {
+      "hash": "137faa8f1c24535ee7730b7aa578c5593e73a7f36e854c555ba327247505702a",
+      "kind": "symbol"
+    },
+    "loader/src/internal.ts:getInternalLoader": {
+      "hash": "65a53fee1ede0669e58deaf09a429a299e1dac0853a9f3b4c3d6d5abd5cc10e2",
+      "kind": "symbol"
+    },
+    "loader/src/internal.ts:unwrapExports": {
+      "hash": "01db5feb5b2713d36026ec355e5ba0ae73cdc3a2dd24c6649c99c226d464cadc",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:<rest>": {
+      "hash": "fb234c2ab471c7f06ee43c7f7253aa741998660687327855db4270ff4579498d",
+      "kind": "rest"
+    },
+    "loader/src/resolve.ts:HELPER_FILES": {
+      "hash": "9edb5511e0057b35518cd7c02c519430c8b288f6059abc47ae14c14f5bf8e430",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:RENAME_BACKOFF": {
+      "hash": "aa9f1ebd945f7324ec2bb09a9fdb29ca86675c25db353fe65322bb9e56c24948",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:RENAME_RETRIES": {
+      "hash": "915fd190738c890c9492cb5548793a19cab6285e3f68db3a81e0fae43995816a",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:Resolve": {
+      "hash": "67aa91b905b0ca687bee8df2230e7394ef6b3f93d357b9ea0050df26d4dffcb1",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:_createResolve": {
+      "hash": "c5857e636ceb0891d6ec51ae690710e9eb6c4b1fd7e6240b00d74b4782b2880b",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:cache": {
+      "hash": "530a838ea72eec7eb460461a5377400796c258e39cb42171853820cd212bfda0",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:createResolve": {
+      "hash": "82459b88ffda122c04a51b71f931b2f1d4b49b2943cc5138385b6cfe60626755",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:findScope": {
+      "hash": "2446a55675dd0cf783f819ba507629044ae54c4e320a44966a6bde30bb9add89",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:isTransientRenameError": {
+      "hash": "8c24659e688a38f4007a4029355fff3a5e75821edc2ee51c3602f621e1132303",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:resolveScope": {
+      "hash": "274520efc4894cfd61f665b02e970cd479c8b29490fa6c96af1d839c9a431a20",
+      "kind": "symbol"
+    },
+    "loader/src/resolve.ts:write": {
+      "hash": "1df10c00f11763289f0ee00f3528705811de1c1a7e6c0de2f9589e7888724c75",
+      "kind": "symbol"
+    },
+    "loader/tests/commit.spec.ts:<rest>": {
+      "hash": "de8f86008397b32c438a39eb27d7a916041b48332ba5b9cf2bc1cc53b0dc4b94",
+      "kind": "rest"
+    },
+    "loader/tests/evaluate.spec.ts:<rest>": {
+      "hash": "93a7bd6715e0c4352a0702c3c3a5aad8673b9e4f689a1817752c097405f7eaa3",
+      "kind": "rest"
+    },
+    "loader/tests/group.spec.ts:<rest>": {
+      "hash": "6d0208f69a811ac1ec51bad2088a8b01f10fd10d3bb8664024e810978c5bd2fe",
+      "kind": "rest"
+    },
+    "loader/tests/import.spec.ts:<rest>": {
+      "hash": "abf6999543e370fe4e05c8c33c5cd56ca09cc510599667b699e9eb42df555eed",
+      "kind": "rest"
+    },
+    "loader/tests/index.spec.ts:<rest>": {
+      "hash": "b56e2f589a57d4acbc18b16cf78d969f7e174829d3f91aae03279fb7a3b233b3",
+      "kind": "rest"
+    },
+    "loader/tests/isolate-provide.spec.ts:<rest>": {
+      "hash": "7e960bfa20971ab7de57a68fd828b22aa8b096086de95a39a5e03a79a28be35b",
+      "kind": "rest"
+    },
+    "loader/tests/isolate-provide.spec.ts:Slot": {
+      "hash": "ce72601aea57dca5015ac0fc5e790b54677870b43d69cb6b8c2e37f78bf737d4",
+      "kind": "symbol"
+    },
+    "loader/tests/isolate-provide.spec.ts:boot": {
+      "hash": "7a30c510f425b96037965f3fc928754ba1c77e7d3c6ac619d5fd4da73ddf02ff",
+      "kind": "symbol"
+    },
+    "loader/tests/isolate-provide.spec.ts:module cordis": {
+      "hash": "c7823f62086221bbc9eed1efedb63aee3acd4927c7d4022e07e27e968c848993",
+      "kind": "symbol"
+    },
+    "loader/tests/isolate-provide.spec.ts:slots": {
+      "hash": "929aeac75bc1ce075d43abe6c5925762057cc2f92f5f32c506912c44508c5c2d",
+      "kind": "symbol"
+    },
+    "loader/tests/isolate-provide.spec.ts:started": {
+      "hash": "3eea309de1e9a49da02c147d56c52373774df8b0ed03d06033fd5496e35809fa",
+      "kind": "symbol"
+    },
+    "loader/tests/isolate.spec.ts:<rest>": {
+      "hash": "288fc38161b185c0bb78c378978aa8e47f93dc2e665902b2e5396043309838b3",
+      "kind": "rest"
+    },
+    "loader/tests/rebuild.spec.ts:<rest>": {
+      "hash": "f423f6b6c4015e1478a5c002ae2932c005ff0bbc07847ef136c8e1a96ea0b318",
+      "kind": "rest"
+    },
+    "loader/tests/rebuild.spec.ts:module cordis": {
+      "hash": "b65711448db2469a86ab2ac07aa82532e8d8f85b446f9566727ccb93a0c26195",
+      "kind": "symbol"
+    },
+    "loader/tests/resolve.spec.ts:<rest>": {
+      "hash": "a921b4fca0a623d145491ce3a3f53a54d38a7326375b31710c20afe8f64d2298",
+      "kind": "rest"
+    },
+    "loader/tests/resolve.spec.ts:fixture": {
+      "hash": "09c1e05b201e0473c3038b16490dd15bf57e602d8fe9bd86a6427e066b1fe255",
+      "kind": "symbol"
+    },
+    "loader/tests/resolve.spec.ts:roots": {
+      "hash": "b6b0819ad0d7c45b0d2d219e732848869a4e0a314847434d41cac34ac6f0598e",
+      "kind": "symbol"
+    },
+    "loader/tests/utils.ts:<rest>": {
+      "hash": "148f4146139738e79a4b8b6e4f08c812265ca9ad97293acda705d5f5ef61850d",
+      "kind": "rest"
+    },
+    "loader/tests/utils.ts:MockLoader": {
+      "hash": "150fc8800fd8a360e28e984c48c8502d9b3ae123d863a7aea741e36c056b25ad",
+      "kind": "symbol"
+    },
+    "loader/tests/utils.ts:MockLoader.commit": {
+      "hash": "6680a14b9e868e8ab0213472e08d16f7a7c6d956f47ee8c6713a06b8b9417d46",
+      "kind": "member"
+    },
+    "loader/tests/utils.ts:MockLoader.constructor": {
+      "hash": "41833881373ded118ac151d85ca490716e1a5ae3d70c4550bd4971094f53c328",
+      "kind": "member"
+    },
+    "loader/tests/utils.ts:MockLoader.expectDisable": {
+      "hash": "e9df228291171a284eb3f7e71cc2c891062e1802a9782ba134c06c7aea3988c9",
+      "kind": "member"
+    },
+    "loader/tests/utils.ts:MockLoader.expectEnable": {
+      "hash": "69ba7caa259666d0117b9353797e02b68f84e0dcca561b4ce9ecba8d25c166aa",
+      "kind": "member"
+    },
+    "loader/tests/utils.ts:MockLoader.expectFiber": {
+      "hash": "647eb8bc7977b975b64b20b327fce1135a724baead19ea60dea25e5466bf2bcd",
+      "kind": "member"
+    },
+    "loader/tests/utils.ts:MockLoader.import": {
+      "hash": "fd5f73940452b3ad2b3893d5bba8cc847362e650e5e752fefa3768ad3a0cdde0",
+      "kind": "member"
+    },
+    "loader/tests/utils.ts:MockLoader.mock": {
+      "hash": "5e653ce22e81d84605de6c1f3bc3229ef2118a91dbf9d5bf20d335182e400141",
+      "kind": "member"
+    },
+    "loader/tests/utils.ts:MockLoader.read": {
+      "hash": "914a13faf68a91da3ffba3bd58fa6abf2620b653a4b5363e95930bba502835ba",
+      "kind": "member"
+    },
+    "loader/tests/utils.ts:module ../src/index.ts": {
+      "hash": "c333738e9d12e4ed0890a43d8033c5a6aedb6c38fe6a394dc78c41bc162f2316",
+      "kind": "symbol"
+    },
+    "loader/tests/utils.ts:sleep": {
+      "hash": "6d2eb332f7d7de94e32f9466e350c0372479f8cdc26875eca4d1898ad04a754b",
+      "kind": "symbol"
+    },
+    "loader/tests/validate.spec.ts:<rest>": {
+      "hash": "f068c5ca9c2981491e87ee72d83484e52a431671261bd1a6b55cbd7e328c5ff6",
+      "kind": "rest"
+    },
+    "loader/validate.spec.ts::Loader: entry options validation::accept an expression only for disabled": {
+      "hash": "1ab65f8feda0a223536e8807d5de491132cdb8621e10a01ab90e7974b16a5c6d",
+      "kind": "case"
+    },
+    "loader/validate.spec.ts::Loader: entry options validation::accept valid options": {
+      "hash": "942464a2860746fe8a0d865aad9994ea2f0a3e35f86d6937749f4b528e328dca",
+      "kind": "case"
+    },
+    "loader/validate.spec.ts::Loader: entry options validation::check the entries of a group passed at runtime as a whole": {
+      "hash": "2128e727c99091fa2ff14e9edecca40d50beaa072865cfa1e710383293ccfdf4",
+      "kind": "case"
+    },
+    "loader/validate.spec.ts::Loader: entry options validation::reject a missing or invalid field": {
+      "hash": "f25234daf03aa08a5f3b186fcbb2bd2c7a04064f118ce93de12ff786946e685c",
+      "kind": "case"
+    },
+    "loader/validate.spec.ts::Loader: entry options validation::reject invalid options at runtime before they are committed": {
+      "hash": "5c148867f9e5d65c3f84209a940ac9b5935764406c917d8c83160327f6c7fd8a",
+      "kind": "case"
+    },
+    "loader/validate.spec.ts::Loader: entry options validation::unload an entry whose options turn invalid, and reload it once fixed": {
+      "hash": "6cf781558ffe95c9924a13b28f03793c336269789fd43fa069a34b46e3cb994d",
+      "kind": "case"
+    },
     "logger.spec.ts::Logger::disposes the exporter that registered the disposer": {
       "hash": "9d32f32cdae2a8b10b993ab0b99bb91ddab99c9ce79ded2ea88ebc9a60d615ec",
       "kind": "case"
