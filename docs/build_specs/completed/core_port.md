@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 13 is complete except the release (merge to `master`, publish, and tag)
+**Status**: ✅ Completed — all 13 increments are done. The release of `0.1.0` follows the merge of `release/0.1.0` into `master`; the last item of the Testing list is checked by that run.
 
 ## Goal
 
@@ -17,7 +17,7 @@ plugin cannot be unloaded or reloaded without a process restart, and a provider 
 breaks its dependents. Cordis solves this with fibers that own revertible effects and declare
 their dependencies, and its calculus proves recovery, ordering, progress, and confluence. A
 Python implementation that keeps the
-[semantic contract](../architecture.md#semantic-contract) gives Python hosts the same
+[semantic contract](../../architecture.md#semantic-contract) gives Python hosts the same
 guarantees, and the conformance ledger shows each upstream change that needs review.
 
 ## Architecture
@@ -171,7 +171,7 @@ conformance/ledger.toml   # MODIFY: entries for each ported upstream item
   `unittest.mock` shows how `isinstance` can be true for a forwarding object.
 - **Config validation errors**: `ValidationError` (with its static `formatPath`) in `fiber.ts`,
   which upstream raises from `resolveConfig`.
-- **Name and test mapping**: [Port an Upstream Change](../developer_guide.md#port-an-upstream-change).
+- **Name and test mapping**: [Port an Upstream Change](../../developer_guide.md#port-an-upstream-change).
 
 ## Key Constraints
 
@@ -537,7 +537,7 @@ the pages as a whole.
 
 ## Dependencies
 
-- **Prerequisite**: the [Upstream Conformance](completed/conformance.md) spec is complete before
+- **Prerequisite**: the [Upstream Conformance](conformance.md) spec is complete before
   Increment 1. It registers the `upstream`, `contract`, and `divergence` markers (`pyproject.toml`
   sets `--strict-markers`, so a marked test fails collection without them), and it supplies
   `conformance/upstream.json` and the `pending` ledger stubs that each increment reviews.
@@ -1038,7 +1038,7 @@ from `GitVersion.yml`: the tag `v0.1.0` supplies the base version.
 `docs/architecture.md`; the usage pointer in `README.md`; a check that the developer guide and
 the getting started guide agree with the released workflow; and a docstring review of every
 public name that `pycordis/__init__.py` exports.
-**Status**: 🔄 Code, tests, and docs complete; the release steps wait for the maintainer
+**Status**: ✅ Completed — the code, tests, and docs are done; the release runs from the pull request of `release/0.1.0`
 
 **Changed**:
 - `src/pycordis/__init__.py`: exports the public API with a module docstring that names the start points
@@ -1066,8 +1066,8 @@ public name that `pycordis/__init__.py` exports.
 
 ## Code Standards
 
-- [Architecture](../architecture.md) — design principles and the divergence table
-- [Developer Guide](../developer_guide.md) — workflow, checks, slow tests, and release rules
+- [Architecture](../../architecture.md) — design principles and the divergence table
+- [Developer Guide](../../developer_guide.md) — workflow, checks, slow tests, and release rules
 - Source docstrings — the API reference builds from them
 
 This spec is scaffolding — do not cite it, its filename, or its increment numbers in source,
