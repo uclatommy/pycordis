@@ -695,7 +695,29 @@ dependents guard.
 `test_isolate.py`
 **Validation**: `uv run pytest tests/test_fiber.py tests/test_isolate.py tests/test_component.py
 tests/test_dispose.py`
-**Status**: ⬜ Pending
+**Docs**: None: the increment adds tests and ledger entries for behavior that the docstrings of `Fiber` already describe
+**Status**: ✅ Completed
+
+**Changed**:
+- `tests/test_fiber.py`: new; inertia, failure, disposal sequences, `restart`, and the validation of a config on first load
+- `tests/test_isolate.py`: new; the six `isolate.spec.ts` cases
+- `conformance/ledger.toml`: 16 cases reviewed as `ported` (10 `fiber.spec.ts`, 6 `isolate.spec.ts`) and 2 as `adapted` with `config-schema`
+- `src/`: no change; the state machine of Increment 5 already gives the lifecycle of this increment
+
+**Tests**:
+- `tests/test_fiber.py` (14 pass, includes a parametrized test for the three dispose sequences and one for `wait` after a sync or async failure), `tests/test_isolate.py` (6 pass)
+- Full suite: 383 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, and `tests/test_docstrings.py`; `tests/test_component.py` and `tests/test_dispose.py` re-run with no change
+- With the check `if self._error is not None` removed from `Fiber._set_epoch`, the test of a failed fiber that does not load again fails
+
+**Deviations**:
+- The `inertia` and `Object.hasOwn` assertions are not ported: they check private state of a JavaScript prototype chain
+- The contract tests for `LIFE-FAILURE` and `LIFE-COHERENT` are not marked: they must drive seeded random schedules (Increment 11), so the IDs stay in the pending list of the ledger
+- The 10 `fiber.spec.ts` cases that call `Fiber.update` stay `pending` (3 config validation cases and 7 update cases), because `update` is Increment 8
+- The `internal/status` listener records changes of one fiber by identity, in place of the prototype check of upstream
+- `ValidationError.issues` is a tuple, so the test compares with `tuple(issues)`
+
+**Manual validation**:
+- A root context parks an `inject` fiber at `PENDING`, loads it on `provide`, parks it again on dispose, and a raising component ends `FAILED` then `DISPOSED` (confirmed by the user)
 
 ### Increment 8: Dependents guard, update, restart, replace
 **Goal**: The provider waits for its dependents, the provision's disposer waits on release, and

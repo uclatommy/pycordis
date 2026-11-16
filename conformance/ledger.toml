@@ -335,13 +335,17 @@ status = "ported"
 hash = "e0d2c45bb40a0ff24f402106afb3603a655fa4c985d19c9613a21e285aecea84"
 
 [items."fiber.spec.ts::Fiber: config validation::fail on first load"]
-status = "pending"
+status = "adapted"
+hash = "d289ae27e6b2af9e53d1cc27825cccf0095e6a4ddac5c2c7a2a92ea35bbc2355"
+divergence = "config-schema"
 
 [items."fiber.spec.ts::Fiber: config validation::keep a running component on update"]
 status = "pending"
 
 [items."fiber.spec.ts::Fiber: config validation::keep the issues and their paths"]
-status = "pending"
+status = "adapted"
+hash = "04e48f78018010fb539e1753fda4757df12aa74a8b8273ad230b00520294060f"
+divergence = "config-schema"
 
 [items."fiber.spec.ts::Fiber: config validation::keep the source config when a listener handles the update"]
 status = "pending"
@@ -350,34 +354,44 @@ status = "pending"
 status = "pending"
 
 [items."fiber.spec.ts::Fiber::component error"]
-status = "pending"
+status = "ported"
+hash = "64399991ce3f9f18a29e4597cc56ea3c64acfb0a2a479d5cd2b635848494cfd7"
 
 [items."fiber.spec.ts::Fiber::dispose error"]
-status = "pending"
+status = "ported"
+hash = "59500643ac748687165ff9432691f263d55398b0c8abfb192f69974a9ad74b34"
 
 [items."fiber.spec.ts::Fiber::failed fiber does not re-enter on dependency refresh"]
-status = "pending"
+status = "ported"
+hash = "0ffb0967789cfc3671d016f805df3748dee4a24ca09accdc9358bf9e2e5101e1"
 
 [items."fiber.spec.ts::Fiber::inertia lock 1"]
-status = "pending"
+status = "ported"
+hash = "d9818645edd40cd3d01cfc1868348790d15a0633c83678b5bd2486551c3e270d"
 
 [items."fiber.spec.ts::Fiber::inertia lock 2"]
-status = "pending"
+status = "ported"
+hash = "7e3ca6d287696832b6ea46b0bb86e137bfc9247ca693b44a103bcd5adf2b1418"
 
 [items."fiber.spec.ts::Fiber::inertia lock 3"]
-status = "pending"
+status = "ported"
+hash = "588cc9b312656bb6342bcaaa8599235d901fdac8db1431da0383e7932844cbac"
 
 [items."fiber.spec.ts::Fiber::keeps the active dispose sequence stable"]
-status = "pending"
+status = "ported"
+hash = "984d08d89fc27486d86a998bbc37bc18841083df52e0ccfc4784139248eb1ff1"
 
 [items."fiber.spec.ts::Fiber::restart wrapped fiber"]
-status = "pending"
+status = "ported"
+hash = "60c362f743cb62eacea9ac52b14f2404fbb2197990cc5ed099d023b260e6371c"
 
 [items."fiber.spec.ts::Fiber::settles a failed fiber to DISPOSED on dispose"]
-status = "pending"
+status = "ported"
+hash = "c040b31b7385c9d774b9ff03299251192a4b6f354a247e9ee9dce770c935a078"
 
 [items."fiber.spec.ts::Fiber::settles a pending fiber to DISPOSED on dispose"]
-status = "pending"
+status = "ported"
+hash = "e3d00dc5dac65dd0935a5f865ad612ff8d6fffb418aef0c3b1f779708f099f48"
 
 [items."fiber.spec.ts::Fiber::update config on wrapped fiber"]
 status = "pending"
@@ -440,22 +454,28 @@ status = "pending"
 status = "pending"
 
 [items."isolate.spec.ts::Isolation::does not expose own provisions across isolation boundaries"]
-status = "pending"
+status = "ported"
+hash = "e9f2957384e671b903fa0bd758a7fd8d9ded88e6e19ac75a913a56f984c926ba"
 
 [items."isolate.spec.ts::Isolation::does not inherit the injected view across isolation boundaries"]
-status = "pending"
+status = "ported"
+hash = "ef44b6b27cb76d2b361662d1a185484e8f92378937a6f8e6b7d90fbb446fb1cd"
 
 [items."isolate.spec.ts::Isolation::isolated context"]
-status = "pending"
+status = "ported"
+hash = "0dd0a7ca7aa0fb8e1f658f3d632cfac2a0bea7c3c91f8e555df1fdbcfb116d83"
 
 [items."isolate.spec.ts::Isolation::isolated event"]
-status = "pending"
+status = "ported"
+hash = "29b5e3718e9970dd47ee309d7d1168f9dbb1fafd83fa5a3c4697c948ca24c09f"
 
 [items."isolate.spec.ts::Isolation::keeps own provisions separate from the injected view"]
-status = "pending"
+status = "ported"
+hash = "630ddd6bb52fa82b01735ccf2056d1afbb6c2d9b957d567197360a4d5e646b43"
 
 [items."isolate.spec.ts::Isolation::shared label"]
-status = "pending"
+status = "ported"
+hash = "a3aab847b609ea9c3b50c848fff9d1104f7d904de8123cc205af3a936e060352"
 
 [items."logger.spec.ts::Logger::disposes the exporter that registered the disposer"]
 status = "pending"
