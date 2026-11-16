@@ -63,7 +63,7 @@ uv run pytest -m "not slow"
 
 The `ci.yml` workflow runs on every push and on pull requests to `develop` or `master`:
 
-- `test`: the full suite with `uv run pytest --cov`, on Python 3.12 and 3.13. CI never filters
+- `test`: the full suite with `uv run pytest --cov`, on Python 3.12, 3.13, and 3.14. CI never filters
   markers; the fast loop above is local only. The run fails when coverage is below
   `fail_under`. The Ubuntu, Python 3.12 job uploads `coverage.xml` to Codecov, which supplies
   the coverage badge in the README. The upload needs the `CODECOV_TOKEN` repository secret.
