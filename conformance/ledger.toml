@@ -1063,9 +1063,10 @@ target = "pycordis.errors.CordisError"
 hash = "452f4c87f08e8cf1e7cfa5f28f8196aab7a1512c65481acbd1883156ad8222ff"
 
 [items."src/fiber.ts:CordisError.constructor"]
-status = "not-applicable"
+status = "diverged"
+target = "pycordis.errors.CordisError"
 hash = "a4e4c3ecae47602aac4041b62f0997447be6a8fde0409ab606e21601cf467e32"
-note = "The Python error takes the message only. The upstream `code` is a key into a message table, and no case reads it."
+divergence = "error-code"
 
 [items."src/fiber.ts:Disposable"]
 status = "ported"

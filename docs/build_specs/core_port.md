@@ -1061,7 +1061,7 @@ public name that `pycordis/__init__.py` exports.
 - `Issue` is also exported: `ValidationError.issues` holds `Issue` objects
 - The API overview page covers the paper's formal model (added at the maintainer's request); the site serves its own MathJax copy, so math needs no outside host
 - The async validator check and the ported event case close two items that the ledger listed as `pending`
-- `CordisError.constructor` is `not-applicable`: the Python error has no `code`. This is a public-surface difference without a divergence row; it needs your decision
+- `CordisError.constructor` is `diverged` with the new `error-code` row in the divergence table: the Python error has no `code`
 - The release steps are not done: they are your actions (release branch, pull request, merge, `next-version` removal, install check)
 
 ## Code Standards
