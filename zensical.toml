@@ -14,10 +14,15 @@ site_description = "A Python port of the Cordis core: plugin and service composi
 site_author = "Thomas Chen"
 repo_url = "https://github.com/uclatommy/pycordis"
 docs_dir = "docs"
+extra_javascript = [
+  "javascripts/mathjax.js",
+  "javascripts/vendor/mathjax/tex-svg.js",
+]
 
 nav = [
   { Home = "README.md" },
   { "Getting Started" = "getting_started.md" },
+  { "User Guide" = "user_guide.md" },
   { "Developer Guide" = "developer_guide.md" },
   { Contributing = "contributing.md" },
   { Architecture = "architecture.md" },
@@ -90,6 +95,8 @@ handlers.python.options.show_root_toc_entry = false
 [project.markdown_extensions.pymdownx.highlight]
 anchor_linenums = true
 pygments_lang_class = true
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
 [project.markdown_extensions.pymdownx.inlinehilite]
 [project.markdown_extensions.pymdownx.superfences]
 custom_fences = [

@@ -12,8 +12,7 @@ inverse, and the framework loads, unloads, and reloads fibers when the services 
 on change.
 
 **Documentation**: <https://uclatommy.github.io/pycordis/>
-**Status**: in development, no release yet. The work plan is in
-[docs/build_specs/](docs/build_specs/index.md).
+**Status**: pre-1.0 (`0.x`): a breaking change to the public API increments the minor version.
 
 ## Upstream
 
@@ -30,13 +29,29 @@ on change.
 
 ## Install
 
-pycordis is not on a package index. Install it from a git tag:
-
 ```bash
-uv add "pycordis @ git+https://github.com/uclatommy/pycordis@vX.Y.Z"
+pip install pycordis
 ```
 
-See [Getting Started](docs/getting_started.md) for development setup.
+## Usage
+
+```python
+from pycordis import Context, ImmediateScheduler
+
+root = Context(ImmediateScheduler())
+
+
+def greeter(ctx: Context, config: object) -> None:
+    print("start")
+    ctx.effect(lambda: lambda: print("stop"))
+
+
+fiber = root.use(greeter)  # prints "start"
+fiber.dispose()  # prints "stop"
+```
+
+The [User Guide](docs/user_guide.md) explains fibers, effects, services, and schedulers. See
+[Getting Started](docs/getting_started.md) for development setup.
 
 ## License
 

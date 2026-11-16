@@ -34,6 +34,28 @@ change. The paper gives a calculus for both and proves its properties in Section
 4.4 extends the calculus with asynchrony, failure, configuration, and isolation. Cordis is the
 reference implementation of the calculus (Section 5).
 
+## Module Map
+
+Each core module has the responsibilities of one upstream module, so that the
+[conformance ledger](#conformance) is easy to read. Upstream `utils.ts` divides into three
+modules.
+
+| Upstream (`packages/core/src`) | pycordis (`src/pycordis/`) |
+|---|---|
+| `context.ts` | `context.py` |
+| `fiber.ts` | `fiber.py` |
+| `reflect.ts` | `reflect.py` |
+| `registry.ts` | `registry.py` |
+| `service.ts` | `service.py` |
+| `events.ts` | `events.py` |
+| `logger.ts` | `logger.py` |
+| `utils.ts` | `disposables.py`, `traceable.py`, `errors.py` |
+| — (Python runtime) | `keys.py`, `scheduler.py`, `deferred.py` |
+
+The Python-runtime modules (`keys`, `scheduler`, `deferred`, `disposables`, `errors`) import no
+other pycordis module except `errors`. The core modules import each other only where the
+upstream modules do.
+
 ## Semantic Contract
 
 Each row is a guarantee that pycordis keeps. The ID is stable: tests refer to it with
