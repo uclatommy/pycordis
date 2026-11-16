@@ -26,6 +26,7 @@ Upstream = "https://github.com/cordiverse/cordis"
 [dependency-groups]
 dev = [
     "pytest>=8.3",
+    "pytest-cov>=6",
     "ruff>=0.13",
 ]
 docs = [
@@ -57,4 +58,21 @@ testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers", "--strict-config"]
 markers = [
     "slow: marks tests measured at >=0.1s call time (deselect with '-m \"not slow\"')",
+    "upstream(id): the test translates the upstream case with inventory ID id",
+    "contract(id): the test checks the semantic-contract property with ID id",
+    "divergence(id): the test checks the divergence with ID id",
+]
+
+[tool.coverage.run]
+source = ["pycordis"]
+branch = true
+relative_files = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 95
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "^\\s*\\.\\.\\.$",
 ]

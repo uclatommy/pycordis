@@ -1,0 +1,2166 @@
+# Conformance ledger: the review of each upstream inventory item, plus the contract state.
+#
+# [contract] lists the contract IDs of docs/architecture.md whose marked test is not
+# running yet. The conformance checks reject a pending ID that has a running test, a
+# pending ID that is not in the contract table, and a contract ID that is neither
+# covered by a running test nor pending.
+#
+# [items."<inventory ID>"] records the review of one upstream item. Add entries for new
+# items with `scripts/upstream_inventory.py <clone> --ledger-stubs`, and copy a hash only
+# after the review of the upstream item.
+
+[contract]
+pending = []
+
+[items."associate.spec.ts::Association::associated access follows the service fiber"]
+status = "ported"
+hash = "bd7bc977600f69c4f0ba4dcaa8340b2f0d0ae9795a0fc844fade70cb68dfaffa"
+
+[items."associate.spec.ts::Association::associated type - accessor injection"]
+status = "ported"
+hash = "1b7952f1ec96e89a13ea120dacba6a89158394936f7fc07ba197bd386fb78595"
+note = "Upstream passes an object as the mixin source, which `ctx[source]` reads as the property \"[object Object]\", and its inner callback never runs because nothing provides `bar`. The test provides `bar` and checks the result that the upstream assertions state."
+
+[items."associate.spec.ts::Association::associated type - service injection"]
+status = "ported"
+hash = "c610e096f279f7c47229433255a0d3dc573a1627c7d63400f78665efcbd66cd8"
+
+[items."associate.spec.ts::Association::inspect"]
+status = "ported"
+hash = "f2cb7e85feb3ed5d944711c624bf3fe03068aea8f4a2a68494cab7a3e2e2654e"
+
+[items."associate.spec.ts::Association::property injection"]
+status = "ported"
+hash = "6edd6b1fa4b6103c754dcffd3d3fcae4aab91a2c664f8cba4a006df0981e5413"
+
+[items."associate.spec.ts::Association::service injection"]
+status = "ported"
+hash = "dacc2948f378082fce16c2da2240ed7e8cfb53cc28c56a71f5ee1d15d336c270"
+
+[items."component.spec.ts::Component::Service.init"]
+status = "adapted"
+hash = "b9fd0c6df59bd6467e900557dc69796eb2fc019bc5fe2a2c8ac2c93bbd5471b1"
+divergence = "hook-names"
+
+[items."component.spec.ts::Component::apply component through deprecated ctx.plugin()"]
+status = "diverged"
+hash = "4ce144753f8b04f82ab1aecd5dfb5d8af9db9bd34262d7967dcba05653ea34cf"
+divergence = "deprecated-aliases"
+
+[items."component.spec.ts::Component::apply functional component"]
+status = "ported"
+hash = "011b3182fa8fe78d54e466ea16f70b11e88c61365af3c96f62fec681cacd3d0a"
+
+[items."component.spec.ts::Component::apply invalid component"]
+status = "ported"
+hash = "e32249decbbd64fb5f0ff96d7e86ebd32cf7a2e19a32db64a4b2793597a4990b"
+
+[items."component.spec.ts::Component::apply object component"]
+status = "ported"
+hash = "b2cc2be9bf680767043478dc07fc8d4c401e485ae49704cecfd5254cb1dbcdeb"
+
+[items."component.spec.ts::Component::compare snapshot"]
+status = "ported"
+hash = "13251c643806c0ea56ed4d69748abf2c00f53122c7b8021d55ab1aae6bf041c4"
+
+[items."component.spec.ts::Component::context inspect"]
+status = "ported"
+hash = "d2e6e45bcbcae05d8f47bdb5dc43a5f73523e2ae0982e7435cd013df43cca96f"
+
+[items."component.spec.ts::Component::ctx.registry"]
+status = "ported"
+hash = "1d6c3b737270a86586766549816e6aad4683f6c112b204a23b7481350dd0cf33"
+
+[items."component.spec.ts::Component::inactive context"]
+status = "ported"
+hash = "413469a0fd430ddbb3c5237bc20dce896e8b652d0aa544ecf375583bc64a4d33"
+
+[items."component.spec.ts::Component::nested components"]
+status = "ported"
+hash = "78e24ff4866b41646c37d1732c0927197607ab20b68511af064668d9d99ec6af"
+
+[items."component.spec.ts::Component::root dispose"]
+status = "ported"
+hash = "eb8e6af3e536e11b9e1eddf32dc865c6be52152002dfd397ecb4af9152d32e55"
+
+[items."decorator.spec.ts::Decorator::@Inject on class method"]
+status = "ported"
+hash = "dfab7f445444e466c2a98e4aa0aabf47a8b7ffb216674fd83af1e83c53715248"
+
+[items."dispose.spec.ts::Effects::async return 1"]
+status = "ported"
+hash = "a9d1da7a5a7c90561ae8bfb8b660b20acd695b989f3453af25275a69a0214732"
+
+[items."dispose.spec.ts::Effects::async return 2"]
+status = "ported"
+hash = "c5ce43f492592d897a8643263a163a4cee892a4e4e18ae44b24678af003292fb"
+
+[items."dispose.spec.ts::Effects::async return with error"]
+status = "ported"
+hash = "8cd68725f964b98fe192fd442d226aefc94122b29daa811c84dfab81252c2fa8"
+
+[items."dispose.spec.ts::Effects::async yield (aborted, finally)"]
+status = "ported"
+hash = "b1042822fc3caef04c55f6a5c318325cdaa4cc6aeadf64ddb35287db0301a863"
+
+[items."dispose.spec.ts::Effects::async yield 1"]
+status = "ported"
+hash = "05472e975903b7af3866dfaa2dff44fa832418cefd4f88e4958cfef025318c7c"
+
+[items."dispose.spec.ts::Effects::async yield 2 (aborted)"]
+status = "ported"
+hash = "d0cca710bca55277a079d0a65bea656c02421f93016014095cf8953e0d51d734"
+
+[items."dispose.spec.ts::Effects::async yield 3 (aborted)"]
+status = "ported"
+hash = "cdd5d87bd9f9afccb73b2964c7e68bb67d75f210a0bcfbc1e9dd74aebd8d3994"
+
+[items."dispose.spec.ts::Effects::async yield 4 (await dispose)"]
+status = "ported"
+hash = "b48fcc506342619bbecde59e960c599d8a6097447d1bf72290b4d647316343b3"
+
+[items."dispose.spec.ts::Effects::async yield invalid effect"]
+status = "ported"
+hash = "e585b47c30b76364eadcb164e0bed97b0e5144c111249611f393d3bca1866525"
+
+[items."dispose.spec.ts::Effects::async yield with error"]
+status = "ported"
+hash = "933d549256a8562f741f90f84d277b5feb9dad294549c2de5d76341079b95481"
+
+[items."dispose.spec.ts::Effects::dispose by component"]
+status = "ported"
+hash = "766a2ab7d9825d652135f299dc0904db1b1f4cebd2809923e8793a26e88a3166"
+
+[items."dispose.spec.ts::Effects::dispose manually"]
+status = "ported"
+hash = "728a3182940aaa2a1548db3358c4c574c7b0a9d94de9ac75994306207ec5104d"
+
+[items."dispose.spec.ts::Effects::return with error"]
+status = "ported"
+hash = "88037c8e31caa6e90a0efbf8b351bd84d572e34154293c6659cf1ae75d715669"
+
+[items."dispose.spec.ts::Effects::yield dispose"]
+status = "ported"
+hash = "3d2821ecfa39ade2fd64cced5be67c21dd18f6ff9ceae00111d1c1fdbacebe91"
+
+[items."dispose.spec.ts::Effects::yield with error"]
+status = "ported"
+hash = "a1981ef39b17e6e61227b6593e4d2f52624388e563e91282fc86cca9ae2f3930"
+
+[items."event:internal/commit"]
+status = "ported"
+hash = "e71de4e9fb854a5a50c85d4002f18cd827e16e6394a20bdedf9ce8b524b0f844"
+
+[items."event:internal/config"]
+status = "ported"
+hash = "7fde6501cc56a280bf69d8d5b5d943307c0be041a924a8ec42e32ef2ad59d4c9"
+
+[items."event:internal/dispatch"]
+status = "ported"
+hash = "70c95e61a48f1087104821232e14e92f598d32e1344c6047bd53e0395dff0ee3"
+
+[items."event:internal/get"]
+status = "adapted"
+hash = "d494fa9581b7816c7fc05229431ce356b368108d1786a4e60231115493f28ae4"
+divergence = "service-access"
+
+[items."event:internal/listener"]
+status = "ported"
+hash = "482eedc50de8b853d213882fd0a4533f0bb97e5803b0afa71328208fd8938e98"
+
+[items."event:internal/plugin"]
+status = "ported"
+hash = "14cd354a0b2e377a20c8079dbe8adbf4185891acbb9aa3b54c4fc1b86ed14f33"
+
+[items."event:internal/replace"]
+status = "ported"
+hash = "dcc5fccc1f476a38972af12c8e6be45743c3215a3884ba9e27abcd65347d625c"
+
+[items."event:internal/service"]
+status = "adapted"
+hash = "2415c6983c7c4a8ffefafd81e5048c3efdf7bc28f5d937b7945cbcfc8f98e0a1"
+divergence = "event-dispatch-args"
+
+[items."event:internal/set"]
+status = "adapted"
+hash = "fe1937efbea755a2e76001363d37396a7428b5989c18580a6ca3ee0fc892b616"
+divergence = "service-access"
+
+[items."event:internal/status"]
+status = "ported"
+hash = "f5e494e80dbe4da452ad88063d8cefabef0efce078911f5e0ae25c6b0c738183"
+
+[items."event:internal/update"]
+status = "adapted"
+hash = "ec34763057031419289255af6efcf58f336b85de77d9d57555238f246e99dee9"
+divergence = "event-dispatch-args"
+
+[items."events.spec.ts::Events::bail defers added listeners until the next dispatch"]
+status = "ported"
+hash = "ddabc03ba955108f0288306f16a7aae10e3b100d4d7f22b682f487b849868c6d"
+
+[items."events.spec.ts::Events::bail skips listeners removed during dispatch"]
+status = "ported"
+hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
+
+[items."events.spec.ts::Events::ctx.bail()"]
+status = "ported"
+hash = "1e1b12552735ea097824511bed2f2546b2033ec6525ed2e5faace9ad87c9056f"
+
+[items."events.spec.ts::Events::ctx.emit()"]
+status = "ported"
+hash = "025bfcf44786a44835b6de40da96eb292fd13acc60f2ecc2450bdf9024a3ec85"
+
+[items."events.spec.ts::Events::ctx.on()"]
+status = "ported"
+hash = "0a8bbd540074325c47cdaddbb9f2dfd03969d81b8609b3f1d40e5e4d4ac7c0d4"
+
+[items."events.spec.ts::Events::ctx.once()"]
+status = "ported"
+hash = "e83af78265f7af2ca7ba48fa2a37f50b566aa01822a3f7b6712530439b78b673"
+
+[items."events.spec.ts::Events::ctx.once() runs once across concurrent serial dispatches"]
+status = "ported"
+hash = "dceddd18dbd09c1fd9dabe5a399a2e9fb95b4cd81cc78bff0e1841cf87b2f809"
+
+[items."events.spec.ts::Events::ctx.once() runs once when an earlier listener emits recursively"]
+status = "ported"
+hash = "05805b72e711990ded3be3e3d0962e050150ab424e8bfc25be0261e84939c9d2"
+
+[items."events.spec.ts::Events::ctx.parallel()"]
+status = "ported"
+hash = "8a3730075df8cd2faf9579a4f5143bdcdccc8c357ed007b83e0bb45bc6ca4d04"
+
+[items."events.spec.ts::Events::ctx.parallel() labels symbol events"]
+status = "ported"
+hash = "dd6be552dd75c19f3b99b349d92c743c51fc58837999ee5b2627761611238d65"
+
+[items."events.spec.ts::Events::ctx.serial()"]
+status = "ported"
+hash = "e05e456a00f1f90538e2cc7077eda9f43b53fc3d9dd179156a28d6a9d40ea869"
+
+[items."events.spec.ts::Events::ctx.waterfall()"]
+status = "ported"
+hash = "8bbef567790572eeabc6073fa1f04ffd0984a0ec37a57fd4eae4fff2280ea9a9"
+
+[items."events.spec.ts::Events::ctx.waterfall() rejects continuations from outer frames"]
+status = "ported"
+hash = "e0e2907fe784a4b1c60bb597b7e6960fb0568516c926307ca8f1b5a37d93f83f"
+
+[items."events.spec.ts::Events::ctx.waterfall() rejects duplicate next()"]
+status = "ported"
+hash = "2f223f0091367b608ff9194a8319e520b873b999ce60b7f8898ce6af4004c1df"
+
+[items."events.spec.ts::Events::ctx.waterfall() rejects duplicate next() after awaiting"]
+status = "ported"
+hash = "821cd64c71da233f5644fde0b6b6e473e5e02e16de8e5aa71c29d42a876ca1a7"
+
+[items."events.spec.ts::Events::ctx.waterfall() supports nested async calls"]
+status = "ported"
+hash = "eb7b3539fa6487a253c6802ea34ac4f661acd09fb4139073bea05e9f273e296a"
+
+[items."events.spec.ts::Events::deprecated dispatch returns bound callbacks that respect later removal"]
+status = "diverged"
+hash = "69ea6609dac5de39ce0632c76dd23d92429f6df6d1a30f3f00165bee59e10457"
+divergence = "deprecated-aliases"
+
+[items."events.spec.ts::Events::deprecated waterfall dispatch continues past a removed callback"]
+status = "diverged"
+hash = "c8a14431815594cc957176283a696dc2b9bd45b9761ccf3134940311ce0d05be"
+divergence = "deprecated-aliases"
+
+[items."events.spec.ts::Events::emit defers added listeners until the next dispatch"]
+status = "ported"
+hash = "ddabc03ba955108f0288306f16a7aae10e3b100d4d7f22b682f487b849868c6d"
+
+[items."events.spec.ts::Events::emit skips listeners removed during dispatch"]
+status = "ported"
+hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
+
+[items."events.spec.ts::Events::internal/update continues past a removed fiber listener"]
+status = "ported"
+hash = "b2dd63ccb2a1c357ad344d9ca507f0bd8c1be1967494acc8b685cd7f20d620ed"
+
+[items."events.spec.ts::Events::internal/update::can be disposed explicitly"]
+status = "ported"
+hash = "ff3e324e058857aaaa18249000d183bc534bc9ee9c9feec97c6ff5da12d7f8ca"
+
+[items."events.spec.ts::Events::internal/update::does not accumulate across reloads"]
+status = "ported"
+hash = "90ba12b05719c840ea28fd2d2d2fa8429f9dac360c641835af03ac23d0df5a76"
+
+[items."events.spec.ts::Events::internal/update::global listeners are not tied to a child fiber reload"]
+status = "ported"
+hash = "898c4ddc949d6c826c7fc9cd8ac2c67a4e3ce09ad814deaa962c55906cd8caed"
+
+[items."events.spec.ts::Events::internal/update::runs prepended listeners first"]
+status = "ported"
+hash = "c404d923b9ef292688891cadca51bb4910a8282dcbe2c14a3781365bce96d750"
+
+[items."events.spec.ts::Events::parallel defers added listeners until the next dispatch"]
+status = "ported"
+hash = "ddabc03ba955108f0288306f16a7aae10e3b100d4d7f22b682f487b849868c6d"
+
+[items."events.spec.ts::Events::parallel skips listeners removed during dispatch"]
+status = "ported"
+hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
+
+[items."events.spec.ts::Events::removes empty event buckets after disposal"]
+status = "ported"
+hash = "c9a6f3ad4cd21873a3361544e5574716f53647c108946b2db0b4aa4221787c55"
+
+[items."events.spec.ts::Events::serial defers added listeners until the next dispatch"]
+status = "ported"
+hash = "ddabc03ba955108f0288306f16a7aae10e3b100d4d7f22b682f487b849868c6d"
+
+[items."events.spec.ts::Events::serial skips listeners removed during dispatch"]
+status = "ported"
+hash = "e0da26ffc81f00a6e9d5bfef8226d3ad03a34e28ad9b52becb274b38530aec37"
+
+[items."events.spec.ts::Events::skips a listener disposed by an earlier component during dispatch"]
+status = "ported"
+hash = "620b9f66a0078e5179b468e5865890345b9b0fac7f0d69af23b0987611363534"
+
+[items."events.spec.ts::Events::supports symbol event names across dispatch modes"]
+status = "ported"
+hash = "c5dca1c084f462c97e15f0f6350c3454cda1cad2eb4bb1facdf9539acda43474"
+
+[items."events.spec.ts::Events::supports symbol event names with ctx.once()"]
+status = "ported"
+hash = "d69de37e6a6e405280c1a530b8eb00c00eb881121f3b038bc1cd6ddaf0c76f53"
+
+[items."events.spec.ts::Events::treats prototype property names as ordinary events"]
+status = "ported"
+hash = "484c39d471a8989d291bc8f30d1cb474e629d15b943e7ef5e6723e837af5bf6e"
+
+[items."events.spec.ts::Events::waterfall continues after a recursive dispatch has consumed a once listener"]
+status = "ported"
+hash = "d43a631e46b7d5845ac81b10c2bddd2d4d0bc6ea56922d8f83a67e67b10cbd78"
+
+[items."events.spec.ts::Events::waterfall continues past a removed listener"]
+status = "ported"
+hash = "1360b0e55115f7723f070c502a7ac8ef9bead0fddfa290067ef1bd2bd9a46ce2"
+
+[items."events.spec.ts::Events::waterfall defers added listeners until the next dispatch"]
+status = "ported"
+hash = "e0d2c45bb40a0ff24f402106afb3603a655fa4c985d19c9613a21e285aecea84"
+
+[items."fiber.spec.ts::Fiber: config validation::fail on first load"]
+status = "adapted"
+hash = "d289ae27e6b2af9e53d1cc27825cccf0095e6a4ddac5c2c7a2a92ea35bbc2355"
+divergence = "config-schema"
+
+[items."fiber.spec.ts::Fiber: config validation::keep a running component on update"]
+status = "adapted"
+hash = "b27ec391e59befa693d5f466658d3fe76bb16a5454b2a96923b7c8764e87acde"
+divergence = "config-schema"
+
+[items."fiber.spec.ts::Fiber: config validation::keep the issues and their paths"]
+status = "adapted"
+hash = "04e48f78018010fb539e1753fda4757df12aa74a8b8273ad230b00520294060f"
+divergence = "config-schema"
+
+[items."fiber.spec.ts::Fiber: config validation::keep the source config when a listener handles the update"]
+status = "adapted"
+hash = "531cdc1b7b19f445a6c58eab0cd4ec01ef9f45f57d788711c8210553fd65f8c7"
+divergence = "update-result"
+
+[items."fiber.spec.ts::Fiber: config validation::pass the resolved config to listeners"]
+status = "adapted"
+hash = "2c08347493a4371a347a3616350d927e34184a555ae8b715b7b36f8bb28d2846"
+divergence = "config-schema"
+
+[items."fiber.spec.ts::Fiber::component error"]
+status = "ported"
+hash = "64399991ce3f9f18a29e4597cc56ea3c64acfb0a2a479d5cd2b635848494cfd7"
+
+[items."fiber.spec.ts::Fiber::dispose error"]
+status = "ported"
+hash = "59500643ac748687165ff9432691f263d55398b0c8abfb192f69974a9ad74b34"
+
+[items."fiber.spec.ts::Fiber::failed fiber does not re-enter on dependency refresh"]
+status = "ported"
+hash = "0ffb0967789cfc3671d016f805df3748dee4a24ca09accdc9358bf9e2e5101e1"
+
+[items."fiber.spec.ts::Fiber::inertia lock 1"]
+status = "ported"
+hash = "d9818645edd40cd3d01cfc1868348790d15a0633c83678b5bd2486551c3e270d"
+
+[items."fiber.spec.ts::Fiber::inertia lock 2"]
+status = "ported"
+hash = "7e3ca6d287696832b6ea46b0bb86e137bfc9247ca693b44a103bcd5adf2b1418"
+
+[items."fiber.spec.ts::Fiber::inertia lock 3"]
+status = "ported"
+hash = "588cc9b312656bb6342bcaaa8599235d901fdac8db1431da0383e7932844cbac"
+
+[items."fiber.spec.ts::Fiber::keeps the active dispose sequence stable"]
+status = "ported"
+hash = "984d08d89fc27486d86a998bbc37bc18841083df52e0ccfc4784139248eb1ff1"
+
+[items."fiber.spec.ts::Fiber::restart wrapped fiber"]
+status = "ported"
+hash = "60c362f743cb62eacea9ac52b14f2404fbb2197990cc5ed099d023b260e6371c"
+
+[items."fiber.spec.ts::Fiber::settles a failed fiber to DISPOSED on dispose"]
+status = "ported"
+hash = "c040b31b7385c9d774b9ff03299251192a4b6f354a247e9ee9dce770c935a078"
+
+[items."fiber.spec.ts::Fiber::settles a pending fiber to DISPOSED on dispose"]
+status = "ported"
+hash = "e3d00dc5dac65dd0935a5f865ad612ff8d6fffb418aef0c3b1f779708f099f48"
+
+[items."fiber.spec.ts::Fiber::update config on wrapped fiber"]
+status = "ported"
+hash = "036d562166591c3baab6188139923123d892e215ef33364bc3f3832de4d16b59"
+
+[items."fiber.spec.ts::Fiber::update config while injected service reloads"]
+status = "ported"
+hash = "653099ed60246428fac5860ae07f58a2a9c2a3e0625900a92173cc648e987917"
+note = "The Object.hasOwn assertions check the prototype chain of a JavaScript wrapper and are not ported."
+
+[items."fiber.spec.ts::Fiber::update does not leak a dropped failure"]
+status = "ported"
+hash = "fd71cd0b2550d37e9bb19f59d47f2d17f490a338383eee71fdd751874c0f3d7b"
+
+[items."fiber.spec.ts::Fiber::update recovers a failed fiber"]
+status = "ported"
+hash = "d75cd917971477459a536d1dd81d326f806ca1d60df2f1e01c5f22432c234c64"
+
+[items."fiber.spec.ts::Fiber::update surfaces a failed recovery to its caller"]
+status = "ported"
+hash = "40ed0b96656c554d9052764a192cb8acc80ce97f309079c38d37344cb5e8f6a9"
+
+[items."fiber.spec.ts::Fiber::update surfaces a failed reload to its caller"]
+status = "ported"
+hash = "c3041c783b7b104240a08d60c6ca2dcaf4c7b1fc1a3867139268d3e3f7ac2d60"
+
+[items."fiber.spec.ts::Fiber::update waits for asynchronous recovery"]
+status = "ported"
+hash = "9209b74a95447b0ea2e72646d29ac773c115643cb190f162425abc1dc5767db1"
+
+[items."intercept.spec.ts::Intercept::custom merge"]
+status = "ported"
+hash = "1ae2ca48cd5f2c0e38d273babb23ed1c0ca518f69b95451d1f4b9bb2f7ffc636"
+
+[items."intercept.spec.ts::Intercept::merge context intercepts from outer to inner"]
+status = "ported"
+hash = "ac774fce05b11ccec869eb915a8f8f873e57b44fc062dd9681fb337f972e6158"
+
+[items."intercept.spec.ts::Intercept::merge injected config under context intercepts"]
+status = "ported"
+hash = "9fa35a6049053a57d40071435576de4963f64f2ef90192ca488d054710aa54c6"
+
+[items."intercept.spec.ts::Intercept::stop looking for injected config at an isolation boundary"]
+status = "ported"
+hash = "ae1f121917b78d71a8027ba39c30c5cab8111801bd8cd61895bb4bf4fdfb676f"
+
+[items."intercept.spec.ts::Intercept::take injected config from the declaring fiber"]
+status = "ported"
+hash = "68f9abfec6d959cb50e797c1caadfbb51b2cb16681909c1ec6befe7c2401ff51"
+
+[items."intercept.spec.ts::Intercept::take injected config from the def site"]
+status = "ported"
+hash = "5b09fa2ebf3bdbf3d7d686c50e8ad3c14e2af8db7eb83e410e4bd30cbd2d5857"
+
+[items."intercept.spec.ts::Intercept::take no injected config for own provisions"]
+status = "ported"
+hash = "fc6211222beaec1cfaf8145d46f0ab54379bf1c083b741288d6de83fef7a2556"
+
+[items."invoke.spec.ts::Functional Service::functional service"]
+status = "ported"
+hash = "55e45fb3e038fd6a078adc6ea00c11b037f933ad1f6d0f4914e5ac9ea1511800"
+
+[items."invoke.spec.ts::Functional Service::uses the service shadow for callable extensions"]
+status = "ported"
+hash = "5fd198fd7c73044a151ede44f748eeacf643481416decdcd607a71b39f57a960"
+
+[items."isolate.spec.ts::Isolation::does not expose own provisions across isolation boundaries"]
+status = "ported"
+hash = "e9f2957384e671b903fa0bd758a7fd8d9ded88e6e19ac75a913a56f984c926ba"
+
+[items."isolate.spec.ts::Isolation::does not inherit the injected view across isolation boundaries"]
+status = "ported"
+hash = "ef44b6b27cb76d2b361662d1a185484e8f92378937a6f8e6b7d90fbb446fb1cd"
+
+[items."isolate.spec.ts::Isolation::isolated context"]
+status = "ported"
+hash = "0dd0a7ca7aa0fb8e1f658f3d632cfac2a0bea7c3c91f8e555df1fdbcfb116d83"
+
+[items."isolate.spec.ts::Isolation::isolated event"]
+status = "ported"
+hash = "29b5e3718e9970dd47ee309d7d1168f9dbb1fafd83fa5a3c4697c948ca24c09f"
+
+[items."isolate.spec.ts::Isolation::keeps own provisions separate from the injected view"]
+status = "ported"
+hash = "630ddd6bb52fa82b01735ccf2056d1afbb6c2d9b957d567197360a4d5e646b43"
+
+[items."isolate.spec.ts::Isolation::shared label"]
+status = "ported"
+hash = "a3aab847b609ea9c3b50c848fff9d1104f7d904de8123cc205af3a936e060352"
+
+[items."logger.spec.ts::Logger::disposes the exporter that registered the disposer"]
+status = "adapted"
+hash = "9d32f32cdae2a8b10b993ab0b99bb91ddab99c9ce79ded2ea88ebc9a60d615ec"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::flattens an aggregate error into its members"]
+status = "adapted"
+hash = "d1ab956ee8aa11bc861cb54df0860d4dc46720aa94980744645327282c158427"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::honours explicit name argument"]
+status = "adapted"
+hash = "3af8bfd950a09ad074623558e23d3127954ff0a269de8450cab33185f26ba384"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::honours intercept name"]
+status = "adapted"
+hash = "54ec222ddc5b8e79497fb886134880bb9016114fab83f8b03b992a5180c0c87d"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::keeps the bounded buffer in place and chronological"]
+status = "adapted"
+hash = "67f4327ce5c7d6310923f791538e601ee24cc4a2330b7be577c19d8002af9ea9"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::logs an error whose errors array is empty"]
+status = "adapted"
+hash = "3c6dd1c2c224035696a12c8f8132f393278fcf8e67eb273a800019c25391e9bd"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::still lets outer caller intercept override the service-derived name"]
+status = "adapted"
+hash = "ad50b4c6b303a3d3a3d557cadb2dd9d8a60c75923b20b4f7e64bf5f088681d96"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::uses fiber name when called from outside any service"]
+status = "adapted"
+hash = "1e72761365b6f78ef8b613d17f7d57351c54bfd1ce07b91d4c81dc922e798499"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::uses service name when called from inside [Service.init] (unchanged behaviour)"]
+status = "adapted"
+hash = "e532d93575ee58b1d8371f30523a4d65163864e24706605ce19e719d02a8f2a8"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::uses service name when called from inside a Service method (regression)"]
+status = "adapted"
+hash = "7658c72efa81d3823c80305508ea86e4180c8877fea652e30dadaad56c0cfb38"
+divergence = "stdlib-logging"
+
+[items."logger.spec.ts::Logger::uses the innermost service name and restores the outer service"]
+status = "adapted"
+hash = "5d39a0fa2ea2d25d8c7f45f98ae309360d26f60ecc422e33169e61cfbdc3427c"
+divergence = "stdlib-logging"
+
+[items."message:@Inject() can only be used on class or class methods"]
+status = "ported"
+hash = "ed5dd36229c220d413e5b153becdbbdb13fe73147ce70bcf9a8373cbe0f89189"
+
+[items."message:Async config validation is not supported"]
+status = "ported"
+hash = "4b98e86e3ef2be1166c633f9168abac36100ce27b31283617d9f41cab8e07ed3"
+
+[items."message:Invalid effect"]
+status = "ported"
+hash = "cc79fb583a51177d3295765ad76603ff37162112638434c9f686d9f2c2c1f080"
+
+[items."message:cannot create effect on inactive context"]
+status = "ported"
+hash = "fc3c2257f49e6f1a5649225fd9d91d75c6d5d4a6c84dd22dca795c82dff0ef29"
+
+[items."message:cannot get property \"{}\" without inject"]
+status = "ported"
+hash = "055d340a7147752676d1f547b96ef9281d5ca4e863ea427115b0054c160fff93"
+
+[items."message:cannot set property \"{}\" in multiple fibers"]
+status = "ported"
+hash = "884270291b3831898fe38c2e968f00de233a2c658f2bb1e0e02e52e41ddcc369"
+
+[items."message:cannot set property \"{}\" without provide"]
+status = "ported"
+hash = "6585ef55f97e54dadb0d7c1d8f84b202c26db11113181726eb7cf78af536cc98"
+
+[items."message:invalid component, expect function or object with an \"apply\" method, received {}"]
+status = "ported"
+hash = "efb531674410a0e5fca7dce755f95970427a1469bd134d353dd1278e2d4e90b7"
+
+[items."message:next() called multiple times"]
+status = "ported"
+hash = "c169a6515735461739c1fd7897319bc0d802de1dde95af65d899716f92404460"
+
+[items."message:one or more listeners of event {} failed"]
+status = "ported"
+hash = "fbe478dc6723bc901fcf8bc85e52d4403b90eb104c3434d0f1607e70ba4eac0e"
+
+[items."message:property \"{}\" is already declared as {}"]
+status = "ported"
+hash = "b68702c04745c9e489805162069cfbc269afb4f235f6a669765889d8723bc507"
+
+[items."message:service \"{}\" has been registered at <{}>"]
+status = "ported"
+hash = "a90ac968c6d9a2b3c2f45e0b50b006b37f39b3de472e613ede9be3a9729d8471"
+
+[items."reflect.spec.ts::Reflect::Context.is()"]
+status = "ported"
+hash = "848b23aacbe31397ed3ec9e7aa44fcb3f96aef0fc2cbd0810388a1669650337f"
+
+[items."reflect.spec.ts::Reflect::access check"]
+status = "adapted"
+hash = "5f243e2eb5db5e6f479ba5ce2bfef6bc61a89c11196f5b1ee2f43ffc24ba24d7"
+divergence = "service-access"
+
+[items."reflect.spec.ts::Reflect::access error"]
+status = "adapted"
+hash = "5dfd388f3d503e9b896602772d2d3a70ab3a911b27a72798e053a77334ad4073"
+divergence = "service-access"
+
+[items."reflect.spec.ts::Reflect::does not load a fiber disposed during service notification"]
+status = "ported"
+hash = "2d30e11cac19db17dd338cccbb8d3aab9788de01eae87f6a94403c4729ca21d8"
+
+[items."reflect.spec.ts::Reflect::service inject leak"]
+status = "ported"
+hash = "afc40c750a3afee5ff9e3272bb8cf4e7f6401cf388804355041cb9e03f38a78d"
+
+[items."reflect.spec.ts::Reflect::service injection"]
+status = "adapted"
+hash = "e8da60f9c0172d92f35717b41ce993134cf1f01366a3d8935ee1d6d0d19c4eb3"
+divergence = "service-access"
+
+[items."replace.spec.ts::registry.replace()::emits internal/replace for each moved fiber"]
+status = "ported"
+hash = "d42731a8f99df6636fe8171255d1d92160f1c74761db6d2d7feb10ce3e96d730"
+
+[items."replace.spec.ts::registry.replace()::follows a chain of replacements"]
+status = "ported"
+hash = "691724c6e6ba883ada87a1f4e9d10efe904be370aabc1dc574723894b2df651f"
+
+[items."replace.spec.ts::registry.replace()::forwards a component that is not registered"]
+status = "ported"
+hash = "961bcc3f038917c8faf09ea7a7a29a704cd1813e899bfcd48578cef52a73e151"
+
+[items."replace.spec.ts::registry.replace()::forwards the old component to the new one"]
+status = "ported"
+hash = "fcf96df7b372b33bb22b2808cd35e374535b3cd325b948c3d806f91a0e2d9188"
+
+[items."replace.spec.ts::registry.replace()::leaves a fiber failed when the new component fails to apply"]
+status = "ported"
+hash = "3485da7b53d7fb78f6d89fe890039adfc393af71054f54acbcbe9261f095b18e"
+
+[items."replace.spec.ts::registry.replace()::merges the fibers into a registered component"]
+status = "ported"
+hash = "9ec7acae33bfdee27f770096141d690f1bc8e59f31f4e45ef7ed840f8f6622a7"
+
+[items."replace.spec.ts::registry.replace()::reloads a consumer of a replaced service"]
+status = "ported"
+hash = "e95b31ab13a9215cec2b3b4d0ddfea9e13eb43919fd9d3d1984e0d8ed2a595bb"
+
+[items."replace.spec.ts::registry.replace()::restarts a failed fiber"]
+status = "ported"
+hash = "c1eef2682996ee31731ac95d4d1a11830e21bc26106256c3d1fbb819328d8d09"
+
+[items."replace.spec.ts::registry.replace()::starts a pending fiber when the new component drops the missing dependency"]
+status = "ported"
+hash = "55415059b6f3a262a7b35c1cfab41ca7d345da49d01ccfb19b5532a23ee9c2b5"
+
+[items."replace.spec.ts::registry.replace()::starts a pending fiber when the new component injects an available service"]
+status = "ported"
+hash = "5870789c5b64e4642e66a626c70bdc52ab787a80be744bb1111ea6aadbc80d74"
+
+[items."replace.spec.ts::registry.replace()::stops depending on a dependency that the new component drops"]
+status = "ported"
+hash = "7b52ac738dc6d629b9180de6198dc18a3161dc08380b661668d91d9b8fd914ad"
+
+[items."replace.spec.ts::registry.replace()::swaps the implementation behind a fiber in place"]
+status = "ported"
+hash = "f0e6cd32d26c8cdad338723d87afbfdd13aab5a654a0abc106216fc22332d0b1"
+
+[items."replace.spec.ts::registry.replace()::switches back to a replaced component"]
+status = "ported"
+hash = "6c0498187a2c5ead6b5d94662deb082acdacfd2b8a84b34425deb14f7e64d10e"
+
+[items."replace.spec.ts::registry.replace()::takes the dependencies of the new component"]
+status = "ported"
+hash = "a4e796d491258fbb5aff70e6a619ca5b93be93c2e14919185da349e4d123532b"
+
+[items."replace.spec.ts::registry.replace()::unregisters the new component when its last fiber is disposed"]
+status = "ported"
+hash = "952365bb32c50a44b9bb1073cc81ef5c4e94e0dd55b582c2e9aababb935cb995"
+
+[items."replace.spec.ts::registry.replace()::validates the config with the new schema"]
+status = "ported"
+hash = "d236d2417c81116d24431ea597d518ff9a4f8ad7c77562e7fd1fb5f29df9cf6b"
+
+[items."service-dispose.spec.ts::Service disposal::allows unrelated providers and sibling effects to clean up concurrently"]
+status = "ported"
+hash = "2dba4bdae72a08e2e1a679d4058fb43ba31dff5fedb00e4fded2a48962cfbe78"
+
+[items."service-dispose.spec.ts::Service disposal::keeps an inherited service accessible to a child in a composed effect"]
+status = "ported"
+hash = "dd42b4c4396331765703ee7586025891474c4c162c9a8e75ec0bc694871c6387"
+
+[items."service-dispose.spec.ts::Service disposal::keeps provider listeners alive through the final consumer event"]
+status = "ported"
+hash = "6ee633764d3756cac447c5ac36942728b5d34ff710fa9550a5009e2c382165eb"
+
+[items."service-dispose.spec.ts::Service disposal::releases an injected binding after providing the same name in another realm (consumer)"]
+status = "ported"
+hash = "2b27bb7ca1cb2d954a85202657d737de77f235fe6052dc9eaa2bd6967347c989"
+
+[items."service-dispose.spec.ts::Service disposal::releases an injected binding after providing the same name in another realm (provider)"]
+status = "ported"
+hash = "2b27bb7ca1cb2d954a85202657d737de77f235fe6052dc9eaa2bd6967347c989"
+
+[items."service-dispose.spec.ts::Service disposal::releases an injected binding after providing the same name in another realm (root)"]
+status = "ported"
+hash = "2b27bb7ca1cb2d954a85202657d737de77f235fe6052dc9eaa2bd6967347c989"
+
+[items."service-dispose.spec.ts::Service disposal::releases dependencies after a cleanup error"]
+status = "ported"
+hash = "2740e1deab24985720a00de5f3b0e9fe813510c1f1ebeadeddcc75784dde6ee1"
+
+[items."service-dispose.spec.ts::Service disposal::replaces a binding from the same provider during consumer initialization"]
+status = "ported"
+hash = "688d63763a9734fb1ba7bbed81e8a44caa22f7352169c042bc3468ad3f28ab67"
+
+[items."service-dispose.spec.ts::Service disposal::retains an ancestor injection until its child finishes cleanup"]
+status = "ported"
+hash = "8591308f33092d4336753ce31f0bd56e01c6b03b91927f0036e9168e1dc69225"
+
+[items."service-dispose.spec.ts::Service disposal::retains dependencies through in-flight setup and rollback (failure: false)"]
+status = "ported"
+hash = "cb33ecb86f00c3b95086ef4da2e0d0949dec3801d967e35c9bcfbccacdac0b82"
+
+[items."service-dispose.spec.ts::Service disposal::retains dependencies through in-flight setup and rollback (failure: true)"]
+status = "ported"
+hash = "cb33ecb86f00c3b95086ef4da2e0d0949dec3801d967e35c9bcfbccacdac0b82"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (consumer first)"]
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (provider first)"]
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (provider)"]
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (restart)"]
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (root)"]
+status = "ported"
+hash = "7f35f31e57c4e4d401df39a184c7e3a5e35a13a03e7e4bf2d050026a386f52e8"
+
+[items."service-dispose.spec.ts::Service disposal::retains transitive dependencies while a consumer providing another service drains"]
+status = "ported"
+hash = "3f68830fc296f41fa35a98d02264374a001e0f0f35f7fbb28c2410bc6f4bf923"
+
+[items."service-dispose.spec.ts::Service disposal::supports composed provider effects (owner shutdown: false)"]
+status = "ported"
+hash = "3604ac25ceafb0d9df22b4f7a5f05cfb3359c3933e4c5342a0661ee21b4f8131"
+
+[items."service-dispose.spec.ts::Service disposal::supports composed provider effects (owner shutdown: true)"]
+status = "ported"
+hash = "3604ac25ceafb0d9df22b4f7a5f05cfb3359c3933e4c5342a0661ee21b4f8131"
+
+[items."service-dispose.spec.ts::Service disposal::tracks same-name services in separate isolation realms (root shutdown: false)"]
+status = "ported"
+hash = "25d8c450cda5b009944654781c8bfab0bfe201664c963dc9f4c0b0b5be37af90"
+
+[items."service-dispose.spec.ts::Service disposal::tracks same-name services in separate isolation realms (root shutdown: true)"]
+status = "ported"
+hash = "25d8c450cda5b009944654781c8bfab0bfe201664c963dc9f4c0b0b5be37af90"
+
+[items."service-dispose.spec.ts::Service disposal::waits for a child that explicitly injects its parent service"]
+status = "ported"
+hash = "90c4ba8cd53f304a05a1c84df67624a526a208423725225293c0028d9b73cbf4"
+
+[items."service-dispose.spec.ts::Service disposal::waits for a disposing consumer that has already left the registry"]
+status = "ported"
+hash = "69f762b8f5fa53d4fa897b6976b7ce9aa5ffe56381be376cf2202953b85dc14d"
+
+[items."service-dispose.spec.ts::Service disposal::waits for current and withdrawn bindings during provider disposal (withdrawn first: false)"]
+status = "ported"
+hash = "07d8de0f3317292ea4bb049abc31f4dfcee24ccaf94492ec8515f200a8989e03"
+
+[items."service-dispose.spec.ts::Service disposal::waits for current and withdrawn bindings during provider disposal (withdrawn first: true)"]
+status = "ported"
+hash = "07d8de0f3317292ea4bb049abc31f4dfcee24ccaf94492ec8515f200a8989e03"
+
+[items."service-dispose.spec.ts::Service disposal::withdraws one binding without waiting for another binding from the same provider"]
+status = "ported"
+hash = "4f8396083a7afd748394b6e50d34ebd808066a2c7601158077dcd5ab6fc6c2dd"
+
+[items."service-dispose.spec.ts::Service disposal::withdraws only the old binding without waiting for the next load"]
+status = "ported"
+hash = "233eeb8a8e5030a006e8debc537331d46624e2854ef4dd79bb48727c553087d5"
+
+[items."service.spec.ts::Service::compare snapshot"]
+status = "ported"
+hash = "8b38682a0cc4295fffe0f3b858861aa6b479578bb66a133a4a66ca7b50af93b2"
+
+[items."service.spec.ts::Service::dispose dependents before isolated provider"]
+status = "ported"
+hash = "ea86d8125d50b12b0abb783ff7f32505710bbf58fde57ef1c88e029503d76081"
+
+[items."service.spec.ts::Service::dispose dependents before provider"]
+status = "ported"
+hash = "702b9269966b5f86857b8ace3f696dc4b144ea00a68c0f77cedf641e96b1ec35"
+
+[items."service.spec.ts::Service::dispose dependents before provider restarts"]
+status = "ported"
+hash = "8610b385ec841e1f7a8405791ee59d8c122b8ad71382e9cebe332714579d8d3f"
+
+[items."service.spec.ts::Service::multiple injects"]
+status = "adapted"
+hash = "ae4d3e0ca56033f8cfce0a0e5c048e6d340a55d2b100f82ba4c7bbe23880391a"
+divergence = "hook-names"
+
+[items."service.spec.ts::Service::pending inject"]
+status = "adapted"
+hash = "f031b152772e9d4494441b16bf1a5a630841d2595a778118005187824a8c8945"
+divergence = "hook-names"
+
+[items."service.spec.ts::Service::traceable effect (with inject)"]
+status = "ported"
+hash = "1b23cc2de1e6290b9eb84c586237398f3b054e96262c67568e43750fb08e94f2"
+
+[items."service.spec.ts::Service::traceable effect (without inject)"]
+status = "ported"
+hash = "c9cd1012bed2685faf7eabd55962d7d7386caf3be76e6516ea89f66a87dd87f2"
+
+[items."service.spec.ts::Service[Symbol.hasInstance]::answers for a plain object after walking to the end of the chain"]
+status = "ported"
+hash = "9b446aaddfd3f7d28442a040b4756e8c57902faca61b28ec7ed01efe41798e9c"
+
+[items."service.spec.ts::Service[Symbol.hasInstance]::answers for null and undefined"]
+status = "ported"
+hash = "0f044e31c64c50295c98798d52e023f47e34f09d09cea02a62a5ac6316888cf4"
+
+[items."shadow.spec.ts::Traceable caller::applies the service inject when entered from root"]
+status = "ported"
+hash = "7dfe652a625aa26efbaa29365a1ea93b29c4cba3fb8e19d0cf060d26487ffc75"
+
+[items."shadow.spec.ts::Traceable caller::exposes the caller to callable services"]
+status = "ported"
+hash = "af2a0bacf48dce0f13bc13374f07f6eec6033c55c529668badb6c41502e827c0"
+
+[items."shadow.spec.ts::Traceable caller::exposes the caller without preserving shadow for noShadow services"]
+status = "ported"
+hash = "e5f9e398f4efe8c6a3f52359679285716d1cf3ef5752b73d1c3b0085b4909d42"
+
+[items."shadow.spec.ts::Traceable caller::keeps caller metadata separate from the service shadow"]
+status = "ported"
+hash = "60ba90ae8b465e0683240bf4f58cbc49a81d0f762f0e84b4b0d5c86ad7324769"
+
+[items."shadow.spec.ts::Traceable caller::keeps unchecked access for services provided on the root ctx"]
+status = "ported"
+hash = "83b10f10fb6ddfb2b33fcb5f0d68600252bc08fa543f194e2fec393d7bd4458b"
+
+[items."shadow.spec.ts::Traceable caller::resolves dependencies through a captured shadow"]
+status = "ported"
+hash = "9e6f15a1dfbf24ee6fe8b9837d6620827aaaf79281caf2e123b77f63687a0099"
+
+[items."shadow.spec.ts::Traceable caller::resolves same-name own provisions at their definition sites"]
+status = "ported"
+hash = "c978e405f9598bb0809ec6c07175c0d0b4199d69bf37e488376f6bf746159fec"
+
+[items."shadow.spec.ts::Traceable caller::strips service shadow before creating components"]
+status = "ported"
+hash = "e4bf620b47071f8743b770f9bebaf9af138740debb0e82fac042e1c1f94ab212"
+
+[items."src/context.ts:<rest>"]
+status = "not-applicable"
+hash = "fa8163fcec0ac28a56ac0102b333a0a8358b627893dee0059e716913cb4dc54f"
+note = "Imports and the TypeScript interface that types the members of `Context`. The `Context` class declares its members with Python type hints."
+
+[items."src/context.ts:Context"]
+status = "ported"
+target = "pycordis.context.Context"
+hash = "da95856926b212318c08f9410901a9ea290e4d985be872ffd3a8d004fc0e66bf"
+
+[items."src/context.ts:Context.[Symbol.for('nodejs.util.inspect.custom')]"]
+status = "ported"
+target = "pycordis.context.Context.__repr__"
+hash = "e7c25f5473f066546a75aa25fe08b422b725b0f31e5e40784d26488f53504909"
+
+[items."src/context.ts:Context.constructor"]
+status = "ported"
+target = "pycordis.context.Context.__init__"
+hash = "3a773c1580d881f32181a942bcd6a244f4546ad8fed42e0742ad29327b2e5dee"
+
+[items."src/context.ts:Context.extend"]
+status = "ported"
+target = "pycordis.context.Context.extend"
+hash = "1d6ac70380d29f8a94220978779b77efda9fff104cd27ab9ace584ea5b31aaca"
+
+[items."src/context.ts:Context.intercept"]
+status = "ported"
+target = "pycordis.context.Context.intercept"
+hash = "cee1429fcff2da3f03d6774cd4dc3aa14b60a143419eda57fbb1b8bca340880f"
+
+[items."src/context.ts:Context.is"]
+status = "adapted"
+target = "pycordis.context.Context"
+hash = "74dd1233ff5d178b94545d881875cd25bb16593355da820272ab2b80735e1b67"
+divergence = "hook-names"
+
+[items."src/context.ts:Context.isolate"]
+status = "ported"
+target = "pycordis.context.Context.isolate"
+hash = "3d3d5976fe96d44551383804e41f654b85e3e7a413f27fb97c76d000d4018eb3"
+
+[items."src/events.ts:<rest>"]
+status = "not-applicable"
+hash = "ebd4d5e1859a9095d72ad20ec2b54f1df9a95e662403e1c11f9050b16d698bae"
+note = "Imports of the TypeScript module."
+
+[items."src/events.ts:DispatchMode"]
+status = "ported"
+target = "pycordis.events.DispatchMode"
+hash = "2b6d88b8d2c9f30d63a24e2e11f3f33f4b2c7566e8a9c484c6770fe1bd822a0e"
+
+[items."src/events.ts:EventOptions"]
+status = "ported"
+target = "pycordis.events.EventOptions"
+hash = "dc89d297ec6e8f68c78ced26c67e21b99b3004f565514c9cd8930224a2676804"
+
+[items."src/events.ts:Events"]
+status = "not-applicable"
+hash = "1db8fa5905847edeb4ccd96c1e374d0cfd1c9444d2ca002a1e936733249d5ed2"
+note = "The TypeScript interface of typed event signatures. pycordis lists the internal event names in InternalEventName and types listeners as callables."
+
+[items."src/events.ts:EventsService"]
+status = "ported"
+target = "pycordis.events.EventsService"
+hash = "9cd5b30a077fa210b8029a5363131061782f4aaf857bf1f3641a91be3f1ee57b"
+
+[items."src/events.ts:EventsService._resolve"]
+status = "adapted"
+target = "pycordis.events.EventsService._resolve"
+hash = "d2ccec29b3b5a97deebfdf7a1c0c9acb8c63b560ff1bba42de278a1782948534"
+divergence = "event-dispatch-args"
+
+[items."src/events.ts:EventsService.bail"]
+status = "adapted"
+target = "pycordis.events.EventsService.bail"
+hash = "a6fba01a9c44384a2d33287ac26d2567886f8138d3aa0c14573fc3ad1570d669"
+divergence = "event-dispatch-args"
+
+[items."src/events.ts:EventsService.constructor"]
+status = "ported"
+target = "pycordis.events.EventsService.__init__"
+hash = "fcc580e7fe2a9ddfdf356dca7b597240b1f9d2a7ed7f9d1862861f2a1bc658a0"
+
+[items."src/events.ts:EventsService.dispatch"]
+status = "diverged"
+hash = "85775376950f6b36ca38f5fe23386eba40ed36004a20dadac388ec9bd8612793"
+divergence = "deprecated-aliases"
+
+[items."src/events.ts:EventsService.emit"]
+status = "adapted"
+target = "pycordis.events.EventsService.emit"
+hash = "95cca3e8bfc71cdd6b09e85bad9f7b351263e558e9963cfbd512dc2eeee9ecc1"
+divergence = "event-dispatch-args"
+
+[items."src/events.ts:EventsService.on"]
+status = "adapted"
+target = "pycordis.events.EventsService.on"
+hash = "56fe45e4b7c2d8b92f3e6c7c08bfab3f6ccce962a3507ebd1318cb33f571ce00"
+divergence = "event-dispatch-args"
+
+[items."src/events.ts:EventsService.once"]
+status = "adapted"
+target = "pycordis.events.EventsService.once"
+hash = "fe71c507358187cfc562c049ba8c722b49949303bee03a5785cf4801335e853a"
+divergence = "event-dispatch-args"
+
+[items."src/events.ts:EventsService.parallel"]
+status = "adapted"
+target = "pycordis.events.EventsService.parallel"
+hash = "216623de2429f4d2c91e673bc631c332557c5476360e09f17e7003e006e8e380"
+divergence = "exception-group"
+
+[items."src/events.ts:EventsService.register"]
+status = "ported"
+target = "pycordis.events.EventsService._register"
+hash = "6de5f373945721eeaf2b41a6bad8074b52ed5c10c989a5babd964e19ff1e7554"
+
+[items."src/events.ts:EventsService.serial"]
+status = "adapted"
+target = "pycordis.events.EventsService.serial"
+hash = "38820f6ffe4870e883a382e05804855c1d300a2fc1805b55c20ab11252a5d358"
+divergence = "async-model"
+
+[items."src/events.ts:EventsService.unregister"]
+status = "ported"
+target = "pycordis.events.EventsService._unregister"
+hash = "9cbd8d2f83493ee66aabc8ad2a80bf3b284e981dc21f8de086c382a62de13ec7"
+
+[items."src/events.ts:EventsService.waterfall"]
+status = "adapted"
+target = "pycordis.events.EventsService.waterfall"
+hash = "db657119512a33a46d1dc2b1d1e6aa4f8c06db967cc685ae5dc3de0cf805a8e1"
+divergence = "event-dispatch-args"
+
+[items."src/events.ts:Hook"]
+status = "ported"
+target = "pycordis.events.Hook"
+hash = "1a6c8bf1de6489e3e828b81447ccf4af23c4d63507881b9a74289bc45a0e3c17"
+
+[items."src/events.ts:Parameters"]
+status = "not-applicable"
+hash = "501b824a51b780bfe25eaaaa533f97fff1f5d1c82c66713b6cae0de57642b457"
+note = "A TypeScript utility type for typed event signatures. Listeners are typed as callables."
+
+[items."src/events.ts:ReturnType"]
+status = "not-applicable"
+hash = "83ab9c14fbe1e2d7435a7766a7c07f0d5b33b6e219ac4e81bf63f37c6874835a"
+note = "A TypeScript utility type for typed event signatures. Listeners are typed as callables."
+
+[items."src/events.ts:ThisType"]
+status = "not-applicable"
+hash = "6ab81278747c558d455d8499a4949623302c275780054c760bb3b14c06f23667"
+note = "A TypeScript utility type for typed event signatures. Listeners are typed as callables."
+
+[items."src/events.ts:isBailed"]
+status = "ported"
+target = "pycordis.events.is_bailed"
+hash = "72a6789f3887e71a16757b63ff2f4c4a21e87ae956cc8c699cca8a771262b059"
+
+[items."src/events.ts:module ./context.ts"]
+status = "adapted"
+target = "pycordis.context.Context"
+hash = "78b369bee0ef9f129ec1d434d64b24b5c65493cfb938d3b75c9bf51f27cfc137"
+divergence = "event-dispatch-args"
+
+[items."src/fiber.ts:<rest>"]
+status = "not-applicable"
+hash = "3fb7194ace11c44260103ab18af428777167133387c9ccaa25213076073dadbe"
+note = "Imports and TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
+
+[items."src/fiber.ts:AsyncDisposable"]
+status = "adapted"
+target = "pycordis.fiber.EffectHandle"
+hash = "9b06c52448b25db987945af9dbca962b5e4a6c56dae35a2018653b7f65019925"
+divergence = "async-effects"
+
+[items."src/fiber.ts:AsyncEffect"]
+status = "adapted"
+target = "pycordis.fiber.EffectForm"
+hash = "a10288c9d38d83843e6939f2100cd7c70dfca18853d052a4963f62ea28615ef7"
+divergence = "async-effects"
+
+[items."src/fiber.ts:CordisError"]
+status = "ported"
+target = "pycordis.errors.CordisError"
+hash = "452f4c87f08e8cf1e7cfa5f28f8196aab7a1512c65481acbd1883156ad8222ff"
+
+[items."src/fiber.ts:CordisError.constructor"]
+status = "diverged"
+target = "pycordis.errors.CordisError"
+hash = "a4e4c3ecae47602aac4041b62f0997447be6a8fde0409ab606e21601cf467e32"
+divergence = "error-code"
+
+[items."src/fiber.ts:Disposable"]
+status = "ported"
+target = "pycordis.fiber.Disposer"
+hash = "85688c0d262dd384c15a4fe6c5b203a2a68bd5c98a1ab308ce0e94f01e773ef6"
+
+[items."src/fiber.ts:Effect"]
+status = "ported"
+target = "pycordis.fiber.EffectForm"
+hash = "5d56b0d4645b7c5e19f09b60fa7af74dba283d910e261aaddbb57cbfc77c7733"
+
+[items."src/fiber.ts:EffectMeta"]
+status = "ported"
+target = "pycordis.fiber.EffectMeta"
+hash = "807bec94699dbd21125381bebb42d81111a60153b0de9e7bd732300309e965ed"
+
+[items."src/fiber.ts:EffectRunner"]
+status = "ported"
+target = "pycordis.fiber._Runner"
+hash = "df1a6fdf989153608f231d8280f09c51887915dfa44aadb109b535a73c936ef1"
+
+[items."src/fiber.ts:Fiber"]
+status = "ported"
+target = "pycordis.fiber.Fiber"
+hash = "2323620692ade98e6c57b7ec7eddbcd707e143f1cc8907eef5da304863a9a754"
+
+[items."src/fiber.ts:Fiber._checkImpl"]
+status = "ported"
+target = "pycordis.fiber.Fiber._check_impl"
+hash = "bfe64666519f6188e3b4693ee3a5e807f3cfdcf1bbd8817332be01f0b4cf5e46"
+
+[items."src/fiber.ts:Fiber._execute"]
+status = "ported"
+target = "pycordis.fiber.Fiber._execute"
+hash = "8e1ef987352caf86b6a3832f50e2a8ce99214f1551e901f02f386c88e4c68112"
+
+[items."src/fiber.ts:Fiber._getState"]
+status = "ported"
+target = "pycordis.fiber.Fiber._get_state"
+hash = "ef72aa6793d112644e45478f235418cbb2b420c5a6767bb7d7de71e1e2e580b3"
+mirror = true
+
+[items."src/fiber.ts:Fiber._refresh"]
+status = "ported"
+target = "pycordis.fiber.Fiber._refresh"
+hash = "19e5bd6e33db741fd4d7e468e87674a971a2dee22aedb27ee84a6c34685aac6f"
+mirror = true
+
+[items."src/fiber.ts:Fiber._reload"]
+status = "ported"
+target = "pycordis.fiber.Fiber._reload"
+hash = "6682be41383a6c0e2f4dd813638eb3fab8c04b5409d2721294ef4af1ea92b7d6"
+mirror = true
+
+[items."src/fiber.ts:Fiber._replace"]
+status = "ported"
+target = "pycordis.fiber.Fiber._replace"
+hash = "ffc342f6940b5a3bfd10723c4047fa0b2104fa215360e5e095a6a70c6a2896dc"
+
+[items."src/fiber.ts:Fiber._resolve"]
+status = "ported"
+target = "pycordis.fiber.Fiber._resolve"
+hash = "7858e13ec614a38fe62ee672223f413b8941b2800ebcd919cfd53ec75fdecf54"
+
+[items."src/fiber.ts:Fiber._setEpoch"]
+status = "ported"
+target = "pycordis.fiber.Fiber._set_epoch"
+hash = "59735115ed5aa5ae323f512a6a05f0d53e12784c93bfeac7d7bcf65ba5a148eb"
+mirror = true
+
+[items."src/fiber.ts:Fiber._unload"]
+status = "ported"
+target = "pycordis.fiber.Fiber._unload"
+hash = "521ea9721c196b3a1c1a51b78afe0d6eb6892e8487027f3ec5f81bcb3d527ebb"
+mirror = true
+
+[items."src/fiber.ts:Fiber._updateState"]
+status = "ported"
+target = "pycordis.fiber.Fiber._update_state"
+hash = "a2a4489289bb237f00f81fcb13f2f077970ae6a244065694e25b0162cc388a58"
+mirror = true
+
+[items."src/fiber.ts:Fiber.assertActive"]
+status = "ported"
+target = "pycordis.fiber.Fiber.assert_active"
+hash = "58a0e4c24377aef6e122cf9afe9fb91374a1efd33f08c0b6cbffd4e604f3a42e"
+
+[items."src/fiber.ts:Fiber.await"]
+status = "adapted"
+target = "pycordis.fiber.Fiber.wait"
+hash = "bb88dbc01d2dbc49f0472759a780df31e5e1ffdb3c38f534e88e1567a0f496f7"
+divergence = "fiber-wait"
+
+[items."src/fiber.ts:Fiber.constructor"]
+status = "ported"
+target = "pycordis.fiber.Fiber.__init__"
+hash = "e16d9639c99eaa1cb7b4388b171cc387e15e76cf908e6451c2267b596091319c"
+
+[items."src/fiber.ts:Fiber.effect"]
+status = "adapted"
+target = "pycordis.fiber.Fiber.effect"
+hash = "073627c9a069a84480f40e865b2464d753e824e6c052311c3e9ec38e28e5dcc2"
+divergence = "async-effects"
+
+[items."src/fiber.ts:Fiber.getEffects"]
+status = "ported"
+target = "pycordis.fiber.Fiber.get_effects"
+hash = "5bce6273c75a1a2c517090f617a07394a22e429a6b04121eb5b217e3558d1fe2"
+
+[items."src/fiber.ts:Fiber.name"]
+status = "ported"
+target = "pycordis.fiber.Fiber.name"
+hash = "2355bfe31ae293e82649cc75dba8f59682900af969391643828835b12458a733"
+
+[items."src/fiber.ts:Fiber.restart"]
+status = "ported"
+target = "pycordis.fiber.Fiber.restart"
+hash = "94511f76e214bb6f177deb6a2b0a8fe4b092d7201d053e13899a3596c0c07502"
+
+[items."src/fiber.ts:Fiber.update"]
+status = "adapted"
+target = "pycordis.fiber.Fiber.update"
+hash = "7d552b1a389fc951aece727bcdb101b19ecf2a5e258c0173d5f4bd4d9fff49ea"
+divergence = "update-result"
+
+[items."src/fiber.ts:FiberState"]
+status = "ported"
+target = "pycordis.fiber.FiberState"
+hash = "a909fac8c8da7ec516c7eb530e958d8e118d1481fa27ac90d4ff6518d330d689"
+
+[items."src/fiber.ts:INACTIVE"]
+status = "ported"
+target = "pycordis.fiber.INACTIVE"
+hash = "c9fcd629603f07c7b49bc151aae2b6f1542ee1912cbe650f1a8901d429bf6ad1"
+
+[items."src/fiber.ts:SyncEffect"]
+status = "ported"
+target = "pycordis.fiber.EffectForm"
+hash = "1721814fb773cb7342d2e5ee21c36ed5b71cc4ed15e77452e8242a6f57491902"
+
+[items."src/fiber.ts:ValidationError"]
+status = "ported"
+target = "pycordis.errors.ValidationError"
+hash = "5f013f4387e20d1ecace2647fd059d2cb48846d019cad45127fd1619a36d64e1"
+
+[items."src/fiber.ts:ValidationError.constructor"]
+status = "ported"
+target = "pycordis.errors.ValidationError.__init__"
+hash = "3d6893744d591ada70a825e45782bd0fabda41bc4db8ccc87dc512163560a37b"
+
+[items."src/fiber.ts:ValidationError.formatPath"]
+status = "ported"
+target = "pycordis.errors.ValidationError.format_path"
+hash = "30536794529f506c4fa9b5cf55fdd9e85f542dca40ded48e1ab3d22ce2fd6207"
+
+[items."src/fiber.ts:ValidationError.is"]
+status = "not-applicable"
+hash = "ee5ca11c52bc4357fa591cbe1b957ace0470988f790b57961d3fd659e64cced3"
+note = "isinstance(error, ValidationError) replaces the brand check"
+
+[items."src/fiber.ts:ValidationError.normalizePath"]
+status = "not-applicable"
+hash = "2480ea44c5d8c5e272958d1f851da1bbaa8fd276a4e1457f338db4900aee848b"
+note = "A Python issue path holds plain names and indexes, so it needs no normalization"
+
+[items."src/fiber.ts:kValidationError"]
+status = "not-applicable"
+hash = "006c123829f8b4c9da97b815ec4eae0a28e09c21c9d86437ca09e629d314141e"
+note = "isinstance replaces the symbol brand"
+
+[items."src/fiber.ts:module ./context.ts"]
+status = "ported"
+target = "pycordis.context.Context"
+hash = "c7e59b3a5665f194b5d1171d9ccba656bde85be7d1f928eeefd13448f40de0e2"
+
+[items."src/fiber.ts:resolveConfig"]
+status = "adapted"
+target = "pycordis.fiber.resolve_config"
+hash = "792ca4135047d874e9c12031afa70892637816040468ccbaed23043a5981b9f4"
+divergence = "config-schema"
+
+[items."src/index.ts:<rest>"]
+status = "not-applicable"
+hash = "a7fb3cbd1fdbb2c0dba65ee87077ddd984317d2e3780b31e9beef0b7f52de309"
+note = "Re-exports of the modules. `pycordis/__init__.py` exports the public names."
+
+[items."src/logger.ts:<rest>"]
+status = "not-applicable"
+hash = "8e5fa0ff854e4c583027f7ddc947dbcd645806c1b889b661b6f239462cb66cf3"
+note = "Imports of the TypeScript module."
+
+[items."src/logger.ts:Exporter"]
+status = "adapted"
+target = "pycordis.logger.LoggerService.exporter"
+hash = "f03f4645d2560403984bc499b3916eaa56e69e7017a1ac50f166eaec14d9ed96"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:Formatter"]
+status = "diverged"
+hash = "6150be29522f606e5e925f75ee8c98c22a26de1404b49cb649c3468c0a7149d9"
+divergence = "logger-format"
+
+[items."src/logger.ts:Logger"]
+status = "adapted"
+target = "pycordis.logger.Logger"
+hash = "bbcd0f9085bbafcbadf862b1ceb9d792cc7ca4b43da506f14a85a8a5caf65df4"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:Logger._method"]
+status = "adapted"
+target = "pycordis.logger.Logger.log"
+hash = "357fff0950e0b600f981662fbc45c1f63e2c86bd991fc0e3ee12c1922125bc9e"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:Logger.code"]
+status = "adapted"
+target = "pycordis.logger.color_code"
+hash = "02abc7ea7524a2904b94a9cd20a6c1896e5d6920531fd4ed708a07d06b7318c5"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:Logger.color"]
+status = "adapted"
+target = "pycordis.logger.colorize"
+hash = "ec81760a691aa20c178349c8aff567f772de0b5506874b40d74e44f78a5e150d"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:Logger.constructor"]
+status = "adapted"
+target = "pycordis.logger.Logger.__init__"
+hash = "86373dd5462dffd1f7b2981b9210745eef30fcd371a499829404ac44a7739703"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:Logger.format"]
+status = "diverged"
+hash = "210e75da13a68a7578e5b949c73a533d79cea449908b749cfc71b70c76f50c61"
+divergence = "logger-format"
+
+[items."src/logger.ts:LoggerLevel"]
+status = "diverged"
+hash = "898537bf84e07394983717d6a09f626c2b5b011cd50517c345ad1139b55b8396"
+divergence = "logger-format"
+
+[items."src/logger.ts:LoggerMethod"]
+status = "not-applicable"
+hash = "80f6c50d6702674e518dc8ba2b5e1128767a26dc16747ac654b793221f7e0d38"
+note = "A TypeScript type of the logging methods; `logging` defines them"
+
+[items."src/logger.ts:LoggerOptions"]
+status = "diverged"
+hash = "f027b674ad0e3d92ed3c10a1c1db211f93e763a8b7cb97053f0122ef7c43103f"
+divergence = "logger-format"
+
+[items."src/logger.ts:LoggerService"]
+status = "adapted"
+target = "pycordis.logger.LoggerService"
+hash = "4b3ea491d778eeaa25cfa8714e5bac8a5fa2dd2432a1227bfe60534b4b4bee3b"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:LoggerService.[symbols.invoke]"]
+status = "adapted"
+target = "pycordis.logger.LoggerService.cordis_invoke"
+hash = "5fb070fb5397ea53e22ce897cd040cc08db5cd89c92e7d712dde3a890b74afd7"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:LoggerService.constructor"]
+status = "adapted"
+target = "pycordis.logger.LoggerService.__init__"
+hash = "58542e85c522d02a0472835a29743d5bbe12aebc805f56175ac964872e8cfc2a"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:LoggerService.exporter"]
+status = "adapted"
+target = "pycordis.logger.LoggerService.exporter"
+hash = "a94a96eb48cebdd80b887a1241eba9ee016cd4a44aec30023d38d64438868633"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:LoggerType"]
+status = "not-applicable"
+hash = "5c7d49127c0dd95fe72e866c00c3d712de38f6d9025ff1864353362040f9a956"
+note = "A TypeScript union of the logging method names"
+
+[items."src/logger.ts:Message"]
+status = "not-applicable"
+hash = "1822aeaaa6541e29191a055c51f9fb6d728c1d7767dda5f07243e93f23e7ca12"
+note = "`logging.LogRecord` is the record"
+
+[items."src/logger.ts:c16"]
+status = "adapted"
+target = "pycordis.logger.color_code"
+hash = "7dc279d84001a1252f3cbc3222932d051882182851d0528ecf281c2cd6e2ec80"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:c256"]
+status = "adapted"
+target = "pycordis.logger.color_code"
+hash = "13907366b03a60e39f4beb74208d49ed5e732c85bf05495adaa2b9c62aa87390"
+divergence = "stdlib-logging"
+
+[items."src/logger.ts:defaultFormatters"]
+status = "diverged"
+hash = "cf248d762e1731e186679c8fecbe30cb8fcb3230438949819c0cfd0e79eb3cc0"
+divergence = "logger-format"
+
+[items."src/logger.ts:isAggregateError"]
+status = "adapted"
+target = "pycordis.logger.Logger.log"
+hash = "34968a9ec300e6f1e9b391e8943bddc704925b348f83e321811c09e11e32beb1"
+divergence = "exception-group"
+
+[items."src/reflect.ts:<rest>"]
+status = "not-applicable"
+hash = "fd1b842e7805e70d0b55b4d5c0e15b91509129b6b6b8e9434b0d694e671bfb15"
+note = "Imports of the TypeScript module."
+
+[items."src/reflect.ts:Impl"]
+status = "ported"
+target = "pycordis.reflect.Impl"
+hash = "07855d5e3a82ee7996eae861aab50ea95aab6ed7d3ad75af37855817c3826b67"
+
+[items."src/reflect.ts:Property"]
+status = "adapted"
+target = "pycordis.reflect.Accessor"
+hash = "3c9cb770e2d9d2f260f2b983d9dd2569ad3236b13b627fc4f2f97da6cb1974a5"
+divergence = "service-access"
+
+[items."src/reflect.ts:RESERVED_WORDS"]
+status = "not-applicable"
+hash = "74cd1ec8af5ebed452dd376507c039b27f2ccd2cc86a88485708002b048ccde3"
+note = "Names that the JavaScript Proxy handler passes through. A Python context has no property traps."
+
+[items."src/reflect.ts:ReflectService"]
+status = "ported"
+target = "pycordis.reflect.ReflectService"
+hash = "6889f6493c84e00be6dd758ec73f3ff6219a4c51bf467696608850a925c72866"
+
+[items."src/reflect.ts:ReflectService._getImpl"]
+status = "adapted"
+target = "pycordis.reflect.ReflectService.find"
+hash = "249bf3f658a8fd402ce5c6aff6dc373ac9877a23016de2e015f1d7a469e3f5f1"
+divergence = "service-access"
+
+[items."src/reflect.ts:ReflectService.accessor"]
+status = "adapted"
+target = "pycordis.reflect.ReflectService.accessor"
+hash = "a8ba13c5e54c854a7d02d9841afed144d06be41cf1ef6ca46185dad9fab9b6d5"
+divergence = "service-access"
+
+[items."src/reflect.ts:ReflectService.bind"]
+status = "adapted"
+target = "pycordis.reflect.ReflectService.bind"
+hash = "65f5b3a130d4ac902953371fa7a0c718b73c76128ee69bdfe322534c16cfa700"
+divergence = "traceable-view"
+
+[items."src/reflect.ts:ReflectService.constructor"]
+status = "ported"
+target = "pycordis.reflect.ReflectService.__init__"
+hash = "e35d51ce532b738420d725f5ae3ea5af47be257c655266dbec4d591db0e82049"
+
+[items."src/reflect.ts:ReflectService.get"]
+status = "adapted"
+target = "pycordis.reflect.ReflectService.get"
+hash = "f226026815e02bced613ea2e9cb998cb6719a228e2b61cf26247901b13b0cf58"
+divergence = "service-access"
+
+[items."src/reflect.ts:ReflectService.mixin"]
+status = "adapted"
+target = "pycordis.reflect.ReflectService.mixin"
+hash = "eeccf361ca2ab65b66fcc774bf425e9f53e026a54f9a4fd261fa86b423f52c75"
+divergence = "service-access"
+
+[items."src/reflect.ts:ReflectService.notify"]
+status = "adapted"
+target = "pycordis.reflect.ReflectService.notify"
+hash = "f75f710f70d598ac20e2a1e65d00ec7905e88bad85188c194a231b34c58b9213"
+divergence = "service-access"
+
+[items."src/reflect.ts:ReflectService.provide"]
+status = "adapted"
+target = "pycordis.reflect.ReflectService.provide"
+hash = "ef3fe0c3d8a0ea2a13d4255531655816e6d1deb8f182f29f09fa235d546ff3e8"
+divergence = "service-access"
+
+[items."src/reflect.ts:ReflectService.set"]
+status = "adapted"
+target = "pycordis.reflect.ReflectService.set"
+hash = "da0f54180f87549f3544d49a4b38e11d430d94b730a3ff5f71c67c60e810ce4c"
+divergence = "service-access"
+
+[items."src/reflect.ts:ReflectService.trace"]
+status = "adapted"
+target = "pycordis.traceable.get_traceable"
+hash = "683b29122da76e868e5a2302c9947348acc6544fcb3edb35039e10242b9dd334"
+divergence = "traceable-view"
+
+[items."src/reflect.ts:createAccessError"]
+status = "not-applicable"
+hash = "4540e2d8131b276fbd0d9cae4ea0427644c1e81039a017d968b1560b056a59bf"
+note = "Builds a JavaScript error placeholder for the Proxy trap stack. A Python error carries its own traceback."
+
+[items."src/reflect.ts:enhanceAccessError"]
+status = "not-applicable"
+hash = "fb93d6c57beb88e8fe81e30e5439e97a5e985913f41750714819193dd7adb110"
+note = "Rewrites a JavaScript stack for the Proxy trap. A Python error carries its own traceback."
+
+[items."src/reflect.ts:isSpecialProperty"]
+status = "not-applicable"
+hash = "54be277dd60d3474ee4d4d5c3d29096f23a93e85563eb361bbfe9c6e9c65644b"
+note = "Selects the keys that the JavaScript Proxy handler passes through. A Python context has no property traps."
+
+[items."src/reflect.ts:locate"]
+status = "ported"
+target = "pycordis.reflect.locate"
+hash = "25d3264a80fb12ef7f293ebbc394f05dbdee42e88a0c390bb163d3bcf4170844"
+
+[items."src/reflect.ts:module ./context.ts"]
+status = "adapted"
+target = "pycordis.context.Context"
+hash = "634d4d902a7ed85af10b58bea8043f8de41b4357fe9854f64a80b3ebf4ae9b2d"
+divergence = "service-access"
+
+[items."src/registry.ts:<rest>"]
+status = "not-applicable"
+hash = "dae43c67076f05075fae8f5c5074f3ad9028b4d0db3c49bea11a19022697d54e"
+note = "Imports and TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
+
+[items."src/registry.ts:Component"]
+status = "ported"
+target = "pycordis.registry.Component"
+hash = "25d4aec84d9f3d49bff695bc37616a864c67e346763e526c4c645d590dd465fe"
+
+[items."src/registry.ts:GetComponentConfig"]
+status = "not-applicable"
+hash = "869560d6ba2da8dbc22f0348a9a5ff8b0a715fe2d6205eace5dd45afaa350feb"
+note = "A TypeScript type that infers the config type; the Python signature takes the config as object"
+
+[items."src/registry.ts:GetComponentParameters"]
+status = "not-applicable"
+hash = "302c08dec9bf5fea2e32cbc24e66df1b2fbd975de1c82b843578edeaee4a566c"
+note = "A TypeScript type that infers the config type; the Python signature takes the config as object"
+
+[items."src/registry.ts:Inject"]
+status = "ported"
+target = "pycordis.registry.inject"
+hash = "897b905424154ea52dc427b305f135d8f652978d67c0f588b1e347d599d8e7d3"
+
+[items."src/registry.ts:InjectKey"]
+status = "not-applicable"
+hash = "979b5c7155030fb75e90d32ee49d58abb4d96857861ef04221f344dedfa38a0c"
+note = "A TypeScript type of the service names that have metadata"
+
+[items."src/registry.ts:RegistryService"]
+status = "ported"
+target = "pycordis.registry.RegistryService"
+hash = "07df27f12b200341238dec1884946428dabfcc6e021898982f25e00ef36780c3"
+
+[items."src/registry.ts:RegistryService._create"]
+status = "ported"
+target = "pycordis.registry.RegistryService._create"
+hash = "4feabe47655f9b193d3bf512434440a23b58019c9845ccf28bf2e2a9e263e8db"
+
+[items."src/registry.ts:RegistryService._forward"]
+status = "ported"
+target = "pycordis.registry.RegistryService._forward"
+hash = "b8b27b147d4eadd42068b95170c026b1e9b30938939913464b640a3edf02582a"
+
+[items."src/registry.ts:RegistryService._unregister"]
+status = "ported"
+target = "pycordis.registry.RegistryService.unregister"
+hash = "9d94e65869374ed9bbb03c6126d2af1ca3d70f17a1fb03e7c0986875777f4baf"
+
+[items."src/registry.ts:RegistryService.constructor"]
+status = "ported"
+target = "pycordis.registry.RegistryService.__init__"
+hash = "396d1a7d09a1d608ffc371ad7d624abca4e18b7561cc2ba80de9f6928d5036aa"
+
+[items."src/registry.ts:RegistryService.counter"]
+status = "ported"
+target = "pycordis.registry.RegistryService.next_uid"
+hash = "6e8893af3a409a74efdfba3e4dc7158b60baf06acf4bba00a25a54f0ce5d7c70"
+
+[items."src/registry.ts:RegistryService.entries"]
+status = "ported"
+target = "pycordis.registry.RegistryService.entries"
+hash = "e7821f438c762fd120d8a96616b010e4f23140f8c0341e9ed0af1394e4db129e"
+
+[items."src/registry.ts:RegistryService.forEach"]
+status = "ported"
+target = "pycordis.registry.RegistryService.for_each"
+hash = "2ba3b246508a868c50a73a869159b45fc7494cb875e1500d0ba40aaa6fd73d87"
+
+[items."src/registry.ts:RegistryService.get"]
+status = "ported"
+target = "pycordis.registry.RegistryService.get"
+hash = "7afa2fb1f7050085fd492b2b104d5b51e3e7f958ac50e24cd7df9081f5a4282a"
+
+[items."src/registry.ts:RegistryService.has"]
+status = "ported"
+target = "pycordis.registry.RegistryService.has"
+hash = "1fe103515278b37d31fd8c163899b04de0fd32efd700fe775fd04e211e707ccb"
+
+[items."src/registry.ts:RegistryService.inject"]
+status = "adapted"
+target = "pycordis.registry.RegistryService.inject"
+hash = "7f006dfa8351cbbabbabf338941571390f4e12b2a38337ce5c7f64383960e526"
+divergence = "service-access"
+
+[items."src/registry.ts:RegistryService.keys"]
+status = "ported"
+target = "pycordis.registry.RegistryService.keys"
+hash = "fce0f85d1d370ec9e29026278d8b758464fa04407838e92ad6816958cf7a6d54"
+
+[items."src/registry.ts:RegistryService.plugin"]
+status = "diverged"
+hash = "a78413f5b5b5c6e3da145a496788a11523afe139dd838727a9a9e313747a1840"
+divergence = "deprecated-aliases"
+
+[items."src/registry.ts:RegistryService.replace"]
+status = "ported"
+target = "pycordis.registry.RegistryService.replace"
+hash = "f8496cbb695d109aed9f59f1ffe5c91cfc015cf09c3f72cf780759331896e7af"
+
+[items."src/registry.ts:RegistryService.resolve"]
+status = "ported"
+target = "pycordis.registry.RegistryService.resolve"
+hash = "88328d0cbe56ffb6e3af631540c622fcf97864e391160ecff520fdc3fd40fce0"
+
+[items."src/registry.ts:RegistryService.size"]
+status = "ported"
+target = "pycordis.registry.RegistryService.__len__"
+hash = "e96d7a660c471339d7c2cb8b907fad8c703fb326532388e482ce3b5c3a07fafa"
+
+[items."src/registry.ts:RegistryService.use"]
+status = "ported"
+target = "pycordis.registry.RegistryService.use"
+hash = "68ec31e3ca7e962edf4ea6e946161f98712f90e1be1b5b5f9ad671586f129405"
+
+[items."src/registry.ts:RegistryService.values"]
+status = "ported"
+target = "pycordis.registry.RegistryService.values"
+hash = "a95a5478d348bf85bf85d2682f86b7dcea7d39e0846f70fa612fe312fbc80965"
+
+[items."src/registry.ts:Spread"]
+status = "not-applicable"
+hash = "c76638a1f61100479bd1edea0768f29bc8e4c68cff2d3bbb2fc58aa9542fc68d"
+note = "A TypeScript type that infers the config type; the Python signature takes the config as object"
+
+[items."src/registry.ts:isApplicable"]
+status = "not-applicable"
+hash = "7c0492b0ff31d8afe0992a9234f029e8aed3b667a4e7949f65b4924dac4f851f"
+note = "RegistryService.resolve checks the apply method"
+
+[items."src/registry.ts:module ./context.ts"]
+status = "diverged"
+target = "pycordis.context.Context"
+hash = "a7b528d54dcc49a65cf78a9fb3bb5fce48bf7843902aee59b0a80d07fed947dd"
+divergence = "deprecated-aliases"
+
+[items."src/service.ts:<rest>"]
+status = "not-applicable"
+hash = "479a432bf514916a55ddf0b979f8a3a14ab75a1eb569dd2ff9964f572521b810"
+note = "Imports and TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
+
+[items."src/service.ts:Service"]
+status = "adapted"
+target = "pycordis.service.Service"
+hash = "2fc19fda13e1e239a5a2f00861af217d81ee7e9cd91e77f272d728ab3fd88df9"
+divergence = "traceable-view"
+
+[items."src/service.ts:Service.[Symbol.hasInstance]"]
+status = "adapted"
+target = "pycordis.traceable.TraceableView"
+hash = "f679a4d808098a0f7691391bce8c9567af1ffa39d00a97517aa8ae57131ca2b7"
+divergence = "traceable-view"
+
+[items."src/service.ts:Service.[symbols.extend]"]
+status = "adapted"
+target = "pycordis.service.Service.cordis_extend"
+hash = "9ee69f184efd7c888386200a5888be5c7736d0bcdd945557f71b0bcff0403eb8"
+divergence = "hook-names"
+
+[items."src/service.ts:Service.[symbols.filter]"]
+status = "adapted"
+target = "pycordis.service.Service.cordis_filter"
+hash = "e831067f59c0463cf20e924dfea0789800239c084868c9d3ad42647ea63ae7cf"
+divergence = "hook-names"
+
+[items."src/service.ts:Service.[symbols.mergeIntercept]"]
+status = "adapted"
+target = "pycordis.service.Service.cordis_merge_intercept"
+hash = "2ec28c37dd0fa8865b2c12ca5e338e26a59ec13f0beb19102a9bb44b079514fa"
+divergence = "hook-names"
+
+[items."src/service.ts:Service.[symbols.resolveIntercept]"]
+status = "adapted"
+target = "pycordis.service.Service.cordis_resolve_intercept"
+hash = "b8af0f76bab0a623b7eef09565f438e95587091f9c3ff5b88ae888975ddd9a39"
+divergence = "hook-names"
+
+[items."src/service.ts:Service.constructor"]
+status = "adapted"
+target = "pycordis.service.Service.__init__"
+hash = "a44aa91b5d64e7e3dd092fddfdf21fd6e334952d523ecb2eeb6bf9a6f1495ca7"
+divergence = "traceable-view"
+
+[items."src/utils.ts:<rest>"]
+status = "not-applicable"
+hash = "ee6cea34cfab0297aefe88d0781d5ef1db339c5cc07d25bb52c37aa19d5f914e"
+note = "Imports and TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
+
+[items."src/utils.ts:AsyncGeneratorFunction"]
+status = "not-applicable"
+hash = "35461347921edd45b78112c09ba9d331d972fe00e8af770e4aeca0f3c461d86d"
+note = "A constant that `isConstructor` uses. `inspect.isclass` tells a class from a function."
+
+[items."src/utils.ts:DisposableList"]
+status = "ported"
+target = "pycordis.disposables.DisposableList"
+hash = "b58c7501dd168230e67f51ee4c3ca797ff8ba2fc271d67a0a20ee2f939fd262f"
+
+[items."src/utils.ts:DisposableList.[Symbol.for('nodejs.util.inspect.custom')]"]
+status = "not-applicable"
+hash = "e66d04512e277748b3c2afb2901ca5f4e08c6e926a4e1ff384fd4de61dd35edd"
+note = "A Node.js inspector hook. Python shows an object through its own repr."
+
+[items."src/utils.ts:DisposableList.[Symbol.iterator]"]
+status = "ported"
+target = "pycordis.disposables.DisposableList.__iter__"
+hash = "c03fe6db6ce7171eacfd80c27580e11fcdf01d9a8f0070cc398451d09584dcd6"
+
+[items."src/utils.ts:DisposableList.clear"]
+status = "ported"
+target = "pycordis.disposables.DisposableList.clear"
+hash = "40b172331bc5e2c4261fe498876a0d6367d528509539f291d668a8350eb8b885"
+
+[items."src/utils.ts:DisposableList.delete"]
+status = "ported"
+target = "pycordis.disposables.DisposableList.delete"
+hash = "1f350f6cbabb5da4be4c22692d975ceabee5094fe35a75ab5e8809963ce7844e"
+
+[items."src/utils.ts:DisposableList.length"]
+status = "ported"
+target = "pycordis.disposables.DisposableList.__len__"
+hash = "b924051c09520728af143d576a823c860c26284c3cbc08aba6adc075eeba9cb5"
+
+[items."src/utils.ts:DisposableList.push"]
+status = "ported"
+target = "pycordis.disposables.DisposableList.push"
+hash = "2275e039351761c402f25d7be4d42ed090cc1ef495bde9835a251a689ac14e09"
+
+[items."src/utils.ts:DisposableList.unshift"]
+status = "ported"
+target = "pycordis.disposables.DisposableList.unshift"
+hash = "135c7a92988b38dfa06f0d4cd8dffec3ad3c242976422ecdc7e6dac05b55c32b"
+
+[items."src/utils.ts:GeneratorFunction"]
+status = "not-applicable"
+hash = "fdeace8128813ed6162c838711fa97fa59458c8b7854a2cbef7f722eaf9870d0"
+note = "A constant that `isConstructor` uses. `inspect.isclass` tells a class from a function."
+
+[items."src/utils.ts:StackInfo"]
+status = "adapted"
+target = "pycordis.errors.CallSite"
+hash = "3dc7d6da73da48ebd72dd630f230b0b664ed85545b812d25db52506a8954dd03"
+divergence = "error-notes"
+
+[items."src/utils.ts:Tracker"]
+status = "ported"
+target = "pycordis.traceable.Tracker"
+hash = "a689ccc240c2164ccd9465ec0592f257bdef8a0815a4024be53b15f03fb0855d"
+
+[items."src/utils.ts:applyTraceable"]
+status = "adapted"
+target = "pycordis.traceable.CallableTraceableView.__call__"
+hash = "57e0da868f017766e82f4e9e345ff274e24c0902ba7ae9dd0b1dd6a5c4748a3a"
+divergence = "traceable-view"
+
+[items."src/utils.ts:buildOuterStack"]
+status = "adapted"
+target = "pycordis.errors.CallSite.capture"
+hash = "ddb23ed852fd950c361d614036fa17e57f975ee14ed2656ef9da22828e764c12"
+divergence = "error-notes"
+
+[items."src/utils.ts:composeError"]
+status = "adapted"
+target = "pycordis.errors.CallSite.annotate"
+hash = "00a131b163081f5f3fcc1f34e855fc70425ee9ac17e2b9de30044588cc270297"
+divergence = "error-notes"
+
+[items."src/utils.ts:createCallable"]
+status = "adapted"
+target = "pycordis.service.Service.__init_subclass__"
+hash = "cdb8e883d329c99cf461940911b7f14ccf1a38a5f58e5b709ff55fd1f2714854"
+divergence = "traceable-view"
+
+[items."src/utils.ts:createShadow"]
+status = "adapted"
+target = "pycordis.traceable._create_shadow"
+hash = "145fc7ba09959e71f3cbf0fb8c8a3e8ed8b1394aa1c85debebdb55c7fbdec8ef"
+divergence = "traceable-view"
+
+[items."src/utils.ts:createShadowMethod"]
+status = "adapted"
+target = "pycordis.traceable._read_attribute"
+hash = "792a4d86817ad18fb6a4ed227cc0103a9f7156d3f5cb6e3cecde20032e32f394"
+divergence = "traceable-view"
+
+[items."src/utils.ts:createTraceable"]
+status = "adapted"
+target = "pycordis.traceable.create_traceable"
+hash = "c21172e5524004f03f05a78d0c9ebb6222c8ef074719e23d6a0f7c8be8eb0df9"
+divergence = "traceable-view"
+
+[items."src/utils.ts:getPropertyDescriptor"]
+status = "not-applicable"
+hash = "092bef87b6fde3e9e51920a61c67342b9fce35bc5428cacfe5ec53b247b96fc7"
+note = "Python attribute lookup (`inspect.getattr_static`) replaces the prototype walk."
+
+[items."src/utils.ts:getTraceable"]
+status = "adapted"
+target = "pycordis.traceable.get_traceable"
+hash = "3353678514bef4ab84487d50fd639c13113967b7506b051db9603c1be25330d6"
+divergence = "traceable-view"
+
+[items."src/utils.ts:handleError"]
+status = "adapted"
+target = "pycordis.errors.CallSite.annotate"
+hash = "74b54d6601c1f259bb29c4dcf1e1699dfbdc1f9161fbd36a53b536e34af33404"
+divergence = "error-notes"
+
+[items."src/utils.ts:isConstructor"]
+status = "not-applicable"
+hash = "2ef88e6fda16604f43726074c8f8e6c8c89aa6b26ce8ed54f01ed17fa1ceb5a8"
+note = "`inspect.isclass` replaces the check."
+
+[items."src/utils.ts:isObject"]
+status = "not-applicable"
+hash = "2dd94ab1a5c2fbe569c222ee7ee42f2fedde59bcdf616f9e7f685d505bd1af2d"
+note = "Python code checks the type that it needs, for example with `isinstance`."
+
+[items."src/utils.ts:joinPrototype"]
+status = "not-applicable"
+hash = "04749ca53fdae10b4f17b850bddcd17033936761450bd41c40af8bc98dee03e7"
+note = "Parent links replace the prototype chains that it joins."
+
+[items."src/utils.ts:symbols"]
+status = "adapted"
+hash = "8b54965506cafdc5ee1bb6212d1ebf52dc0d77c4a6bbb0744eecc05b9598ad25"
+divergence = "hook-names"
+
+[items."src/utils.ts:withProp"]
+status = "adapted"
+target = "pycordis.traceable._Shadow"
+hash = "4c24832e53d0ace0747c2061b88bc8242c6a4f32840e400440f9027ce600237d"
+divergence = "traceable-view"
+
+[items."src/utils.ts:withProps"]
+status = "adapted"
+target = "pycordis.traceable.Overlay"
+hash = "ead420a45b46478242d51ac4cc486550508d151dcbdf37331d0d836511ec5160"
+divergence = "traceable-view"
+
+[items."state:ACTIVE"]
+status = "ported"
+hash = "630c2f1c0ee1b8d7da57cf8936ae7e78274aba0bfd765fe10a20dfe580f9eecc"
+
+[items."state:DISPOSED"]
+status = "ported"
+hash = "af7c3f4d85b9dfa7412b91910a05a0e3870c0e8692243ce37a54fa76d1afb1cf"
+
+[items."state:FAILED"]
+status = "ported"
+hash = "02bd349299173f7fdf2dbc983d70961b26d74e6260c3755a058e25f5ee172f98"
+
+[items."state:LOADING"]
+status = "ported"
+hash = "ba0eebf379567c645b1edd9382142898e897046ba001ecc8c343ad19f338650f"
+
+[items."state:PENDING"]
+status = "ported"
+hash = "332011b91ccd9887592cd7072f12da38748e37ee1af81985f9c8e1f066aec6fb"
+
+[items."state:UNLOADING"]
+status = "ported"
+hash = "bdc8ba5cab4f938a6dc565d0f4f1a1208eff1ac1fc8a61bad706bf52e2be7663"
+
+[items."tests/associate.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "72be33e6ad889bbc982f72b3254cf36291935b278261cf7e097d95c888d5a7d9"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/component.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "67523a75948a9ad0d6a318e0d45a95c0585846400c19a9e34c9afed06bd268b1"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/decorator.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "cbe09784f0797e557207a0bef2ee60e6f548c05e2098d1f6827a3b8db87ce8b4"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/dispose.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "e6cdec5f1fd00fcfa64722f4589ccb446a384491deaaa7a65fb350a457137afb"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/events.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "bd3843b7c7aa66a0dd708d068f3432a1dc15fe58e1b3c60a9cd52142da4cc8f0"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/events.spec.ts:createArray"]
+status = "not-applicable"
+hash = "9f6fe004231d7a1bf8fb5a98cce3171c82f85ed5be32a52625b6d66474b11ad5"
+note = "A list-building helper. Python uses a list comprehension."
+
+[items."tests/events.spec.ts:setup"]
+status = "ported"
+hash = "47f741177c8b78423c0ae98e6dd2575f9c7400fbdd8b4692e9412ecdb0d9d3b9"
+note = "The `root` fixture of `tests/conftest.py` replaces it."
+
+[items."tests/events.types.ts:<rest>"]
+status = "not-applicable"
+hash = "9b92ba2d545f826e1fe5078485968456769a9bcd9c5ba0788361f727971b8ce0"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
+
+[items."tests/events.types.ts:ctx"]
+status = "not-applicable"
+hash = "220d8189469a44c195efe689d4c2688e1855f95b1146e4e21767ebfb7639f9a8"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
+
+[items."tests/events.types.ts:dynamicEvent"]
+status = "not-applicable"
+hash = "ab79da64627ee02d1bffbad693ea6fd44cfd61420a13ae42df886d6cbfe27ce8"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
+
+[items."tests/events.types.ts:module ../src/events.ts"]
+status = "not-applicable"
+hash = "16d7b62a85416ae20881b2bb2e7929937c70ca9f77ed9b90bb5c8605433e66bc"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
+
+[items."tests/events.types.ts:ready"]
+status = "not-applicable"
+hash = "05549babc495ac32a955f92bd0fc25ac8bb3eb3d3b10724668acf1f02dd78966"
+note = "A TypeScript type test of event signatures. Python has no equivalent static check in the test suite."
+
+[items."tests/fiber.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "d72120feb2a457d899ae926da78c728aa070c45a4bfef07a214d2c2d908b3ca6"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/intercept.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "8fe2f988bb35dcce326e75c5645678c9f0db7de25f8ca29da7ed2a9edf550e86"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/intercept.spec.ts:Bar"]
+status = "ported"
+hash = "a18b71e5731d2f455e2f677b0b886d9626586066e984e04cbc98f4b6e09aa19e"
+note = "`Bar` in `tests/test_intercept.py`."
+
+[items."tests/intercept.spec.ts:Bar.config"]
+status = "ported"
+hash = "91086c151c9dbbe30bb8fb601fe7fb51b344bfc230c800a940adf17e22bfe339"
+note = "`Bar` in `tests/test_intercept.py`."
+
+[items."tests/intercept.spec.ts:Bar.constructor"]
+status = "ported"
+hash = "e2fdfae25f623ba41aa3b2a2efc4779cca89afdcd1151baf44c547c238046413"
+note = "`Bar` in `tests/test_intercept.py`."
+
+[items."tests/intercept.spec.ts:Config"]
+status = "not-applicable"
+hash = "a0d66052eac736ce6677d46ebceb84849f01f02c248a4dd7c2311e50beed0595"
+note = "A TypeScript type of the service configuration. Python uses `dict[str, Any]`."
+
+[items."tests/intercept.spec.ts:Foo"]
+status = "ported"
+hash = "8671ffb0df91ac84d359001e568db5f701f59bd99cf7cde2e344e13d34d57521"
+note = "`Foo` in `tests/test_intercept.py`."
+
+[items."tests/intercept.spec.ts:Foo.config"]
+status = "ported"
+hash = "80ee975364c0b53d6772216330e62ecc64a95dbfa5a9e1259782068622c6f7d6"
+note = "`Foo` in `tests/test_intercept.py`."
+
+[items."tests/intercept.spec.ts:Foo.constructor"]
+status = "ported"
+hash = "39a976ba05f01125ca8cc4ac9e3e25c5167671ec1f28a39567d9b0651d27df28"
+note = "`Foo` in `tests/test_intercept.py`."
+
+[items."tests/invoke.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "3d5dca283f2b1690999997d70167b0d40435363dcae092236fd6d3be8fd888d2"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/isolate.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "9bf22508be1ecca0968f0e9a39798d9d2edafb19feaa8a98ee967bcaa56fb972"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/logger.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "a8db75bd9af4ef87bb6539f580c418828ba68d49dc581b40d11d546409f83381"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/logger.spec.ts:setup"]
+status = "ported"
+hash = "8193a81a98a0ff75e5d06a40d32ac992f37a953b09fbf855bdfc1df61137deb4"
+note = "The `captured` fixture of `tests/test_logger.py` replaces it."
+
+[items."tests/reflect.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "868ce0012e71dd996241b8275f9d69dfe802d57c4072cda703d86271bdd73a0b"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/replace.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "5fbd54f18c8c058a13b9ad1381fb742f403ed91c84cf9c67c6535f64e05901f4"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/service-dispose.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "1ccf693e95c25354776f335eba57da1dcb98fc8ac98bab38297720d404ea64a1"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/service-dispose.spec.ts:fixture"]
+status = "ported"
+hash = "a32de02bd71921dc37290acf271b1121e6875bca8df161ed31178dee590b8c63"
+note = "`Fixture` in `tests/test_service_dispose.py`."
+
+[items."tests/service.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "d65696743eedf6e0ed00dbf7abfa414705faedd69af074bd3482236735d76b1f"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/shadow.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "405e0fcef817b8dce161142978367c45658b16b48f75e540983e1ad45278d54b"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/update.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "2d059991f7fa30cc62c4a6aa8e16586a69744455ad25ea359a70d20b9c7d2311"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/utils.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "da221d70dea2a356410638e47faa5f94fa548b18f6d54c8c0a3f0336832e572a"
+note = "The imports and the describe wrapper of the spec. Each translated case carries its own upstream marker."
+
+[items."tests/utils.ts:<rest>"]
+status = "not-applicable"
+hash = "809fe0521c0a40da3a5bb8c1f1f51ba1a0bb6816f8b1894458cd4a7695f4db74"
+note = "Imports of the helper module."
+
+[items."tests/utils.ts:Counter"]
+status = "ported"
+hash = "46ca8fec26e6e136d6ed04098989b12ef35611aea750bcde71e282b1a1789fdf"
+note = "`Counter` in `tests/conftest.py`."
+
+[items."tests/utils.ts:Counter.constructor"]
+status = "ported"
+hash = "3dd2b517663620285c0a5a9959be638cf44a0ecb7319491fd9c233a7ef0141ce"
+note = "`Counter` in `tests/conftest.py`."
+
+[items."tests/utils.ts:Counter.increase"]
+status = "ported"
+hash = "90893a8e23895f7e8f087d8440ec8d3f5d2f48b5233426964af2aa23e2dd4479"
+note = "`Counter.increase` in `tests/conftest.py`."
+
+[items."tests/utils.ts:Filter"]
+status = "ported"
+hash = "d7191bf284d60c562fe3d330ccfdb12030846177886c13c24ba3dfecd98be33d"
+note = "`Filter` in `tests/conftest.py`."
+
+[items."tests/utils.ts:Filter.constructor"]
+status = "ported"
+hash = "f7e691416f7cf5c5d97c43a3caf1a191f0458edb78c0c9f62bad54724f13fe55"
+note = "`Filter` in `tests/conftest.py`."
+
+[items."tests/utils.ts:Session"]
+status = "ported"
+hash = "24941ae221fbcfd6339cbf62e5e36f6050a2ecd6d02e06ec7f86e7b9fe8ff3a8"
+note = "`Session` in `tests/conftest.py`."
+
+[items."tests/utils.ts:Session.[Context.filter]"]
+status = "ported"
+hash = "4d5a5a5a9f8b7439e2606a088fd218c6dda89eb1ff03c5c83f06e5cebc20db9f"
+note = "`Session.cordis_filter` in `tests/conftest.py`."
+
+[items."tests/utils.ts:Session.constructor"]
+status = "ported"
+hash = "f71973d862a54872dc84ec908f46882f528bcc03105a6c8ad6fd84882a8364a6"
+note = "`Session` in `tests/conftest.py`."
+
+[items."tests/utils.ts:event"]
+status = "ported"
+hash = "29c0e6096250b211889a212efa522ac53a8551cf39ed2a5d9a18d899bf0fce68"
+note = "`event` in `tests/conftest.py`."
+
+[items."tests/utils.ts:getHookSnapshot"]
+status = "ported"
+hash = "ffe2849d7602d7c1430b7835a030db85474c69a55a9c2f5392b91fea02723710"
+note = "`hook_snapshot` in `tests/conftest.py`."
+
+[items."tests/utils.ts:module ../src/context.ts"]
+status = "not-applicable"
+hash = "8f24d712775fc9bdb6851fbadba81fe3ae32abe1bd28c180614c5bcfd9e24bec"
+note = "Imports of the TypeScript module."
+
+[items."tests/utils.ts:module ../src/events.ts"]
+status = "not-applicable"
+hash = "d9b595410427982cccc500da48567fb79a73667c41d72e6e3a6b235c5d54cf85"
+note = "Imports of the TypeScript module."
+
+[items."tests/utils.ts:sleep"]
+status = "ported"
+hash = "6d2eb332f7d7de94e32f9466e350c0372479f8cdc26875eca4d1898ad04a754b"
+note = "`FakeClock.sleep` in `tests/conftest.py`."
+
+[items."tests/utils.ts:withTimers"]
+status = "ported"
+hash = "cc2c4beb5197400b8acf80ca82b81d818e1b60f0760552d0c81274dfe7b8b339"
+note = "The `clock` fixture of `tests/conftest.py` replaces it."
+
+[items."update.spec.ts::Fiber: concurrent updates::cleans up a superseded failure without failing the latest update"]
+status = "ported"
+hash = "35b4db94c86d8b7d535505a6c45ea59c40f4cc379dda99ef9cb67ad3b6105aad"
+
+[items."update.spec.ts::Fiber: concurrent updates::coalesces updates during unloading"]
+status = "ported"
+hash = "99eee75582626551ecc688448fba8e48b614eac2925c9ee76006191e44076c24"
+
+[items."update.spec.ts::Fiber: concurrent updates::does not load a queued config after disposal"]
+status = "ported"
+hash = "5d7b70a3f7f8160e6f666d066e595def4884c6fc51fd8bb185d87d2488e5ff9b"
+
+[items."update.spec.ts::Fiber: concurrent updates::does not restart when a listener accepts an update during loading"]
+status = "ported"
+hash = "eae09c0d568296fb6af1e1305b8a9141ab0de6748d593c51448c2a6699317f17"
+
+[items."update.spec.ts::Fiber: concurrent updates::honors config ABA while loading even when config is unchanged"]
+status = "ported"
+hash = "f417991a56e6ddc3552fed48f6088a86ef589cacf70e0d131672b482bedf0067"
+
+[items."update.spec.ts::Fiber: concurrent updates::honors restart while loading even when config is unchanged"]
+status = "ported"
+hash = "f417991a56e6ddc3552fed48f6088a86ef589cacf70e0d131672b482bedf0067"
+
+[items."update.spec.ts::Fiber: concurrent updates::rejects all waiting updates when the latest load fails"]
+status = "ported"
+hash = "b6afedcdfa2cbb1c9850c85640dcabef4a41b2511c718f19bb1e6e74265f15cb"
+
+[items."update.spec.ts::Fiber: concurrent updates::settles concurrent updates on the latest config (inject: false)"]
+status = "ported"
+hash = "bdde8ae5fc08ea27e4b04db32837f445fbd81b916cf071248f81a8e5fc31cb8e"
+
+[items."update.spec.ts::Fiber: concurrent updates::settles concurrent updates on the latest config (inject: true)"]
+status = "ported"
+hash = "bdde8ae5fc08ea27e4b04db32837f445fbd81b916cf071248f81a8e5fc31cb8e"
+
+[items."update.spec.ts::Fiber: concurrent updates::skips superseded loads before executing the component"]
+status = "ported"
+hash = "1669df0ccbfc9b61561346a76c11d7ee37b24154007f1423c5127e0db5ea980b"
+
+[items."update.spec.ts::Fiber: concurrent updates::stops advancing an outdated async generator and collects its final yield"]
+status = "ported"
+hash = "e8427ce24632a802aced78aa45cbef1b5dd8b3bdbd26cd13af940e03f889d89f"
+
+[items."update.spec.ts::Fiber: concurrent updates::waits for dependencies and loads only the latest config"]
+status = "ported"
+hash = "cc9657368126986825e21635a7e1ddafbc7dae826439b3b8d700b07d8d25277f"
+
+[items."utils.spec.ts::DisposableList::clear removes every entry and returns them in order"]
+status = "ported"
+hash = "d4192743db2ded5567a8ac08346c84ad4e49a637a709292f260a1e0bbb658fc2"
+
+[items."utils.spec.ts::DisposableList::delete removes an unshifted entry"]
+status = "ported"
+hash = "b80001d2f99a8ac51382492b2f9a5938ec647b5366d40ea88e0a02d680146b58"
+
+[items."utils.spec.ts::DisposableList::delete removes the entry it was given"]
+status = "ported"
+hash = "dcbcafd940fc4ee03a66b90cec44f6bb9da05f8b379cfd64988ce9e1ec4e42b3"
+
+[items."utils.spec.ts::DisposableList::disposer removes its own entry after a later push"]
+status = "ported"
+hash = "3a80f8cc41e7e2a8fce8e4779cac3d05bee534e534dce6f1096877dbc3281527"
+
+[items."utils.spec.ts::DisposableList::disposer removes its own entry after a later unshift"]
+status = "ported"
+hash = "6765f67f83b4f1fe71e8504f38675af450aa9c34291beae67731091e3355f74e"
+
+[items."utils.spec.ts::DisposableList::iterates unshifted entries before pushed ones"]
+status = "ported"
+hash = "13566b9774f236be37e91bdbfc9177c8effae848ba2cc05ee16315d08c7a2c02"
+

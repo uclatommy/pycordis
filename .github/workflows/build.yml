@@ -1,0 +1,69 @@
+name: Build
+
+# The only workflow that calculates the version and builds the archives.
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: The version that GitVersion calculated.
+        value: ${{ jobs.build.outputs.version }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.gitversion.outputs.semVer }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # GitVersion needs the history and the tags
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
+        with:
+          versionSpec: "6.8.2"
+      - name: Calculate the version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
+        with:
+          configFilePath: GitVersion.yml
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.9.3"
+          python-version: "3.12"
+      - name: Set the version and build
+        run: |
+          uv version "${{ steps.gitversion.outputs.semVer }}" --frozen
+          uv build
+      - name: Check the archives
+        run: |
+          python - <<'PY'
+          import glob, sys, tarfile, zipfile
+
+          errors = []
+          (wheel,) = glob.glob("dist/*.whl")
+          (sdist,) = glob.glob("dist/*.tar.gz")
+          with zipfile.ZipFile(wheel) as zf:
+              names = zf.namelist()
+          with tarfile.open(sdist) as tf:
+              sdist_names = tf.getnames()
+          if "pycordis/py.typed" not in names:
+              errors.append("the wheel has no pycordis/py.typed")
+          if not any(n.endswith("licenses/LICENSE") for n in names):
+              errors.append("the wheel has no license file")
+          if not any(n.endswith("/LICENSE") for n in sdist_names):
+              errors.append("the sdist has no license file")
+          if any(n.startswith("tests/") for n in names):
+              errors.append("the wheel contains tests/")
+          if errors:
+              sys.exit("\n".join(errors))
+          PY
+      - name: Upload the archives
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error

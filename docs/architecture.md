@@ -34,6 +34,28 @@ change. The paper gives a calculus for both and proves its properties in Section
 4.4 extends the calculus with asynchrony, failure, configuration, and isolation. Cordis is the
 reference implementation of the calculus (Section 5).
 
+## Module Map
+
+Each core module has the responsibilities of one upstream module, so that the
+[conformance ledger](#conformance) is easy to read. Upstream `utils.ts` divides into three
+modules.
+
+| Upstream (`packages/core/src`) | pycordis (`src/pycordis/`) |
+|---|---|
+| `context.ts` | `context.py` |
+| `fiber.ts` | `fiber.py` |
+| `reflect.ts` | `reflect.py` |
+| `registry.ts` | `registry.py` |
+| `service.ts` | `service.py` |
+| `events.ts` | `events.py` |
+| `logger.ts` | `logger.py` |
+| `utils.ts` | `disposables.py`, `traceable.py`, `errors.py` |
+| — (Python runtime) | `keys.py`, `scheduler.py`, `deferred.py` |
+
+The Python-runtime modules (`keys`, `scheduler`, `deferred`, `disposables`, `errors`) import no
+other pycordis module except `errors`. The core modules import each other only where the
+upstream modules do.
+
 ## Semantic Contract
 
 Each row is a guarantee that pycordis keeps. The ID is stable: tests refer to it with
@@ -67,11 +89,16 @@ The conformance data is in `conformance/`:
   upstream test case, each exported symbol, and the error messages, event names, and state
   names, with a hash of each item's normalized source. It holds no upstream code.
 - `ledger.toml` has one entry for each inventory item. An entry gives the item's status
-  (`ported`, `adapted`, `diverged`, or `not-applicable`), the pycordis symbol or test that
-  covers it, the divergence ID where there is one, and the upstream hash at the time of review.
+  (`pending` before review; `ported`, `adapted`, `diverged`, or `not-applicable` after it), the
+  pycordis symbol that covers it (a `target`; a test case is linked by its `upstream` marker),
+  the divergence ID where there is one, and the upstream hash at the time of review. A `pending`
+  entry has no hash and no target. The inventory has `case`, `symbol`, `member`, `rest`,
+  `message`, `event`, and `state` items. A marker ID is a string literal, because the checks
+  read markers with `ast`.
 
 A test in the suite checks this data with no network access. It fails when:
 
+- the inventory revision differs from the revision in `README.md`;
 - an inventory item has no ledger entry;
 - a ledger hash differs from the inventory hash, which means that upstream changed the item
   after its review;
@@ -109,5 +136,23 @@ change removes the reason for a divergence, remove the divergence and its row.
 
 | ID | Kind | Upstream | pycordis | Contract | Reason and evidence |
 |---|---|---|---|---|---|
+| `error-notes` | adaptation | `composeError` string changes | `BaseException.add_note` | — | Native Python mechanism |
+| `async-effects` | adaptation | `AsyncIterable`, `Promise<Disposable>`, thenable `AsyncDisposable` | Async generator / coroutine that awaits `Deferred`; `EffectHandle.__await__` | — | Same semantics without asyncio |
+| `fiber-wait` | adaptation | `ctx.use()` is `PromiseLike`; `fiber.await()` | `fiber.wait()` returns `Deferred[Fiber]`; `Fiber.__await__` | — | `await` is a keyword; explicit wait for sync code |
+| `hook-names` | adaptation | `Service.init`, `Context.filter`, `symbols.*`, `Context.is` | `cordis_*` attributes; `isinstance(value, Context)` | — | No symbols in Python; no new dunders |
+| `async-model` | adaptation | Promise, microtasks | `Deferred` + scheduler task trampoline | — | A GUI main thread with a frame loop has no event loop |
+| `exception-group` | adaptation | `AggregateError` | `ExceptionGroup` | — | Native Python type |
+| `event-dispatch-args` | adaptation | `emit(thisArg, name, ...args)` with the argument type deciding which is the `this` value; symbol event names; listeners run with `this` | `emit(name, *args, this=obj)`; any hashable event name; listeners never receive `this`; an internal event passes its receiver as the first argument | — | Python has no symbols and no way to tell a `this` value from an event name by type |
+| `service-access` | adaptation | `ctx.foo` through Proxy; `internal/get` and `internal/set` listeners receive an `error` placeholder | `ctx[key]` (checked in a component's context, unchecked at the root), `ctx.get(key)` (lenient), `Key[T]`, accessor callbacks `get(ctx)` and `set(ctx, value)`; `internal/get` and `internal/set` listeners receive no `error` argument; a `RegistryService` method takes the calling context as its first argument | — | Static typing; no `__getattr__` fallback; the placeholder exists only to build a JavaScript stack |
+| `config-schema` | adaptation | `Component.Config` is a Standard Schema | `Config` is an object with `model_validate` or a function from the raw config to the validated config; a failure becomes `ValidationError` | — | No runtime dependencies; pydantic-compatible |
+| `traceable-view` | adaptation | `getTraceable` returns a `Proxy` of the service. The proxy shows the use-site context as `ctx`, runs methods with a shadow `this`, and is callable when the service has `symbols.invoke`. `Service[Symbol.hasInstance]` and `createCallable` serve the proxy | `get_traceable` returns a forwarding view (`TraceableView`). A method runs with a shadow object as `self`. `isinstance` works through `__class__`. A service class that defines `cordis_invoke` is callable through `__call__`. `cordis_extend` creates an extension that reads from its parent | — | Python has no `Proxy`. The view gives the same results in the upstream scenarios, and a name that starts with `cordis_` is the port of a symbol-keyed property |
+| `update-result` | adaptation | `Fiber.update` returns `undefined` when an `internal/update` listener takes the update, and a `Promise` otherwise | `Fiber.update` always returns a `Deferred[None]`; it is already resolved when a listener takes the update | — | A task can await only a `Deferred`, so a result that may be `None` would raise `TypeError` in a task. The affected upstream tests pass |
+| `stdlib-logging` | adaptation | `LoggerService` over its own `Logger`, `Message`, exporters with a level table, and a buffer exporter; the default name is `hyphenate(fiber.name)`; a logger takes its level from the exporter or the intercept; an error with a `cause` logs the cause too | `LoggerService` over `logging`: a `Logger` is a `LoggerAdapter` for `pycordis.<name>` that adds the fiber to each record; an exporter is a `logging.Handler` that sees only the records of its root context; `buffer` keeps the newest `LogRecord` objects of the root context; the default name is `fiber.name`; the host sets levels with `logging`; an `ExceptionGroup` logs its members | — | Integration with host logging, with no second logging system. The upstream cases pass after the host sets the level of `pycordis`. The library adds no handler to `pycordis`: each `Logger` carries a filter that fills the buffers, so the default `logging` output for a host without handlers stays |
+| `logger-format` | omission | `Logger.format`, `defaultFormatters`, `Formatter`, `LoggerLevel`, `LoggerOptions`, the exporter fields `levels`, `formatters`, and `maxLength`, and the `level` of the intercept configuration | Not ported | — | `logging.Formatter`, the `logging` levels, and `logging` filters give the same function. `ColorFormatter` gives the colors |
+| `root-late-effect` | improvement | An effect registered on the root during root teardown stays, with no report | It stays and is logged at `DEBUG` with its label | `EFF-REVERT` | The host sees the one effect that root disposal does not revert. Test: `divergence("root-late-effect")` |
+| `owner-thread` | improvement | A single-threaded runtime with no thread check | Every `Context`, `Fiber`, and core-service method raises `CordisError("WRONG_THREAD")` when another thread calls it; `Scheduler.submit` and `Deferred` completion are allowed from any thread | `REG-WELLFORMED` | A Python host has worker threads. A call from the wrong thread fails at once and does not corrupt the registry. Test: `divergence("owner-thread")` in `tests/test_threading.py` |
+| `host-introspection` | improvement | `state`, `uid`, `parent`, and `getEffects()` are public; the children of a fiber are in `runtime.fibers` | `fiber.error` and `fiber.children` are also public | `LIFE-FAILURE` | A host status view reads the failure cause and the fiber tree without the internals of the registry. Test: `divergence("host-introspection")` in `tests/test_fiber.py` |
+| `error-code` | omission | `CordisError(code, message?)`: `code` keys a message table that has one entry, and the instance keeps `code` | `CordisError(message)`: the instance has no `code` | — | The message states the rule, and a Python caller catches `CordisError` and reads the message. No upstream case reads `code` |
+| `deprecated-aliases` | omission | `ctx.plugin` / `registry.plugin`, `events.dispatch` | Not ported | — | No vestigial API |
 
-The table has no rows yet. A change that adds a divergence adds its row in the same change.
+A change that adds a divergence adds its row in the same change.

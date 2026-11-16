@@ -1,6 +1,6 @@
 # Build Spec: Upstream Conformance
 
-**Status**: ⬜ Not started — reviewed, ready to implement
+**Status**: ✅ Completed — all five increments are done
 
 ## Goal
 
@@ -118,7 +118,7 @@ collection-time check would duplicate it.
   reformat or a comment edit is not a change.
 - **Counts at `68c9d99`**: 203 `case` items (185 `it` calls; the 10 `it.each` calls give 28
   rows), about 130 `symbol` and `member` items, 1 `message` item from `CordisError.Code` plus
-  about 15 thrown messages, 10 `event` items, 6 `state` items.
+  11 thrown messages, 11 `event` items, 6 `state` items.
 
 ### Ledger (`conformance/ledger.toml`)
 
@@ -232,7 +232,30 @@ mirror = true
 its languages, so that each module the core port adds is checked from its first commit.
 **Files**: `tests/test_docstrings.py` (~60)
 **Validation**: `uv run pytest tests/test_docstrings.py`
-**Status**: ⬜ Pending
+**Status**: ✅ Completed
+**Changed**:
+- `tests/test_docstrings.py`: `docstring_violations(source, location)` parses source with `ast`
+  and returns one message per module, class, function, or async-function docstring that names a
+  banned term (`upstream`, `TypeScript`, `JavaScript` case-insensitive as words; `Promise`,
+  `Proxy`, `WeakMap` case-sensitive as words; `\.ts\b`). `_tree_violations` scans every `.py`
+  file under a directory. `#` comments are not read.
+- `src/pycordis/__init__.py`: the module docstring describes pycordis itself; the tracked
+  upstream revision is named only in `README.md`.
+**Tests**:
+- `tests/test_docstrings.py`: 17 tests pass — a parametrized case per banned term plus near-word
+  and case variants that must not flag, one test asserting the exact messages for module, class,
+  method, nested-class, nested-method, and async-function positions, one `#` comment test, one
+  test that the source tree has no violation, and one test that the file scan reaches packages
+  in subdirectories.
+- Re-ran `tests/test_package.py`: passes.
+**Deviations**:
+- `src/pycordis/__init__.py` changed although the increment lists only the test file: its module
+  docstring named `upstream`, which fails the required "passes on `src/pycordis`" check, so it
+  was reworded.
+**Manual validation**:
+- In an interactive session, `docstring_violations` returned `[]` for
+  `src/pycordis/__init__.py`, one message for a docstring naming `upstream`, and `[]` for a
+  `#` comment naming banned terms.
 
 ### Increment 2: Markers and contract coverage
 **Goal**: The three markers are registered, the static marker scan validates `contract` and
@@ -240,15 +263,109 @@ its languages, so that each module the core port adds is checked from its first 
 **Files**: `pyproject.toml`, `tests/conformance_checks.py` (~120),
 `tests/test_conformance.py` (~60), `conformance/ledger.toml` (contract section)
 **Validation**: `uv run pytest tests/test_conformance.py`
-**Status**: ⬜ Pending
+**Status**: ✅ Completed
+**Changed**:
+- `pyproject.toml`: registered the `upstream`, `contract` and `divergence` markers.
+- `tests/conformance_checks.py`: `parse_markdown_table` / `table_section_ids` read the
+  contract and divergence tables from `docs/architecture.md` by their exact header row and
+  strip backticks from cells; `pending_contract_ids` reads the ledger's `[contract]` table;
+  `scan_markers` reads traceability markers from the `ast` of the test sources — decorator
+  form on a function, method, async function, or class, marks inherited from a skipped
+  enclosing class, and `marks=` on a `pytest.param` set inside a `parametrize` decorator —
+  and records a running test as one with no `skip` mark and no `skipif` mark with a literal
+  `True` condition; an `xfail` (or `xfail(reason=...)`) mark still runs, because the test
+  states the expected result; the same rule applies to `contract` and `divergence` markers.
+  Checks: `check_marker_arguments` (non-literal ID), `check_marker_ids` (marker names an ID
+  that is not a row of `docs/architecture.md`), `check_contract_coverage` (contract ID with
+  no running test and not pending; pending ID outside the table; stale pending entry). Each
+  check is a pure function that returns failure messages naming the item.
+- `conformance/ledger.toml`: created with `[contract] pending` listing all eight contract
+  IDs; the core port has no tests yet.
+**Tests**:
+- `tests/test_conformance.py`: 14 tests pass — the parametrized bad-data test (one case per
+  check failure mode, with the expected message fragment), the committed-data test, and
+  scanner tests for marks on a running marked test, `skip` / literal-`True` `skipif` /
+  non-literal `skipif` / `xfail` (counted as running), marks inherited from a skipped
+  class, `pytest.param` marks including a skipped parameter set, one param with two
+  `contract` IDs, and an f-string param ID reported as non-literal, the divergence rules
+  (xfail reason not reported; a literal ID outside the divergence table fails), non-literal
+  and missing ID arguments on decorators, and the table reader (backticks stripped, bare ID
+  read as a row, missing header table raises `ValueError`).
+- Full suite (`uv run pytest`): 32 pass. `ruff check` and `ruff format --check` clean.
+**Deviations**:
+- The spec sentence "`xfail` does not count as running" is ambiguous, and the maintainer
+  decided: an `xfail`-marked test counts toward conformance, for `contract` and
+  `divergence` alike — a test can expect failure as a negative check of the formal
+  specification. Only `skip` and a literal-`True` `skipif` prevent a marker from counting.
+- Corollary of that decision, implemented and tested: `xfail` with a non-empty argument
+  list (for example `xfail(reason=...)`) is not reported by `check_marker_arguments`, and a
+  literal string ID remains mandatory, for `contract` and `divergence` alike.
+- The two files came out larger than the estimate (305 and 313 lines against ~120 and ~60),
+  mostly docstrings and the multi-case scanner tests.
+**Manual validation**:
+- In an interactive session, with `tests/` on `sys.path`:
+  `check_contract_coverage(['X'], [], [])` returns one message naming `X` and
+  `[contract] pending`;
+  `check_contract_coverage(['X'], ['X'], [MarkerOccurrence('contract', 'X', 'tests/t.py::test_x', True)])`
+  returns the stale-pending message;
+  `check_contract_coverage(['X'], ['X'], [])` returns `[]`.
+- Add a scratch test file under `tests/` marked `@pytest.mark.contract('NO-SUCH')` and run
+  `uv run pytest tests/test_conformance.py -k committed`: the committed-data test fails with
+  `NO-SUCH` named in the message. Marking the same test `xfail` keeps it failing — an
+  `xfail` test still runs — and marking it `skip` keeps it failing too, because an ID must
+  name a real row even on a test that does not run. Delete the scratch file afterwards.
 
 ### Increment 3: Inventory scanner
 **Goal**: `scripts/upstream_inventory.py` writes `upstream.json` for the tracked revision.
 **Files**: `scripts/upstream_inventory.py` (~250), `tests/test_inventory.py` (~120),
 `conformance/upstream.json`
 **Validation**: `uv run pytest tests/test_inventory.py`; manual: run the script on a clone at the
-tracked revision and confirm 203 `case` items and 10 `event` items
-**Status**: ⬜ Pending
+tracked revision and confirm 203 `case` items and 11 `event` items
+**Status**: ✅ Completed
+**Changed**:
+- `scripts/upstream_inventory.py`: a tokenizer (strings, nested template literals, regular
+  expressions, comments) and a statement splitter give the `case`, `symbol`, `member`, and
+  `rest` items; `vocabulary` gives `message`, `event`, and `state` items; `item_hash`
+  hashes `normalize(text)` of the item's ranges, or the string of a vocabulary item;
+  `build_inventory` and `main` write `conformance/upstream.json` with sorted keys. A
+  construct that the scanner cannot place raises `ValueError` with the file and the offset:
+  `it.skip` and other `it` forms, a non-literal title or `it.each` table, a duplicate test
+  ID, a test call inside other code, a decorator on a class member, a destructuring
+  declaration.
+- `conformance/upstream.json`: 457 items for `68c9d99` (203 `case`, 99 `symbol`, 98
+  `member`, 28 `rest`, 12 `message`, 11 `event`, 6 `state`); the script gives the same file
+  on every run.
+- `Item.spans` is a tuple of ranges. A merged declaration, a class `symbol` (its members are
+  separate items), and `rest` have more than one range, and the rows of one `it.each` share
+  one range. A message is a call whose callee name ends in `Error` (`new TypeError(…)`,
+  `createAccessError(…)`); `AggregateError` and `CordisError` give their second argument.
+**Tests**:
+- `tests/test_inventory.py`: 23 tests pass — five snippets with the expected items and the
+  partition property (nested `describe`, `it.each` rows, braces in a string and in a
+  template literal with a regular expression, a class with overloads, a computed key, a
+  `static { }` block and a merged namespace, declarations and `rest`), the class `symbol`
+  hash that excludes member text, one item for overloads and merged declarations, five
+  non-literal `it.each` tables and seven other unplaceable constructs that raise
+  `ValueError`, the hash under reformat, comment edit, and token change, `normalize` with
+  comment markers inside strings, `digest`, and the vocabulary items.
+- Partition property checked on every real file of the clone: each token is in exactly one
+  range.
+- Full suite (`uv run pytest`): 55 pass. `ruff check` and `ruff format --check` clean.
+**Deviations**:
+- `Item` has `spans` (a tuple of ranges) in place of `span`, because a class `symbol` has
+  holes where its members are, and a merged declaration is not contiguous.
+- `rest` IDs are `<path>:<rest>`, with the angle brackets in the ID.
+- `module` declarations have the ID `<path>:module <specifier>`
+  (`tests/utils.ts:module ../src/events.ts`).
+- The `Events` interface has 11 `internal/*` keys, not 10; the counts in this spec are
+  corrected.
+- The script has no `--ledger-stubs` option yet; it belongs to the next increment.
+- The script and its test came out larger than the estimate (963 and 302 lines against ~250
+  and ~120), because of the tokenizer, the statement rules, and `ruff format`.
+**Manual validation**:
+- Run `uv run python scripts/upstream_inventory.py /tmp/cordis-scratch/cordis` on the clone
+  at `68c9d99`: the script prints the counts `case` 203 and `event` 11 and writes
+  `conformance/upstream.json`; a second run gives a file with no difference.
 
 ### Increment 4: Ledger checks
 **Goal**: Revision, coverage, hash, status, target, and marker checks pass, with every inventory
@@ -258,20 +375,71 @@ item `pending` (the core port has not started).
 `conformance/ledger.toml`
 **Validation**: `uv run pytest tests/test_conformance.py`; manual: change one hash in
 `upstream.json` of an entry set to `ported` in a scratch copy and see the hash check fail
-**Status**: ⬜ Pending
+**Status**: ✅ Completed
+**Changed**:
+- `scripts/upstream_inventory.py`: `ledger_stubs(items, reviewed)` returns `pending` TOML entries
+  for the items that the ledger lacks, with quoted keys escaped; `--ledger-stubs` prints them
+  (the summary line goes to stderr), and `--ledger PATH` names the ledger that it reads.
+- `tests/conformance_checks.py`: `check_revision`, `check_inventory_coverage`,
+  `check_hash_pinning`, `check_status_consistency`, `check_target_resolution`, and
+  `check_upstream_markers`, with the readers `readme_revision`, `ledger_entries`,
+  `divergence_kinds`, and `resolves`. Status consistency also rejects an unknown ledger field, a
+  `target` on a `case` entry, and a divergence of the wrong kind for the status.
+- `conformance/ledger.toml`: 457 `pending` entries, one for each inventory item.
+**Tests**:
+- `tests/test_conformance.py`: 36 tests pass — 21 more bad-input cases in the parametrized test
+  (one per failure mode, with the expected fragment), the committed-data test with the six new
+  checks, one test that reviewed entries pass, one for `resolves`, one for `readme_revision`.
+- `tests/test_inventory.py`: one test that `ledger_stubs` skips reviewed items and that its
+  escaped keys parse back to the same IDs.
+- Full suite (`uv run pytest`): 88 pass. `ruff check` and `ruff format --check` clean.
+**Deviations**:
+- `check_status_consistency` also takes the marker occurrences, because a stale `pending` includes
+  an `upstream` marker that names a `pending` case.
+- Marker coverage is `check_upstream_markers`: it also fails when a marker names an ID that is
+  not a `case` item.
+- `--ledger-stubs` reads the ledger from `--ledger` and writes the stubs after the inventory.
+**Manual validation**:
+- In a scratch copy of `ledger.toml`, set one entry to `ported` with a wrong `hash`, then call
+  `check_hash_pinning(INVENTORY["items"], ledger_entries(text))`: it returns the message that
+  names the item and the correct hash.
 
 ### Increment 5: Vocabulary and divergence evidence
 **Goal**: The vocabulary check and the per-kind divergence evidence check pass.
 **Files**: `tests/conformance_checks.py` (~80), `tests/test_conformance.py` (~30)
 **Validation**: `uv run pytest tests/test_conformance.py`; manual: add a divergence row of kind
 `correction` with no link and see the check fail
-**Status**: ⬜ Pending
+**Status**: ✅ Completed
+**Changed**:
+- `tests/conformance_checks.py`: `source_vocabulary` reads the string literals (an f-string with
+  each field as `{}`) and the `Enum` member names of the package source with `ast`;
+  `check_vocabulary` fails a reviewed `message`, `event`, or `state` entry with no `divergence`
+  whose text is absent; `check_divergence_evidence` applies the per-kind evidence rules and
+  fails a vestigial row; `divergence_rows` reads the table rows.
+**Tests**:
+- `tests/test_conformance.py`: 52 tests pass — 13 more bad-input cases (absent message, event,
+  and state; each evidence failure, a skipped test, a partly unknown contract cell; vestigial
+  row; unknown kind), the committed-data test with
+  both checks, and three tests for the source reader, the vocabulary exemptions, and full
+  evidence.
+- Full suite (`uv run pytest`): 104 pass. `ruff check` and `ruff format --check` clean.
+**Deviations**:
+- The `adaptation` rule checks only that an `adapted` entry names the row. The running
+  `upstream` test of each adapted `case` entry stays in `check_upstream_markers`, which owns it.
+- A `not-applicable` vocabulary entry is checked like `ported`: only a `divergence` field
+  exempts an entry.
+- A row with a kind other than the four in the table fails.
+**Manual validation**:
+- In an interactive session with `tests/` on `sys.path`, call
+  `check_divergence_evidence([{"ID": "D-1", "Kind": "correction", "Contract": "EFF-REVERT",
+  "Reason and evidence": "Upstream bug."}], ["EFF-REVERT"], {}, [])`: it returns the missing-link
+  message and the missing-test message.
 
 ## Code Standards
 
-- [Architecture](../architecture.md) — the contract, conformance, and divergence rules
-- [Developer Guide](../developer_guide.md) — the upstream review procedure
-- [Contributing](../contributing.md) — the test and docstring standards
+- [Architecture](../../architecture.md) — the contract, conformance, and divergence rules
+- [Developer Guide](../../developer_guide.md) — the upstream review procedure
+- [Contributing](../../contributing.md) — the test and docstring standards
 
 This spec is scaffolding — do not cite it, its filename, or its increment numbers in source,
 docstrings, comments, or test names. Docstrings state the present rule, not the change that

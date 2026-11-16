@@ -1,0 +1,3 @@
+# Third-party files copied into the repository. They are kept out of diffs and
+# language statistics.
+docs/javascripts/vendor/** linguist-vendored -diff

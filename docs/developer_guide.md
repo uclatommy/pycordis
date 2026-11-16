@@ -52,6 +52,13 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+To measure coverage (line and branch), add `--cov`. The run fails when total coverage is below
+`fail_under` in `pyproject.toml`:
+
+```bash
+uv run pytest --cov --cov-report=term-missing
+```
+
 The fast loop excludes slow tests:
 
 ```bash
@@ -62,8 +69,12 @@ uv run pytest -m "not slow"
 
 The `ci.yml` workflow runs on every push and on pull requests to `develop` or `master`:
 
-- `test`: the full suite with `uv run pytest`, on Python 3.12 and 3.13. CI never filters
-  markers; the fast loop above is local only.
+- `test`: the full suite with `uv run pytest --cov`, on Python 3.12 and 3.13. CI never filters
+  markers; the fast loop above is local only. The run fails when coverage is below
+  `fail_under`. The Ubuntu, Python 3.12 job uploads `coverage.xml` to Codecov, which supplies
+  the coverage badge in the README. The upload needs the `CODECOV_TOKEN` repository secret.
+  `codecov.yml` sets the Codecov status checks: total coverage can drop by at most 1%, and the
+  lines that a pull request changes need 90% coverage.
 - `lint`: `uv lock --check`, `uv run ruff check .`, and `uv run ruff format --check .`
 - `docs`: `uv run python scripts/gen_ref_pages.py`, a drift check, then
   `uv run zensical build --strict`. The drift check fails when the generator changes a
@@ -86,9 +97,11 @@ pycordis tracks one upstream revision of `cordiverse/cordis`. The README records
 change is reviewed by behavior, not applied as a line diff. To move to a newer revision:
 
 1. Clone upstream into a scratch directory outside this repository.
-2. Generate the inventory of the new revision into `conformance/upstream.json` with
-   `scripts/upstream_inventory.py`. The conformance check now lists every new, removed, or
-   changed upstream item: a missing ledger entry, a stale ledger entry, or a stale hash.
+2. Set the new revision in `README.md`. Generate the inventory of that revision into
+   `conformance/upstream.json` with `uv run python scripts/upstream_inventory.py <clone>`. Add
+   `--ledger-stubs` to print `pending` ledger entries for the new items, and append them to
+   `conformance/ledger.toml`. The conformance check now lists every new, removed, or changed
+   upstream item: a missing ledger entry, a stale ledger entry, or a stale hash.
 3. Review each listed item, and put it in one class:
     - **Contract change**: the change affects a semantic-contract property. Update the contract
       table first, then the tests, then the code.
@@ -99,18 +112,51 @@ change is reviewed by behavior, not applied as a line diff. To move to a newer r
       the change with the same structure; otherwise no code change.
     - **TypeScript only**: types, build files, or JavaScript runtime details. No code change.
 4. For each item, update its ledger entry: the status, the pycordis symbol or test, the
-   divergence ID if there is one, and the new hash. Never copy a hash without this review.
-5. Update the tracked revision in `README.md` in the same commit as the last reviewed item.
+   divergence ID if there is one, and the new hash. Never copy a hash without this review: the
+   hash records that the review took place. A translated test carries an `upstream` marker with
+   the case ID as a string literal.
+5. Add, change, or remove divergence rows in `docs/architecture.md` with the code. Delete a row
+   when an upstream change removes its reason.
 6. Release a new version (see below).
 
 ## Release
 
 pycordis uses SemVer `0.x`. A change to the public API increments the minor version; other
-changes increment the patch version.
+changes increment the patch version. GitVersion calculates the version from the branch
+structure, never from commit messages. `pyproject.toml` keeps the placeholder version `0.0.0`:
+do not edit it, and do not create a version tag by hand.
 
-1. Create `release/<version>` from `develop`, and set `version` in `pyproject.toml` there.
-2. Merge the branch into `master` through a pull request.
-3. Tag the merge commit on `master` `vX.Y.Z`, and push the tag.
+1. Create `release/<version>` from `develop`. The branch name sets the version, so the name
+   states the compatibility level that you decided.
+2. Merge the branch into `master` through a pull request. Use a **merge commit**. A squash or
+   rebase merge removes the branch name from the history, and `master` then gives only a patch
+   increment of the last tag.
+3. The merge starts `release.yml`. It calculates the version, publishes the build to PyPI, and
+   then creates the tag `vX.Y.Z` on the built commit.
 4. Merge `master` into `develop`.
 
-Projects that depend on pycordis pin the tag (see [Getting Started](getting_started.md#install)).
+A small fix that you commit directly to `master` publishes the next patch version.
+
+`ci.yml` runs the same version calculation and build on every push and pull request (the
+`build` job), so an error in `GitVersion.yml` fails CI before a release needs it. Only
+`release.yml` uploads to PyPI, and it runs only on `master`.
+
+If a release run fails, re-run the failed job:
+
+- If `publish` fails, no tag exists. Re-run the workflow.
+- If only `tag` fails, the upload is complete. Re-run **only** the failed job. A full re-run
+  calculates the same version, and PyPI rejects a second upload of it.
+
+Do not push to `master` again until the tag exists. Without the tag, each push to `master`
+calculates the same version, and PyPI rejects the upload.
+
+### One-time setup
+
+These steps cannot run in a workflow:
+
+1. Make sure that the name `pycordis` is free on PyPI, and register a pending trusted
+   publisher for it (repository `uclatommy/pycordis`, workflow `release.yml`, environment
+   `pypi`).
+2. Create the GitHub environment `pypi`.
+3. Add the `build` job of `ci.yml` to the required checks of `master`.
+4. Make sure that no tag ruleset blocks `GITHUB_TOKEN` from creating `v*` tags.

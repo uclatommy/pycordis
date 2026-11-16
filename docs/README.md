@@ -7,6 +7,8 @@ plugins and services from revertible effects and declared dependencies.
 ## Quick Links
 
 - **[Getting Started](getting_started.md)**: install pycordis and set up a development environment
+- **[User Guide](user_guide.md)**: concepts, schedulers, the host contract, and the service
+  binding rule
 - **[Developer Guide](developer_guide.md)**: workflow, tests, upstream porting, releases
 - **[Contributing](contributing.md)**: rules a change must meet, with the pull request checklist
 - **[Architecture](architecture.md)**: design principles, the semantic contract, conformance,
@@ -20,12 +22,16 @@ plugins and services from revertible effects and declared dependencies.
 docs/
 ├── README.md            # Home page and documentation guide (this file)
 ├── getting_started.md   # Install and development setup
+├── user_guide.md        # Concepts, schedulers, host contract, binding rule
 ├── developer_guide.md   # Workflow, tests, porting, releases
 ├── contributing.md      # Standards for a change, pull request checklist
 ├── architecture.md      # Principles, semantic contract, conformance, divergences
 ├── api/
-│   ├── index.md         # Hand-written API overview
+│   ├── index.md         # Hand-written API overview: paper-to-code map
 │   └── <module>.md      # Generated, one page per public module (not committed)
+├── javascripts/
+│   ├── mathjax.js       # MathJax configuration for LaTeX math
+│   └── vendor/mathjax/  # MathJax tex-svg.js and its license (third-party, Apache-2.0)
 └── build_specs/         # Build specs; closed specs move to completed/
 zensical.toml            # Site configuration (repository root)
 scripts/gen_ref_pages.py # Generates API pages and nav sections
@@ -42,6 +48,23 @@ uv run zensical build --strict
 
 `--strict` fails the build on any warning, so a local build applies the same gate as CI.
 Open `site/index.html`, or run `uv run zensical serve` to rebuild on each edit.
+
+## Math Rendering
+
+Pages write LaTeX math between `$` signs (inline) or `$$` lines (display), and
+`pymdownx.arithmatex` marks it for MathJax. The site serves its own copy of MathJax, so a page
+needs no outside host to show a formula. The copy is `docs/javascripts/vendor/mathjax/tex-svg.js`
+(MathJax 3.2.2), which draws formulas as SVG and needs no font files.
+
+To update MathJax:
+
+1. Download `es5/tex-svg.js` and `LICENSE` from the `mathjax` npm package at an exact 3.x
+   version. MathJax 4 is not a direct replacement: its `tex-svg.js` loads font data and
+   speech rules from a CDN at run time, so an offline copy also needs about 10 MB of font
+   files and a change to the configuration.
+2. Replace the two files in `docs/javascripts/vendor/mathjax/`, and change the version above.
+3. Run `uv run zensical build --strict`, and check the formulas on the
+   [API Reference](api/index.md) overview page in a browser.
 
 ## Maintenance Philosophy
 

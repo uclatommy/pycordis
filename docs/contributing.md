@@ -115,7 +115,9 @@ at least one test. No percentage target excuses a missing one.
 !!! info "Traceability markers"
     A translated upstream case carries `@pytest.mark.upstream("<case ID>")`, a test of a contract
     property carries `@pytest.mark.contract("<ID>")`, and a test of a divergence carries
-    `@pytest.mark.divergence("<ID>")`. The markers, not the test names, link a test to upstream,
+    `@pytest.mark.divergence("<ID>")`. Each ID is a string literal, because the conformance
+    checks read the markers with `ast`. A symbol ID has the `src/` prefix
+    (`src/fiber.ts:Fiber._unload`). The markers, not the test names, link a test to upstream,
     so translated cases follow normal consolidation: a merged test keeps one marker per case.
 
 ## Documentation
