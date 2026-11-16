@@ -53,7 +53,7 @@ class DisposableList[T]:
         serial = next(self._serial)
         self._tail[serial] = value
         self._serials[id(value)] = serial
-        return lambda: self._remove(serial)
+        return self._remover(serial)
 
     def unshift(self, value: T) -> Callable[[], None]:
         """Add `value` before every other entry.
@@ -64,7 +64,7 @@ class DisposableList[T]:
         serial = -next(self._serial)
         self._head[serial] = value
         self._serials[id(value)] = serial
-        return lambda: self._remove(serial)
+        return self._remover(serial)
 
     def delete(self, value: T) -> bool:
         """Remove `value`, which is the object that was added.
@@ -88,6 +88,12 @@ class DisposableList[T]:
         self._tail.clear()
         self._serials.clear()
         return values
+
+    def _remover(self, serial: int) -> Callable[[], None]:
+        def remove() -> None:
+            self._remove(serial)
+
+        return remove
 
     def _remove(self, serial: int) -> bool:
         table = self._head if serial < 0 else self._tail

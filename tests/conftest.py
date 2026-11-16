@@ -12,6 +12,7 @@ from typing import Any
 
 import pytest
 
+from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.scheduler import ImmediateScheduler, spawn
 
@@ -75,6 +76,12 @@ class FakeClock:
 def scheduler() -> ImmediateScheduler:
     """A scheduler that drains when the outermost call returns."""
     return ImmediateScheduler()
+
+
+@pytest.fixture
+def root(scheduler: ImmediateScheduler) -> Context:
+    """A root context on `scheduler`."""
+    return Context(scheduler)
 
 
 @pytest.fixture

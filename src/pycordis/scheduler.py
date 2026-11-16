@@ -6,7 +6,7 @@ parks, and resumes in a later step when the `Deferred` completes. pycordis does 
 use an event loop.
 
 Start with `ImmediateScheduler` for tests and headless programs. Use `spawn` to run a
-coroutine on a scheduler.
+coroutine on a scheduler in a later step, and `start` to run its first step at once.
 """
 
 import threading
@@ -211,4 +211,25 @@ def spawn[T](scheduler: Scheduler, coroutine: Coroutine[Any, Any, T]) -> Deferre
     """
     result = Deferred[T]()
     scheduler.submit(_Task(scheduler, coroutine, result).run)
+    return result
+
+
+def start[T](scheduler: Scheduler, coroutine: Coroutine[Any, Any, T]) -> Deferred[T]:
+    """Run the first step of `coroutine` now, and the other steps on `scheduler`.
+
+    Call it on the owner thread inside `Scheduler.call`, so that the scheduler does
+    not run a later step before this call returns. The coroutine awaits only a
+    `Deferred`, or an object that forwards its `await` to one.
+
+    Args:
+        scheduler: The scheduler that drives the later steps.
+        coroutine: The coroutine to run.
+
+    Returns:
+        A `Deferred` that completes with the coroutine's return value, or rejects with
+        the exception that ends it. It is already complete when the coroutine ends
+        without an `await`.
+    """
+    result = Deferred[T]()
+    _Task(scheduler, coroutine, result).run()
     return result

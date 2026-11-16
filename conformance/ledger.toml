@@ -11,7 +11,6 @@
 
 [contract]
 pending = [
-    "EFF-REVERT",
     "EFF-ISOLATE",
     "REG-WELLFORMED",
     "LIFE-ORDER",
@@ -76,49 +75,62 @@ status = "pending"
 status = "pending"
 
 [items."dispose.spec.ts::Effects::async return 1"]
-status = "pending"
+status = "ported"
+hash = "a9d1da7a5a7c90561ae8bfb8b660b20acd695b989f3453af25275a69a0214732"
 
 [items."dispose.spec.ts::Effects::async return 2"]
-status = "pending"
+status = "ported"
+hash = "c5ce43f492592d897a8643263a163a4cee892a4e4e18ae44b24678af003292fb"
 
 [items."dispose.spec.ts::Effects::async return with error"]
-status = "pending"
+status = "ported"
+hash = "8cd68725f964b98fe192fd442d226aefc94122b29daa811c84dfab81252c2fa8"
 
 [items."dispose.spec.ts::Effects::async yield (aborted, finally)"]
-status = "pending"
+status = "ported"
+hash = "b1042822fc3caef04c55f6a5c318325cdaa4cc6aeadf64ddb35287db0301a863"
 
 [items."dispose.spec.ts::Effects::async yield 1"]
-status = "pending"
+status = "ported"
+hash = "05472e975903b7af3866dfaa2dff44fa832418cefd4f88e4958cfef025318c7c"
 
 [items."dispose.spec.ts::Effects::async yield 2 (aborted)"]
-status = "pending"
+status = "ported"
+hash = "d0cca710bca55277a079d0a65bea656c02421f93016014095cf8953e0d51d734"
 
 [items."dispose.spec.ts::Effects::async yield 3 (aborted)"]
-status = "pending"
+status = "ported"
+hash = "cdd5d87bd9f9afccb73b2964c7e68bb67d75f210a0bcfbc1e9dd74aebd8d3994"
 
 [items."dispose.spec.ts::Effects::async yield 4 (await dispose)"]
-status = "pending"
+status = "ported"
+hash = "b48fcc506342619bbecde59e960c599d8a6097447d1bf72290b4d647316343b3"
 
 [items."dispose.spec.ts::Effects::async yield invalid effect"]
-status = "pending"
+status = "ported"
+hash = "e585b47c30b76364eadcb164e0bed97b0e5144c111249611f393d3bca1866525"
 
 [items."dispose.spec.ts::Effects::async yield with error"]
-status = "pending"
+status = "ported"
+hash = "933d549256a8562f741f90f84d277b5feb9dad294549c2de5d76341079b95481"
 
 [items."dispose.spec.ts::Effects::dispose by component"]
 status = "pending"
 
 [items."dispose.spec.ts::Effects::dispose manually"]
-status = "pending"
+status = "ported"
+hash = "728a3182940aaa2a1548db3358c4c574c7b0a9d94de9ac75994306207ec5104d"
 
 [items."dispose.spec.ts::Effects::return with error"]
-status = "pending"
+status = "ported"
+hash = "88037c8e31caa6e90a0efbf8b351bd84d572e34154293c6659cf1ae75d715669"
 
 [items."dispose.spec.ts::Effects::yield dispose"]
 status = "pending"
 
 [items."dispose.spec.ts::Effects::yield with error"]
-status = "pending"
+status = "ported"
+hash = "a1981ef39b17e6e61227b6593e4d2f52624388e563e91282fc86cca9ae2f3930"
 
 [items."event:internal/commit"]
 status = "pending"
@@ -415,10 +427,12 @@ status = "pending"
 status = "pending"
 
 [items."message:Invalid effect"]
-status = "pending"
+status = "ported"
+hash = "cc79fb583a51177d3295765ad76603ff37162112638434c9f686d9f2c2c1f080"
 
 [items."message:cannot create effect on inactive context"]
-status = "pending"
+status = "ported"
+hash = "fc3c2257f49e6f1a5649225fd9d91d75c6d5d4a6c84dd22dca795c82dff0ef29"
 
 [items."message:cannot get property \"{}\" without inject"]
 status = "pending"
@@ -649,25 +663,40 @@ status = "pending"
 status = "pending"
 
 [items."src/context.ts:Context"]
-status = "pending"
+status = "ported"
+target = "pycordis.context.Context"
+hash = "da95856926b212318c08f9410901a9ea290e4d985be872ffd3a8d004fc0e66bf"
 
 [items."src/context.ts:Context.[Symbol.for('nodejs.util.inspect.custom')]"]
-status = "pending"
+status = "ported"
+target = "pycordis.context.Context.__repr__"
+hash = "e7c25f5473f066546a75aa25fe08b422b725b0f31e5e40784d26488f53504909"
 
 [items."src/context.ts:Context.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.context.Context.__init__"
+hash = "3a773c1580d881f32181a942bcd6a244f4546ad8fed42e0742ad29327b2e5dee"
 
 [items."src/context.ts:Context.extend"]
-status = "pending"
+status = "ported"
+target = "pycordis.context.Context.extend"
+hash = "1d6ac70380d29f8a94220978779b77efda9fff104cd27ab9ace584ea5b31aaca"
 
 [items."src/context.ts:Context.intercept"]
-status = "pending"
+status = "ported"
+target = "pycordis.context.Context.intercept"
+hash = "cee1429fcff2da3f03d6774cd4dc3aa14b60a143419eda57fbb1b8bca340880f"
 
 [items."src/context.ts:Context.is"]
-status = "pending"
+status = "adapted"
+target = "pycordis.context.Context"
+hash = "74dd1233ff5d178b94545d881875cd25bb16593355da820272ab2b80735e1b67"
+divergence = "hook-names"
 
 [items."src/context.ts:Context.isolate"]
-status = "pending"
+status = "ported"
+target = "pycordis.context.Context.isolate"
+hash = "3d3d5976fe96d44551383804e41f654b85e3e7a413f27fb97c76d000d4018eb3"
 
 [items."src/events.ts:<rest>"]
 status = "pending"
@@ -742,10 +771,16 @@ status = "pending"
 status = "pending"
 
 [items."src/fiber.ts:AsyncDisposable"]
-status = "pending"
+status = "adapted"
+target = "pycordis.fiber.EffectHandle"
+hash = "9b06c52448b25db987945af9dbca962b5e4a6c56dae35a2018653b7f65019925"
+divergence = "async-effects"
 
 [items."src/fiber.ts:AsyncEffect"]
-status = "pending"
+status = "adapted"
+target = "pycordis.fiber.EffectForm"
+hash = "a10288c9d38d83843e6939f2100cd7c70dfca18853d052a4963f62ea28615ef7"
+divergence = "async-effects"
 
 [items."src/fiber.ts:CordisError"]
 status = "pending"
@@ -754,16 +789,24 @@ status = "pending"
 status = "pending"
 
 [items."src/fiber.ts:Disposable"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Disposer"
+hash = "85688c0d262dd384c15a4fe6c5b203a2a68bd5c98a1ab308ce0e94f01e773ef6"
 
 [items."src/fiber.ts:Effect"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.EffectForm"
+hash = "5d56b0d4645b7c5e19f09b60fa7af74dba283d910e261aaddbb57cbfc77c7733"
 
 [items."src/fiber.ts:EffectMeta"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.EffectMeta"
+hash = "807bec94699dbd21125381bebb42d81111a60153b0de9e7bd732300309e965ed"
 
 [items."src/fiber.ts:EffectRunner"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber._Runner"
+hash = "df1a6fdf989153608f231d8280f09c51887915dfa44aadb109b535a73c936ef1"
 
 [items."src/fiber.ts:Fiber"]
 status = "pending"
@@ -772,7 +815,9 @@ status = "pending"
 status = "pending"
 
 [items."src/fiber.ts:Fiber._execute"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._execute"
+hash = "8e1ef987352caf86b6a3832f50e2a8ce99214f1551e901f02f386c88e4c68112"
 
 [items."src/fiber.ts:Fiber._getState"]
 status = "pending"
@@ -799,37 +844,55 @@ status = "pending"
 status = "pending"
 
 [items."src/fiber.ts:Fiber.assertActive"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber.assert_active"
+hash = "58a0e4c24377aef6e122cf9afe9fb91374a1efd33f08c0b6cbffd4e604f3a42e"
 
 [items."src/fiber.ts:Fiber.await"]
-status = "pending"
+status = "adapted"
+target = "pycordis.fiber.Fiber.wait"
+hash = "bb88dbc01d2dbc49f0472759a780df31e5e1ffdb3c38f534e88e1567a0f496f7"
+divergence = "fiber-wait"
 
 [items."src/fiber.ts:Fiber.constructor"]
 status = "pending"
 
 [items."src/fiber.ts:Fiber.effect"]
-status = "pending"
+status = "adapted"
+target = "pycordis.fiber.Fiber.effect"
+hash = "073627c9a069a84480f40e865b2464d753e824e6c052311c3e9ec38e28e5dcc2"
+divergence = "async-effects"
 
 [items."src/fiber.ts:Fiber.getEffects"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber.get_effects"
+hash = "5bce6273c75a1a2c517090f617a07394a22e429a6b04121eb5b217e3558d1fe2"
 
 [items."src/fiber.ts:Fiber.name"]
 status = "pending"
 
 [items."src/fiber.ts:Fiber.restart"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber.restart"
+hash = "94511f76e214bb6f177deb6a2b0a8fe4b092d7201d053e13899a3596c0c07502"
 
 [items."src/fiber.ts:Fiber.update"]
 status = "pending"
 
 [items."src/fiber.ts:FiberState"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.FiberState"
+hash = "a909fac8c8da7ec516c7eb530e958d8e118d1481fa27ac90d4ff6518d330d689"
 
 [items."src/fiber.ts:INACTIVE"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.INACTIVE"
+hash = "c9fcd629603f07c7b49bc151aae2b6f1542ee1912cbe650f1a8901d429bf6ad1"
 
 [items."src/fiber.ts:SyncEffect"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.EffectForm"
+hash = "1721814fb773cb7342d2e5ee21c36ed5b71cc4ed15e77452e8242a6f57491902"
 
 [items."src/fiber.ts:ValidationError"]
 status = "pending"
@@ -1205,22 +1268,28 @@ status = "pending"
 status = "pending"
 
 [items."state:ACTIVE"]
-status = "pending"
+status = "ported"
+hash = "630c2f1c0ee1b8d7da57cf8936ae7e78274aba0bfd765fe10a20dfe580f9eecc"
 
 [items."state:DISPOSED"]
-status = "pending"
+status = "ported"
+hash = "af7c3f4d85b9dfa7412b91910a05a0e3870c0e8692243ce37a54fa76d1afb1cf"
 
 [items."state:FAILED"]
-status = "pending"
+status = "ported"
+hash = "02bd349299173f7fdf2dbc983d70961b26d74e6260c3755a058e25f5ee172f98"
 
 [items."state:LOADING"]
-status = "pending"
+status = "ported"
+hash = "ba0eebf379567c645b1edd9382142898e897046ba001ecc8c343ad19f338650f"
 
 [items."state:PENDING"]
-status = "pending"
+status = "ported"
+hash = "332011b91ccd9887592cd7072f12da38748e37ee1af81985f9c8e1f066aec6fb"
 
 [items."state:UNLOADING"]
-status = "pending"
+status = "ported"
+hash = "bdc8ba5cab4f938a6dc565d0f4f1a1208eff1ac1fc8a61bad706bf52e2be7663"
 
 [items."tests/associate.spec.ts:<rest>"]
 status = "pending"

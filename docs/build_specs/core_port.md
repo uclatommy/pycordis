@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 1 of 12 complete
+**Status**: 🔄 In progress — Increment 2 of 12 complete
 
 ## Goal
 
@@ -516,7 +516,36 @@ restart, and call-site notes.
 **Files**: `context.py` (~120), `fiber.py` (effect part, ~220), `keys.py` (~30),
 `test_effect_forms.py`, `test_dispose.py`
 **Validation**: `uv run pytest tests/test_effect_forms.py tests/test_dispose.py`
-**Status**: ⬜ Pending
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/keys.py`: `Key[T]` (equality and hash follow the name) and the `Keyable[T]` alias
+- `src/pycordis/context.py`: `Context(scheduler)` with `root`, `fiber`, `scheduler`, `extend`, `isolate`, `intercept`, `effect`, and the read-only mappings `meta`, `isolates`, `intercepts`
+- `src/pycordis/fiber.py`: `Fiber` (root only), `FiberState`, `EffectHandle`, `EffectMeta`, `Disposer`, `EffectForm`, `INACTIVE`; `effect()` in every return form with the call-site note, the `root-late-effect` log, and `get_effects()`
+- `src/pycordis/fiber.py`: the root lifecycle (`_get_state`, `_update_state`, `_refresh`, `_set_epoch`, `_reload`, `_unload`), `wait()`, `restart()`, and `dispose()` (the root restart)
+- `src/pycordis/scheduler.py`: `start`, which runs the first step of a task at once
+- `src/pycordis/disposables.py`: the remover that `push` and `unshift` return gives `None`, as its signature states
+- `tests/conftest.py`: the `root` fixture
+- `conformance/ledger.toml`: reviewed the `Context` items, the effect and state items of `fiber.ts`, the 13 runnable `dispose.spec.ts` cases, the two effect messages, and the six states; `EFF-REVERT` leaves `[contract] pending`
+- `docs/architecture.md`: divergence rows `async-effects`, `fiber-wait`, `hook-names`, `root-late-effect`
+
+**Tests**:
+- `tests/test_dispose.py` (13 upstream cases in 9 tests), `tests/test_effect_forms.py` (16 tests, one parametrized over five effect forms, with the `EFF-REVERT` contract test and the `root-late-effect` divergence test), `tests/test_context.py` (7), `tests/test_keys.py` (2)
+- Full suite: 187 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, `tests/test_docstrings.py`, `tests/test_utils.py`, and `tests/test_scheduler.py`
+
+**Deviations**:
+- The lifecycle methods that the root restart needs are ported now, without `internal/*` events, provisions, `inject`, and the dependents guard. The ledger items `_getState`, `_updateState`, `_setEpoch`, `_refresh`, `_reload`, and `_unload` stay `pending` until they are complete
+- `dispose.spec.ts` cases "dispose by component" (needs `ctx.use`) and "yield dispose" (needs `ctx.on`) stay `pending`
+- `tests/test_context.py` and `tests/test_keys.py` are not in the file list; they test the public derivation API and `Key`
+- The spec does not name the read-only tables. They are `Context.meta` (the values of `extend`), `Context.isolates`, and `Context.intercepts`
+- `Fiber.dispose` is a method that calls `restart`; the non-root form replaces it with the unload of the fiber's effect
+- The test for awaiting an object that is not a `Deferred`, `Fiber`, or `EffectHandle` is not added again: `tests/test_scheduler.py` owns that rule
+- `DisposableList.push` and `unshift` returned a remover that gave a `bool`; the effect code treated that value as a pending `Deferred`. The remover now gives `None`
+- Errors that a disposer raises during teardown are logged with the effect label but carry no call-site note
+- Owner-thread checks are not added yet (planned for the threading increment)
+
+**Manual validation**:
+- A root context registers effects, reverts them newest first with `handle()`, and `fiber.dispose()` leaves the root `ACTIVE` (confirmed by the user)
 
 ### Increment 3: Events
 **Goal**: `EventsService` with every dispatch mode, listener effects, `cordis_filter`, and the
