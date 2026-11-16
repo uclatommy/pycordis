@@ -869,7 +869,32 @@ tests/test_invariants.py` (mark each test the **unmarked slow tests** summary li
 `uv run python`, create a root context with `FramePumpScheduler`, `use` a component that
 provides a service and one that injects it, pump, and read `fiber.state` and `get_effects()`
 for both.
-**Status**: ⬜ Pending
+**Docs**: Docstrings of `Scheduler.assert_owner`, `FramePumpScheduler`, `Fiber.children`, and the thread rule of `Context` and `Fiber`; the divergence rows `owner-thread` and `host-introspection`
+**Status**: ✅ Completed
+
+**Changed**:
+- `scheduler.py`: `Scheduler` keeps the owner thread and has `assert_owner()`; `FramePumpScheduler` with a thread-safe `submit` and `pump(max_steps)`; `owner_thread(attribute)` decorator; `ImmediateScheduler.run_until_quiet` asserts the owner thread
+- `context.py`, `events.py`, `reflect.py`, `registry.py`, `fiber.py`: each public method of `Context`, `Fiber`, `EventsService`, `ReflectService`, and `RegistryService` raises `CordisError("WRONG_THREAD")` from another thread
+- `fiber.py`: `Fiber.children`, a snapshot tuple of the live child fibers in creation order
+- `docs/architecture.md`: divergence rows `owner-thread` and `host-introspection`
+- `conformance/ledger.toml`: `[contract] pending` is empty; the seven contract IDs have running tests
+
+**Tests**:
+- `tests/test_scheduler.py` (`pump` cases and the empty-pump timing and allocation check), `tests/test_threading.py` (19 pass), `tests/test_invariants.py` (240 pass: 8 properties over 30 seeds), `tests/test_fiber.py` (introspection case)
+- Full suite: 803 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, and `tests/test_docstrings.py`; the summary lists no unmarked slow test
+- A test of the invariant suite fails when the provider wait for dependents in `Fiber._unload` is disabled (45 failures); the change was reverted
+- The submit-from-another-thread test of `ImmediateScheduler` moved from `tests/test_scheduler.py` to `tests/test_threading.py`, where it covers both schedulers
+
+**Deviations**:
+- `LoggerService` has no owner-thread check: logging from a worker thread is valid, and `logging` is thread-safe. `next_uid` and `resolve` of the registry have no check, because only internal code calls them
+- The invariant model runs the schedule to quiescence after it disposes a provider slot, so that a later `use` of a provider of the same key does not conflict with the unloading provider (a realm has one provider for a key; the second one fails to load, as upstream does). Other calls interleave freely
+- `replace` in the invariant model happens once for each provider slot
+- `fiber.children` follows the parent fiber that owns the child, not `runtime.fibers`; `Runtime.fibers` stays the list of one component
+- `LIFE-FAILURE` and `LIFE-COHERENT` have their own random-schedule tests; the failure test compares the siblings with a run that has no failing component
+
+**Manual validation**:
+- In `uv run python`, a `FramePumpScheduler` root with a provider and a dependent, pumped once, gave `ACTIVE` for both fibers and the expected `get_effects()` and `children` (confirmed by the user)
+- A mutation that disables the dependents wait in `ReflectService._release` fails 4 tests of `test_reflect.py` and `test_service_dispose.py`: the guard is live code. The random invariant suite does not withdraw a single service, so fixed-order tests cover that path
 
 ### Increment 12: First release
 **Goal**: The public exports, the user guide, the completed module map and divergence table, and

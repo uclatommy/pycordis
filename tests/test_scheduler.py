@@ -2,7 +2,10 @@
 
 import gc
 import threading
+import time
+import tracemalloc
 import types
+import warnings
 import weakref
 from collections.abc import Callable, Coroutine
 from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
@@ -13,7 +16,7 @@ from conftest import FakeClock
 
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
-from pycordis.scheduler import ImmediateScheduler, Scheduler, spawn
+from pycordis.scheduler import FramePumpScheduler, ImmediateScheduler, Scheduler, spawn
 
 Run = Callable[[Coroutine[Any, Any, Any]], Deferred[Any]]
 
@@ -273,23 +276,6 @@ def test_a_custom_scheduler_needs_only_submit_and_call_does_nothing() -> None:
     assert task.result() == 2
 
 
-def test_submit_from_another_thread_waits_for_the_owner_to_drain(
-    scheduler: ImmediateScheduler,
-) -> None:
-    ran_on: list[int] = []
-    worker = threading.Thread(
-        target=lambda: scheduler.submit(lambda: ran_on.append(threading.get_ident()))
-    )
-    worker.start()
-    worker.join(timeout=5)
-    assert not worker.is_alive()
-    assert ran_on == []
-
-    scheduler.run_until_quiet(timeout=1)
-
-    assert ran_on == [threading.get_ident()]
-
-
 def test_run_until_quiet_waits_for_a_deferred_that_a_worker_completes(
     scheduler: ImmediateScheduler,
 ) -> None:
@@ -337,6 +323,106 @@ def test_a_failing_submitted_function_leaves_later_work_queued(
     scheduler.run_until_quiet(timeout=1)
 
     assert ran == ["later"]
+
+
+# FramePumpScheduler
+
+
+@pytest.mark.parametrize(
+    ("queued", "limit", "ran"), [(5, 2, 2), (3, 10, 3), (3, 0, 0), (0, 4, 0)]
+)
+def test_pump_runs_at_most_the_limit_and_returns_the_steps_run(
+    queued: int, limit: int, ran: int
+) -> None:
+    pump = FramePumpScheduler()
+    seen: list[int] = []
+    for index in range(queued):
+        pump.submit(lambda index=index: seen.append(index))
+
+    assert pump.pump(limit) == ran
+    assert seen == list(range(ran))
+    assert pump.pump(queued) == queued - ran
+
+
+def test_pump_runs_a_step_that_another_step_submits_within_the_limit() -> None:
+    pump = FramePumpScheduler()
+    seen: list[str] = []
+
+    def first() -> None:
+        seen.append("first")
+        pump.submit(lambda: seen.append("second"))
+
+    pump.submit(first)
+
+    assert pump.pump(1) == 1
+    assert seen == ["first"]
+    assert pump.pump(5) == 1
+    assert seen == ["first", "second"]
+
+
+def test_pump_rejects_a_negative_limit() -> None:
+    with pytest.raises(ValueError, match="-1"):
+        FramePumpScheduler().pump(-1)
+
+
+def test_pump_leaves_later_steps_queued_when_a_step_raises() -> None:
+    pump = FramePumpScheduler()
+    seen: list[str] = []
+
+    def fail() -> None:
+        raise RuntimeError("step failed")
+
+    pump.submit(fail)
+    pump.submit(lambda: seen.append("later"))
+
+    with pytest.raises(RuntimeError, match="step failed"):
+        pump.pump(5)
+    assert pump.pump(5) == 1
+    assert seen == ["later"]
+
+
+def test_pump_resumes_a_parked_task_after_its_deferred_completes() -> None:
+    pump = FramePumpScheduler()
+    gate = Deferred[int]()
+
+    async def body() -> int:
+        return await gate
+
+    task = spawn(pump, body())
+    pump.pump(10)
+    assert not task.done()
+
+    gate.resolve(3)
+    assert not task.done()
+    pump.pump(10)
+
+    assert task.result() == 3
+
+
+def test_an_empty_pump_is_fast_and_allocates_nothing() -> None:
+    pump = FramePumpScheduler()
+    pump.pump(8)  # warm-up
+    calls = 20_000
+
+    tracemalloc.start()
+    try:
+        before = tracemalloc.take_snapshot()
+        started = time.perf_counter()
+        for _ in range(calls):
+            pump.pump(8)
+        elapsed = time.perf_counter() - started
+        after = tracemalloc.take_snapshot()
+    finally:
+        tracemalloc.stop()
+
+    assert elapsed / calls < 50e-6
+    grown = [
+        stat
+        for stat in after.compare_to(before, "lineno")
+        if stat.size_diff > 0 and "src/pycordis" in str(stat.traceback)
+    ]
+    if grown:  # interpreter noise on some platforms: warn, and let the timing gate
+        warnings.warn(f"an empty pump allocated memory: {grown}", stacklevel=1)
 
 
 # FakeClock

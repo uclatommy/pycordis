@@ -10,15 +10,7 @@
 # after the review of the upstream item.
 
 [contract]
-pending = [
-    "EFF-ISOLATE",
-    "REG-WELLFORMED",
-    "LIFE-ORDER",
-    "LIFE-COHERENT",
-    "LIFE-PROGRESS",
-    "LIFE-CONFLUENT",
-    "LIFE-FAILURE",
-]
+pending = []
 
 [items."associate.spec.ts::Association::associated access follows the service fiber"]
 status = "ported"

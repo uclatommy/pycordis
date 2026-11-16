@@ -20,7 +20,7 @@ from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.fiber import EffectHandle, Fiber, FiberState
 from pycordis.keys import Keyable, key_name
-from pycordis.scheduler import Scheduler, start
+from pycordis.scheduler import Scheduler, owner_thread, start
 from pycordis.traceable import Overlay, get_traceable, get_with_receiver
 
 if TYPE_CHECKING:
@@ -145,10 +145,12 @@ class ReflectService:
         self._accessors: dict[str, Accessor] = {}
         self._impl_counter = 0
 
+    @owner_thread("scheduler")
     def has_property(self, name: str) -> bool:
         """Return whether `name` is declared as a service or as an accessor."""
         return name in self._services or name in self._accessors
 
+    @owner_thread("scheduler")
     def read(
         self, ctx: "Context", key: Keyable[Any], receiver: object | None = None
     ) -> Any:
@@ -190,6 +192,7 @@ class ReflectService:
             )
         return get_traceable(ctx, found.impl.value)
 
+    @owner_thread("scheduler")
     def write(
         self,
         ctx: "Context",
@@ -211,6 +214,7 @@ class ReflectService:
         else:
             accessor.set(ctx, value, receiver)
 
+    @owner_thread("scheduler")
     def get(self, ctx: "Context", key: Keyable[Any], strict: bool = True) -> Any:
         """Return the value of the service `key` that `ctx` sees, or `None`.
 
@@ -219,6 +223,7 @@ class ReflectService:
         impl = self.find(ctx, key_name(key), strict)
         return None if impl is None else get_traceable(ctx.use_site, impl.value)
 
+    @owner_thread("scheduler")
     def set(self, ctx: "Context", key: Keyable[Any], value: Any) -> None:
         """Replace the value of the service `key` that `ctx` sees.
 
@@ -234,6 +239,7 @@ class ReflectService:
             raise CordisError(f'cannot set property "{name}" in multiple fibers')
         impl.value = value
 
+    @owner_thread("scheduler")
     def provide(
         self,
         ctx: "Context",
@@ -278,6 +284,7 @@ class ReflectService:
 
         return fiber.effect(setup, f"ctx.provide({json.dumps(name)})")
 
+    @owner_thread("scheduler")
     def notify(self, ctx: "Context", names: Iterable[str]) -> None:
         """Report a change of the providers of `names` to `internal/service` listeners.
 
@@ -307,6 +314,7 @@ class ReflectService:
                 this=_Filter(name, ctx.isolates.get(name)),
             )
 
+    @owner_thread("scheduler")
     def announce(self, fiber: Fiber) -> None:
         """Report that the providers of `fiber` became visible or hidden.
 
@@ -317,6 +325,7 @@ class ReflectService:
             if self._store.get(impl.isolate) is impl:
                 self.notify(fiber.ctx.isolate(impl.name, impl.isolate), [impl.name])
 
+    @owner_thread("scheduler")
     def accessor(
         self, ctx: "Context", key: Keyable[Any], accessor: Accessor
     ) -> EffectHandle:
@@ -341,6 +350,7 @@ class ReflectService:
 
         return ctx.fiber.effect(setup, f"ctx.accessor({json.dumps(name)})")
 
+    @owner_thread("scheduler")
     def mixin(
         self,
         ctx: "Context",
@@ -363,6 +373,7 @@ class ReflectService:
 
         return ctx.fiber.effect(setup, f"ctx.mixin({json.dumps(source_name)})")
 
+    @owner_thread("scheduler")
     def bind[**P, R](self, ctx: "Context", callback: Callable[P, R]) -> Callable[P, R]:
         """Return a function that calls `callback` with its arguments traced for `ctx`.
 
@@ -377,6 +388,7 @@ class ReflectService:
 
         return bound
 
+    @owner_thread("scheduler")
     def find(self, ctx: "Context", name: str, strict: bool) -> Impl | None:
         """Return the provider of `name` that `ctx` sees, or `None`.
 

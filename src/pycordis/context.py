@@ -18,7 +18,7 @@ from pycordis.keys import Keyable
 from pycordis.logger import LoggerService
 from pycordis.reflect import Accessor, ReflectService
 from pycordis.registry import Component, RegistryService
-from pycordis.scheduler import Scheduler
+from pycordis.scheduler import Scheduler, owner_thread
 from pycordis.traceable import get_traceable
 
 
@@ -47,7 +47,8 @@ class Context:
     lookup reads the nearest context that has the key.
 
     Call context methods on the owner thread of the root context, which is the thread
-    that created it.
+    that created it. A call from another thread raises `CordisError("WRONG_THREAD")`.
+    To hand work to the owner thread, use `Scheduler.submit`.
 
     Examples:
         ```python
@@ -212,6 +213,7 @@ class Context:
         """
         self.root._isolates.setdefault(name, object())
 
+    @owner_thread("scheduler")
     def extend(self, **meta: object) -> Self:
         """Return a child context that adds `meta` to its `meta` mapping.
 
@@ -221,6 +223,7 @@ class Context:
             self._isolates, self._intercepts, self._meta.new_child(meta)
         )
 
+    @owner_thread("scheduler")
     def isolate(self, name: str, label: object | None = None) -> Self:
         """Return a child context whose service `name` is separate from the parent's.
 
@@ -236,12 +239,14 @@ class Context:
             self._isolates.new_child({name: realm}), self._intercepts, self._meta
         )
 
+    @owner_thread("scheduler")
     def intercept(self, name: str, config: object) -> Self:
         """Return a child context that passes `config` to the service `name`."""
         return self._derive(
             self._isolates, self._intercepts.new_child({name: config}), self._meta
         )
 
+    @owner_thread("scheduler")
     def effect(
         self, execute: Callable[[], EffectForm], label: str = "anonymous"
     ) -> EffectHandle:
@@ -264,6 +269,7 @@ class Context:
         with self.scheduler.call():
             return self.fiber.effect(execute, label, call_site=CallSite.capture(skip=1))
 
+    @owner_thread("scheduler")
     def use(self, component: Component, config: object = None) -> Fiber:
         """Run `component` in a new fiber that this context's fiber owns.
 
@@ -299,6 +305,7 @@ class Context:
                 self.use_site, component, config, CallSite.capture(skip=1)
             )
 
+    @owner_thread("scheduler")
     def inject(self, deps: object, callback: Callable[["Context"], Any]) -> Fiber:
         """Run `callback(ctx)` in a new fiber that requires the services `deps`.
 
@@ -343,6 +350,7 @@ class Context:
         """
         self.reflect.write(self, key, value)
 
+    @owner_thread("scheduler")
     def get[T](self, key: Keyable[T], strict: bool = True) -> T | None:
         """Return the value of the service `key`, or `None`.
 
@@ -356,6 +364,7 @@ class Context:
         """
         return self.reflect.get(self, key, strict)
 
+    @owner_thread("scheduler")
     def set[T](self, key: Keyable[T], value: T) -> None:
         """Replace the value of the service `key` that this context sees.
 
@@ -364,6 +373,7 @@ class Context:
         """
         self.reflect.set(self, key, value)
 
+    @owner_thread("scheduler")
     def provide[T](
         self,
         key: Keyable[T],
@@ -400,6 +410,7 @@ class Context:
         """
         return self.reflect.provide(self.use_site, key, value, check)
 
+    @owner_thread("scheduler")
     def accessor(
         self,
         key: Keyable[Any],
@@ -424,6 +435,7 @@ class Context:
         """
         return self.reflect.accessor(self.use_site, key, Accessor(get, set))
 
+    @owner_thread("scheduler")
     def mixin(
         self, source: Keyable[Any], mixins: Iterable[str] | Mapping[str, str]
     ) -> EffectHandle:
@@ -446,6 +458,7 @@ class Context:
         """
         return self.reflect.mixin(self.use_site, source, mixins)
 
+    @owner_thread("scheduler")
     def on(
         self,
         name: EventName,
@@ -479,6 +492,7 @@ class Context:
         """
         return self.events.on(self.use_site, name, listener, options)
 
+    @owner_thread("scheduler")
     def once(
         self,
         name: EventName,
@@ -491,6 +505,7 @@ class Context:
         """
         return self.events.once(self.use_site, name, listener, options)
 
+    @owner_thread("scheduler")
     def emit(self, name: EventName, *args: Any, this: object = None) -> None:
         """Call every listener of `name` with `args`, and ignore the results.
 
@@ -502,6 +517,7 @@ class Context:
         """
         self.events.emit(name, *args, this=this)
 
+    @owner_thread("scheduler")
     def bail(self, name: EventName, *args: Any, this: object = None) -> Any:
         """Call the listeners in order, and return the first result that is not
         `None` or `False`.
@@ -510,6 +526,7 @@ class Context:
         """
         return self.events.bail(name, *args, this=this)
 
+    @owner_thread("scheduler")
     def serial(self, name: EventName, *args: Any, this: object = None) -> Deferred[Any]:
         """Call the listeners one after another, and wait for each result.
 
@@ -518,6 +535,7 @@ class Context:
         """
         return self.events.serial(name, *args, this=this)
 
+    @owner_thread("scheduler")
     def parallel(
         self, name: EventName, *args: Any, this: object = None
     ) -> Deferred[None]:
@@ -528,6 +546,7 @@ class Context:
         """
         return self.events.parallel(name, *args, this=this)
 
+    @owner_thread("scheduler")
     def waterfall(self, name: EventName, *args: Any, this: object = None) -> Any:
         """Run the listeners as a chain around the final function in `args[-1]`.
 

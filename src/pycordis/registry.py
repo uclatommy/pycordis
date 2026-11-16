@@ -28,7 +28,7 @@ from pycordis.disposables import DisposableList
 from pycordis.errors import CallSite
 from pycordis.fiber import Fiber
 from pycordis.keys import key_name
-from pycordis.scheduler import Scheduler
+from pycordis.scheduler import Scheduler, owner_thread
 from pycordis.traceable import get_traceable
 
 if TYPE_CHECKING:
@@ -230,6 +230,7 @@ class RegistryService:
         self._internal[callback] = runtime
         return runtime
 
+    @owner_thread("_scheduler")
     def get(self, component: Component) -> Runtime | None:
         """Return the record of `component`, or `None` if it has no live fiber.
 
@@ -238,10 +239,12 @@ class RegistryService:
         forwarded = self._forward(component)
         return None if forwarded is None else self._internal.get(forwarded[0])
 
+    @owner_thread("_scheduler")
     def has(self, component: Component) -> bool:
         """Return whether `component`, or its replacement, has a live fiber."""
         return self.get(component) is not None
 
+    @owner_thread("_scheduler")
     def replace(self, old: Component, new: Component) -> list[Fiber]:
         """Move the live fibers of `old` to `new`, and run them again.
 
@@ -303,27 +306,33 @@ class RegistryService:
                 fiber._replace(target, inject)
             return fibers
 
+    @owner_thread("_scheduler")
     def keys(self) -> KeysView[Callable[..., Any]]:
         """Return a view of the functions that run the loaded components."""
         return self._internal.keys()
 
+    @owner_thread("_scheduler")
     def values(self) -> ValuesView[Runtime]:
         """Return a view of the records of the loaded components."""
         return self._internal.values()
 
+    @owner_thread("_scheduler")
     def entries(self) -> ItemsView[Callable[..., Any], Runtime]:
         """Return a view of the pairs of runner and record."""
         return self._internal.items()
 
+    @owner_thread("_scheduler")
     def for_each(self, callback: Callable[[Runtime, Callable[..., Any]], None]) -> None:
         """Call `callback(runtime, key)` for each loaded component."""
         for key, runtime in list(self._internal.items()):
             callback(runtime, key)
 
+    @owner_thread("_scheduler")
     def unregister(self, runtime: Runtime) -> None:
         """Drop the record of a component that has no fiber."""
         del self._internal[runtime.callback]
 
+    @owner_thread("_scheduler")
     def run_inject_methods(self, ctx: "Context", instance: object) -> None:
         """Start a fiber for each method of `instance` that `inject` decorates.
 
@@ -339,6 +348,7 @@ class RegistryService:
             if deps is not None:
                 ctx.inject(deps, partial(_call_method, instance, member))
 
+    @owner_thread("_scheduler")
     def inject(
         self,
         ctx: "Context",
@@ -364,6 +374,7 @@ class RegistryService:
         )
         return self.use(ctx, component, None, call_site)
 
+    @owner_thread("_scheduler")
     def use(
         self,
         ctx: "Context",

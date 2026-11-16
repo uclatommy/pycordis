@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any, Self
 from pycordis.deferred import Deferred
 from pycordis.disposables import DisposableList
 from pycordis.errors import CallSite, CordisError, Issue, ValidationError
-from pycordis.scheduler import Scheduler, spawn, start
+from pycordis.scheduler import Scheduler, owner_thread, spawn, start
 from pycordis.traceable import get_traceable
 
 if TYPE_CHECKING:
@@ -266,7 +266,8 @@ class Fiber:
     The root fiber is always `ACTIVE`, and `dispose` on it reverts every effect of the
     root and leaves the root in use.
 
-    Call fiber methods on the owner thread of the root context.
+    Call fiber methods on the owner thread of the root context. A call from another
+    thread raises `CordisError("WRONG_THREAD")`.
 
     Attributes:
         parent: The context that created the fiber.
@@ -303,6 +304,7 @@ class Fiber:
         self._disposables = DisposableList[Disposer]()
         self.update_hooks = DisposableList[Callable[..., Any]]()
         self._store: dict[str, Impl] = {}
+        self._children: dict[Fiber, None] = {}
         self._handle: EffectHandle | None = None
         self._release: Callable[[], None] | None = None
         if runtime is None:
@@ -344,6 +346,15 @@ class Fiber:
         return self._state
 
     @property
+    def children(self) -> tuple["Fiber", ...]:
+        """The live fibers that this fiber's context created, in creation order.
+
+        A child leaves the tuple when it is disposed. A child that reloads or moves to
+        a replacement component keeps its place. The tuple is a snapshot.
+        """
+        return tuple(self._children)
+
+    @property
     def error(self) -> BaseException | None:
         """The error that failed the fiber, or `None`."""
         return self._error
@@ -376,6 +387,7 @@ class Fiber:
         if self._uid is None:
             raise CordisError("cannot create effect on inactive context")
 
+    @owner_thread("_scheduler")
     def get_effects(self) -> list[EffectMeta]:
         """Return the metadata of the effects of this fiber, in registration order.
 
@@ -384,6 +396,7 @@ class Fiber:
         """
         return [d.meta for d in self._disposables if isinstance(d, EffectHandle)]
 
+    @owner_thread("_scheduler")
     def effect(
         self,
         execute: Callable[[], EffectForm],
@@ -458,6 +471,7 @@ class Fiber:
             )
         return handle
 
+    @owner_thread("_scheduler")
     def wait(self) -> Deferred[Self]:
         """Wait until no load or unload is in progress.
 
@@ -471,6 +485,7 @@ class Fiber:
     def __await__(self) -> Generator[Deferred[Self], None, Self]:
         return self.wait().__await__()
 
+    @owner_thread("_scheduler")
     def restart(self) -> Deferred[None]:
         """Revert the effects of the fiber and run it again.
 
@@ -484,6 +499,7 @@ class Fiber:
             self._refresh()
             return start(self._scheduler, self._restarted())
 
+    @owner_thread("_scheduler")
     def update(self, config: object, no_save: bool = False) -> Deferred[None]:
         """Give the fiber a new config, and run the component again with it.
 
@@ -541,6 +557,7 @@ class Fiber:
                 return start(self._scheduler, result)
             return Deferred.resolved(None)
 
+    @owner_thread("_scheduler")
     def dispose(self) -> Deferred[None]:
         """End the fiber: unload it, revert its effects, and remove it.
 
@@ -652,6 +669,7 @@ class Fiber:
         """
         assert self.runtime is not None
         self.runtime.fibers.push(self)
+        self.parent.fiber._children[self] = None
         try:
             self._refresh()
         except Exception as error:
@@ -668,6 +686,7 @@ class Fiber:
         self._uid = None
         self.ctx.emit("internal/plugin", self)
         runtime = self.runtime
+        del self.parent.fiber._children[self]
         runtime.fibers.delete(self)
         if not len(runtime.fibers):
             self.ctx.registry.unregister(runtime)

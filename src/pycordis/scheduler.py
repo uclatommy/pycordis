@@ -5,8 +5,9 @@ coroutine that a scheduler drives step by step: it runs until it awaits a `Defer
 parks, and resumes in a later step when the `Deferred` completes. pycordis does not
 use an event loop.
 
-Start with `ImmediateScheduler` for tests and headless programs. Use `spawn` to run a
-coroutine on a scheduler in a later step, and `start` to run its first step at once.
+Start with `ImmediateScheduler` for tests and headless programs, or with
+`FramePumpScheduler` for a host that has a frame loop. Use `spawn` to run a coroutine on
+a scheduler in a later step, and `start` to run its first step at once.
 """
 
 import threading
@@ -15,20 +16,37 @@ from abc import ABC, abstractmethod
 from collections import deque
 from collections.abc import Callable, Coroutine, Iterator
 from contextlib import contextmanager
+from functools import wraps
+from operator import attrgetter
 from typing import Any
 
 from pycordis.deferred import Deferred
+from pycordis.errors import CordisError
 
 
 class Scheduler(ABC):
     """Runs work on the owner thread, one step at a time.
 
     A host selects the scheduler when it creates the root context. A subclass
-    implements `submit`; the base class keeps the parked tasks.
+    implements `submit`; the base class keeps the parked tasks and the owner thread.
+
+    The thread that creates the scheduler is the owner thread. Every method of the
+    context, its fibers, and its services runs on that thread. Only `submit` and the
+    completion of a `Deferred` are allowed from other threads.
     """
 
     def __init__(self) -> None:
         self._parked: set[_Task[Any]] = set()
+        self._owner = threading.get_ident()
+
+    def assert_owner(self) -> None:
+        """Check that the calling thread is the owner thread.
+
+        Raises:
+            CordisError: With the message `WRONG_THREAD` when another thread calls.
+        """
+        if threading.get_ident() != self._owner:
+            raise CordisError("WRONG_THREAD")
 
     @abstractmethod
     def submit(self, fn: Callable[[], None]) -> None:
@@ -70,8 +88,6 @@ class ImmediateScheduler(Scheduler):
     other work runs waits in a queue and runs in the same drain. Work that other
     threads submit runs at the next drain on the owner thread.
 
-    The thread that creates the scheduler is the owner thread.
-
     Examples:
         ```python
         >>> scheduler = ImmediateScheduler()
@@ -85,7 +101,6 @@ class ImmediateScheduler(Scheduler):
 
     def __init__(self) -> None:
         super().__init__()
-        self._owner = threading.get_ident()
         self._ready = threading.Condition()
         self._queue: deque[Callable[[], None]] = deque()
         self._depth = 0
@@ -121,7 +136,9 @@ class ImmediateScheduler(Scheduler):
 
         Raises:
             TimeoutError: If a task is still parked after `timeout` seconds.
+            CordisError: If another thread calls (`WRONG_THREAD`).
         """
+        self.assert_owner()
         deadline = None if timeout is None else time.monotonic() + timeout
         while True:
             self._drain()
@@ -150,6 +167,87 @@ class ImmediateScheduler(Scheduler):
                 fn()
         finally:
             self._draining = False
+
+
+class FramePumpScheduler(Scheduler):
+    """A scheduler that a host with a frame loop drives with `pump`.
+
+    Submitted work waits in a queue. `pump` runs a bounded number of steps and never
+    blocks, so a host calls it once per frame without a long pause. Work that any
+    thread submits runs on the owner thread in a later `pump` call.
+
+    To run all ready work, for example before the first frame, call `pump` with a limit
+    that is larger than the work. A task that waits for a `Deferred` stays parked, and
+    it resumes in the `pump` call that follows the completion.
+
+    Examples:
+        ```python
+        >>> scheduler = FramePumpScheduler()
+        >>> scheduler.submit(lambda: print("step"))
+        >>> scheduler.pump(10)
+        step
+        1
+        >>> scheduler.pump(10)
+        0
+        ```
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._queue: deque[Callable[[], None]] = deque()
+
+    def submit(self, fn: Callable[[], None]) -> None:
+        self._queue.append(fn)
+
+    def pump(self, max_steps: int) -> int:
+        """Run at most `max_steps` queued steps, then return.
+
+        A step that another step submits is in the same call when the limit allows it.
+        An empty queue returns `0` at once. If a step raises, the exception goes to the
+        caller and the later steps stay queued. Call it on the owner thread.
+
+        Args:
+            max_steps: The most steps to run. `0` runs none.
+
+        Returns:
+            The number of steps that ran.
+
+        Raises:
+            ValueError: If `max_steps` is negative.
+            CordisError: If another thread calls (`WRONG_THREAD`).
+        """
+        self.assert_owner()
+        if max_steps < 0:
+            raise ValueError(f"max_steps must not be negative, got {max_steps}")
+        queue = self._queue
+        steps = 0
+        while steps < max_steps and queue:
+            steps += 1
+            queue.popleft()()
+        return steps
+
+
+def owner_thread[**P, R](attribute: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    """Make a method check that it runs on the owner thread of its scheduler.
+
+    Args:
+        attribute: The name of the instance attribute that holds the scheduler.
+
+    Returns:
+        A decorator. The decorated method raises `CordisError("WRONG_THREAD")` when
+        another thread calls it.
+    """
+    get_scheduler = attrgetter(attribute)
+
+    def decorate(method: Callable[P, R]) -> Callable[P, R]:
+        @wraps(method)
+        def checked(*args: P.args, **kwargs: P.kwargs) -> R:
+            get_scheduler(args[0]).assert_owner()
+            return method(*args, **kwargs)
+
+        return checked
+
+    return decorate
 
 
 class _Task[T]:

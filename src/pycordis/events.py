@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.fiber import EffectHandle
-from pycordis.scheduler import Scheduler, start
+from pycordis.scheduler import Scheduler, owner_thread, start
 
 if TYPE_CHECKING:
     from pycordis.context import Context
@@ -135,10 +135,12 @@ class EventsService:
         self.scheduler = scheduler
         self._hooks: dict[EventName, list[Hook]] = {}
 
+    @owner_thread("scheduler")
     def listener_counts(self) -> dict[EventName, int]:
         """Return the number of registered listeners of each event that has any."""
         return {name: len(hooks) for name, hooks in self._hooks.items()}
 
+    @owner_thread("scheduler")
     def emit(self, name: EventName, *args: Any, this: object = None) -> None:
         """Call every listener of `name` with `args`, and ignore the results.
 
@@ -148,6 +150,7 @@ class EventsService:
             if not hook.removed:
                 hook.callback(*args)
 
+    @owner_thread("scheduler")
     def bail(self, name: EventName, *args: Any, this: object = None) -> Any:
         """Call the listeners of `name` in order, and return the first bailing result.
 
@@ -162,6 +165,7 @@ class EventsService:
                 return result
         return None
 
+    @owner_thread("scheduler")
     def serial(self, name: EventName, *args: Any, this: object = None) -> Deferred[Any]:
         """Call the listeners of `name` one after another, and wait for each result.
 
@@ -176,6 +180,7 @@ class EventsService:
         with self.scheduler.call():
             return start(self.scheduler, self._serial(hooks, args))
 
+    @owner_thread("scheduler")
     def parallel(
         self, name: EventName, *args: Any, this: object = None
     ) -> Deferred[None]:
@@ -192,6 +197,7 @@ class EventsService:
             runs = [start(self.scheduler, self._invoke(hook, args)) for hook in hooks]
             return start(self.scheduler, self._gather(runs, name))
 
+    @owner_thread("scheduler")
     def waterfall(self, name: EventName, *args: Any, this: object = None) -> Any:
         """Run a chain of listeners that wrap a final function.
 
@@ -233,6 +239,7 @@ class EventsService:
 
         return dispatch()
 
+    @owner_thread("scheduler")
     def on(
         self,
         ctx: "Context",
@@ -267,6 +274,7 @@ class EventsService:
             return result
         return self._register(ctx, f"ctx.on({_describe(name)})", name, listener, opts)
 
+    @owner_thread("scheduler")
     def once(
         self,
         ctx: "Context",
@@ -286,6 +294,7 @@ class EventsService:
         dispose = self.on(ctx, name, call_once, options)
         return dispose
 
+    @owner_thread("scheduler")
     def install(
         self,
         ctx: "Context",

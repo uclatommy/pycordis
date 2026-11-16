@@ -499,3 +499,42 @@ def test_a_listener_that_handles_an_update_keeps_the_source_config(
         {"ok": True, "resolved": True},
         {"ok": True, "extra": 1, "resolved": True},
     ]
+
+
+@pytest.mark.divergence("host-introspection")
+def test_a_host_reads_the_fiber_tree_the_failure_and_the_effect_labels(
+    root: Context,
+) -> None:
+    def parent(ctx: Context, config: object) -> None:
+        ctx.on("custom", lambda: None)
+        ctx.provide("service", 1)
+        ctx.use(child)
+
+    def child(ctx: Context, config: dict[str, bool]) -> None:
+        if config["fail"]:
+            raise ValueError("child failed")
+
+    outer = root.use(parent)
+    first = outer.ctx.use(child, {"fail": False})
+    failing = outer.ctx.use(child, {"fail": True})
+
+    assert [fiber.parent.fiber for fiber in outer.children] == [outer] * 3
+    assert outer.children[1:] == (first, failing)
+    assert root.fiber.children == (outer,)
+    assert [meta.label for meta in outer.get_effects()][:2] == [
+        'ctx.on("custom")',
+        'ctx.provide("service")',
+    ]
+    assert failing.state == FiberState.FAILED
+    assert isinstance(failing.error, ValueError)
+    assert first.error is None
+
+    failing.update({"fail": False})
+
+    assert failing.state == FiberState.ACTIVE
+    assert failing.error is None
+
+    first.dispose()
+
+    assert first not in outer.children
+    assert len(outer.children) == 2
