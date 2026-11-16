@@ -4,7 +4,16 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 import pytest
-from conftest import FakeClock, Filter, Recorder, Session, Symbol, event, hook_snapshot
+from conftest import (
+    Counter,
+    FakeClock,
+    Filter,
+    Recorder,
+    Session,
+    Symbol,
+    event,
+    hook_snapshot,
+)
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
@@ -711,3 +720,15 @@ def test_a_global_update_listener_hears_every_update_of_every_fiber(
 
     assert global_calls == [1, 2]
     assert local_calls == [1, 2]
+
+
+def test_a_listener_gets_a_traced_argument_for_its_own_context(root: Context) -> None:
+    counter = Counter(root)
+
+    fiber = root.inject([], lambda ctx: ctx.on(event, lambda c: c.increase()))
+    root.emit(event, counter)
+    assert counter.value == 1
+
+    # the effect belongs to the fiber of the listener, not to the root
+    fiber.dispose()
+    assert counter.value == 0

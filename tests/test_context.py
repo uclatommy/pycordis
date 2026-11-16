@@ -1,5 +1,7 @@
 """Tests for `Context` derivation and the context-level effect entry point."""
 
+from collections.abc import Callable
+
 import pytest
 
 from pycordis.context import Context
@@ -63,6 +65,43 @@ def test_effect_through_a_derived_context_belongs_to_the_shared_fiber(
     root.isolate("db").effect(lambda: None, "derived")
 
     assert [meta.label for meta in root.fiber.get_effects()] == ["derived"]
+
+
+@pytest.mark.parametrize(
+    "derive",
+    [
+        lambda ctx: ctx.extend(a=1),
+        lambda ctx: ctx.isolate("db"),
+        lambda ctx: ctx.intercept("db", 1),
+    ],
+    ids=["extend", "isolate", "intercept"],
+)
+def test_a_context_derived_from_a_shadow_keeps_the_def_site_and_the_use_site(
+    root: Context, derive: Callable[[Context], Context]
+) -> None:
+    def_site = root.extend(site="def")
+    shadow = root.extend(site="use").with_shadow(def_site)
+
+    child = derive(shadow)
+
+    assert root.shadow is None and root.use_site is root
+    assert child.shadow is def_site
+    assert child.use_site.shadow is None
+    assert child.use_site is not child
+    # the table that the call changed belongs to the use site
+    plain = derive(shadow.use_site)
+    for table in ("isolates", "intercepts", "meta"):
+        assert set(getattr(child.use_site, table)) == set(getattr(plain, table))
+
+
+def test_a_shadow_acts_for_the_use_site_and_is_not_nested(root: Context) -> None:
+    first, second = root.extend(site="first"), root.extend(site="second")
+
+    shadow = root.extend(site="use").with_shadow(first).with_shadow(second)
+
+    assert shadow.shadow is second
+    assert shadow.use_site.shadow is None
+    assert shadow.meta["site"] == "use"
 
 
 def test_repr_names_the_fiber(root: Context) -> None:

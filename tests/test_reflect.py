@@ -91,7 +91,7 @@ def test_a_property_name_has_one_kind(
         if kind == "provide":
             root.provide("foo")
         else:
-            root.accessor("foo", lambda ctx: 1)
+            root.accessor("foo", lambda ctx, receiver: 1)
 
     declare(first)
     with pytest.raises(CordisError, match=message):
@@ -197,21 +197,29 @@ def test_a_removed_provider_without_dependents_leaves_at_once(root: Context) -> 
 
 def test_an_accessor_computes_reads_and_writes(root: Context) -> None:
     store = {"value": 1}
-    handle = root.accessor(
-        "answer",
-        lambda ctx: store["value"],
-        lambda ctx, value: store.update(value=value),
-    )
+    receivers: list[object] = []
+
+    def get(ctx: Context, receiver: object) -> int:
+        receivers.append(receiver)
+        return store["value"]
+
+    def set_(ctx: Context, value: int, receiver: object) -> None:
+        receivers.append(receiver)
+        store.update(value=value)
+
+    handle = root.accessor("answer", get, set_)
 
     assert root["answer"] == 1
     root["answer"] = 5
     assert store == {"value": 5}
+    # a plain access has no receiver
+    assert receivers == [None, None]
     handle()
     assert root["answer"] is None
 
 
 def test_an_accessor_without_a_setter_is_read_only(root: Context) -> None:
-    root.accessor("answer", lambda ctx: 42)
+    root.accessor("answer", lambda ctx, receiver: 42)
 
     with pytest.raises(CordisError, match='property "answer" is read-only'):
         root["answer"] = 0

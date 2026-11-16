@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 8 of 13 complete
+**Status**: 🔄 In progress — Increment 9 of 13 complete
 
 ## Goal
 
@@ -675,7 +675,7 @@ tests/test_component.py`
 - A reversed order of intercept layers, a `check` result that is ignored, and an `inject` configuration for the fiber's own provision each fail a test
 
 **Deviations**:
-- `cordis_resolve_intercept` takes an explicit `caller` context (user-approved, divergence `intercept-caller`). Increment 9 removes the argument when the traceable view supplies the caller, and removes the divergence row
+- `cordis_resolve_intercept` takes an explicit `caller` context (user-approved, divergence `intercept-caller`). Increment 9 removed the argument and the divergence row
 - `intercept.spec.ts` `take injected config from the def site` stays `pending`: it needs the use-site view of Increment 9. Its test goes in `tests/test_intercept.py` then
 - `service.spec.ts` `traceable effect (with inject)` and `(without inject)` wait for Increment 9, and `dispose dependents before provider`, `... restarts`, and `... isolated provider` wait for Increment 8; they stay `pending`
 - The tracker, the callable form (`cordis_invoke`), `cordis_extend`, and `Service.[Symbol.hasInstance]` are not added: they belong to the traceable view (Increment 9). Ledger items `Service`, `Service.constructor`, `.[symbols.extend]`, `.[Symbol.hasInstance]`, `Impl`, and `ReflectService.provide` stay `pending`
@@ -781,7 +781,50 @@ tests/test_service.py tests/test_events.py tests/test_fiber.py`
 attribution, and the shadow and caller introspection.
 **Files**: `traceable.py` (~220), `service.py` (remove the `caller` argument of `cordis_resolve_intercept`), `test_associate.py`, `test_shadow.py`, `test_invoke.py`, `test_intercept.py` (the def-site case; the other cases read the view)
 **Validation**: `uv run pytest` (the view changes effect attribution for every earlier module)
-**Status**: ⬜ Pending
+**Docs**: Docstrings of `pycordis.traceable`, `Context.shadow`, `Context.use_site`, `Context.with_shadow`, `Context.provide`, `Context.on`, `ReflectService.bind`, `Service`, and `Accessor`; the divergence row `traceable-view`; the row `intercept-caller` is removed
+**Status**: ✅ Completed
+
+**Changed**:
+- `traceable.py`: new; `Tracker`, `get_traceable`, `TraceableView` and `CallableTraceableView` (the view), a shadow object for the `self` of a method, and `Overlay` (the `self` of a method that a mixin forwards)
+- `context.py`: `shadow`, `use_site`, and `with_shadow`; `extend`, `isolate`, and `intercept` keep the shadow; `use`, `inject`, `provide`, `accessor`, `mixin`, `on`, and `once` act on the use site; `accessor` callbacks take a receiver
+- `reflect.py`: `read` resolves at the def site and returns a view; `get` returns a view for the use site; `has_property`; `Accessor.get` and `Accessor.set` take the receiver; a mixin forwards methods with an `Overlay` as `self`
+- `service.py`: the constructor sets the tracker (`property="ctx"`, `associate=<name>`); a subclass that defines `cordis_invoke` is callable; `cordis_extend`; `cordis_resolve_intercept` has no argument and reads `cordis_caller`
+- `events.py`: `on` binds the listener with `ReflectService.bind`, so a traceable argument reaches the listener as its view for the listener's context
+- `fiber.py`: `_check_impl` calls `check` with the view of the service for the injecting fiber; `Service` passes `cordis_check` unbound
+- `docs/architecture.md`: divergence row `traceable-view`; the row `intercept-caller` is removed
+- `conformance/ledger.toml`: 48 items reviewed (25 cases, 10 `src/utils.ts` symbols, 5 `src/service.ts` symbols, and 5 `src/reflect.ts` symbols; `getPropertyDescriptor` is `not-applicable`, the 6 `adapted` intercept cases are now `ported`, and `ReflectService.bind`, `EventsService.on`, and `EventsService.once` are `adapted`); the `accessor injection` case has a note
+
+**Tests**:
+- `tests/test_associate.py` (6 pass), `tests/test_shadow.py` (8 pass), `tests/test_invoke.py` (3 pass), `tests/test_traceable.py` (13 pass), `tests/test_intercept.py` (9 pass, 1 new for the def-site case and 1 for a hook on a view), `tests/test_service.py` (22 pass, 3 new for effect attribution; the check-hook test asserts the context of the hook), `tests/test_events.py` (1 new for a traced listener argument)
+- Full suite: 504 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, and `tests/test_docstrings.py`; `tests/test_reflect.py` and `tests/test_fiber.py` re-run with the new `Accessor` signature
+- With the def-site lookup in `ReflectService._checked` replaced by the use site, `test_an_associated_access_follows_the_fiber_of_the_service` fails; with `Context.use` passing the shadow context on, `test_a_component_created_through_a_view_gets_a_context_without_shadow` fails; without the bind in `EventsService.on`, without the view in `Fiber._check_impl`, or with `Overlay` writes sent to the service, the matching new assertion fails
+
+**Deviations**:
+- New divergence `traceable-view` (adaptation): a forwarding view in place of the Proxy. `cordis_extend` reads from its parent by delegation in place of the prototype chain
+- `Accessor.get` and `Accessor.set` take a receiver argument (user-approved); the callers in `tests/test_reflect.py` changed
+- The `check` of `Context.provide` takes one argument, the view of the service (user-approved); `ReflectService.bind` and the listener binding of `EventsService.on` are added in this increment (user-approved). The ledger items `ReflectService` and `ReflectService.constructor` stay `pending`
+- The `logger.buffer` assertion of `strips service shadow before creating components` is replaced by the state and the error of the two fibers, because the logger is Increment 10
+- `property injection` does not port the call `ctx.foo.baz()` with a `this` value: a stored Python function is not bound. The test checks that the view gives the stored function
+- `associated type - accessor injection` uses the service name `"bar"` as the mixin source. Upstream passes an object, which `ctx[source]` cannot resolve, and its inner callback never runs because nothing provides `bar` (confirmed by a run of upstream at the tracked revision); the Python test provides `bar` and runs the callback. A forwarded setter stores its state on the extended object, as upstream does when the callback runs
+- The `<rest>` and helper items of the test files stay `pending`, as in the earlier increments
+- `tests/conftest.py` gets the `Counter` helper of `tests/utils.ts`
+
+**Tests (review)**:
+- Added `tests/test_context.py` (shadow derivation through `extend`, `isolate`, and `intercept`, and one level of shadow), `tests/test_traceable.py` (hook write and delete on a view, a property without a setter), and a stronger accessor assertion in `tests/test_reflect.py` (a plain access has no receiver)
+- Full suite: 504 pass; no unmarked slow tests; no test removed, because no sibling test duplicated another
+
+**Manual validation**:
+- A view of a service for an extended context reports `isinstance` true, the use-site context as `ctx`, and the def-site context as `cordis_caller` (confirmed by the user)
+
+**Follow-up (not started)**: Report to upstream — decision pending
+- Defect: `ReflectService.mixin` with an object `source` reads `ctx[source]`. The object becomes the key `"[object Object]"`, so a checked read throws `cannot get property "[object Object]" without inject`, a root read gives `undefined`, and a write throws `TypeError: Reflect.set called on non-object`. The upstream case `associate.spec.ts::Association::associated type - accessor injection` passes without a real check: its outer assertion passes because of that error, and its inner `ctx.inject(['bar'], …)` never runs because nothing provides `bar` (the fiber stays `PENDING`, and `await` resolves at once)
+- Evidence: a probe test run against upstream at the tracked revision, with the dependencies of `packages/core` only. With `bar` provided as a `Service`, the inner block runs and gives `undefined`, then `101`
+- No contract property covers it, so pycordis keeps the upstream behavior for an object source (a `TypeError`) until the user decides. The ledger entry of the case has a note
+- Suggested report: one GitHub issue, not a pull request, because the intended result is unclear. Draft:
+  - Title: `mixin()` with an object source reads `ctx["[object Object]"]`; `associated type - accessor injection` passes without running its inner block
+  - Body: at the tracked revision, the `mixin<T extends {}>(source: T, …)` overload builds accessors whose getter reads `ctx[source]`. That gives the three results above. In `tests/associate.spec.ts`, the outer `expect(() => session.bar).to.throw()` passes only because of that error, and the inner callback never runs. Attach the probe spec
+  - Suggested direction: support object sources (`typeof source === 'string' ? ctx[source] : source`), or remove the overload; and make the case fail when its callback does not run (for example with `expect.assertions(n)`)
+- If the user reports it: add the issue link to the ledger note. If upstream fixes it: review the changed item, change the pycordis `mixin` and the test, and copy the new hash. If the user decides to fix it in pycordis first: add a `correction` divergence row with the issue link and a test marked `divergence`
 
 ### Increment 10: Logger and @inject
 **Goal**: `LoggerService` over the fiber logger, and the `@inject` decorator with its

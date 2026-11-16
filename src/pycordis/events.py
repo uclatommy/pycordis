@@ -245,7 +245,8 @@ class EventsService:
         Args:
             ctx: The context that registers the listener.
             name: The event name.
-            listener: The function to call.
+            listener: The function to call. An argument that has a `Tracker` reaches
+                it as its view for `ctx`.
             options: The `EventOptions`, or a `bool` for `prepend`.
 
         Returns:
@@ -260,6 +261,7 @@ class EventsService:
             else EventOptions(prepend=options)
         )
         ctx.fiber.assert_active()
+        listener = ctx.reflect.bind(ctx, listener)
         result = self.bail("internal/listener", ctx, name, listener, opts)
         if result:
             return result

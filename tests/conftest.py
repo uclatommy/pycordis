@@ -15,6 +15,7 @@ import pytest
 from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.scheduler import ImmediateScheduler, spawn
+from pycordis.traceable import Tracker
 
 SLOW_THRESHOLD_S = 0.1
 
@@ -117,6 +118,26 @@ class Filter:
 
     def filter(self, session: Session) -> bool:
         return session.flag == self.flag
+
+
+class Counter:
+    """A traceable object: `increase` registers an effect for its use site."""
+
+    cordis_tracker = Tracker(property="ctx", associate="counter")
+
+    def __init__(self, ctx: Context) -> None:
+        self.ctx = ctx
+        self.value = 0
+
+    def increase(self) -> Any:
+        def effect() -> Callable[[], None]:
+            self.value += 1
+            return self.decrease
+
+        return self.ctx.effect(effect)
+
+    def decrease(self) -> None:
+        self.value -= 1
 
 
 def hook_snapshot(ctx: Context) -> dict[str, int]:

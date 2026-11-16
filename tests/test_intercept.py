@@ -12,20 +12,30 @@ class Foo(Service[dict[str, Any]]):
     def __init__(self, ctx: Context, config: object = None) -> None:
         super().__init__(ctx, "foo")
 
-    def config(self, caller: Context) -> dict[str, Any]:
-        return self.cordis_resolve_intercept(caller)
+    def config(self) -> dict[str, Any]:
+        return self.cordis_resolve_intercept()
+
+
+class Bar(Service[Any]):
+    inject = {"foo": {"a": 2}}
+
+    def __init__(self, ctx: Context, config: object = None) -> None:
+        super().__init__(ctx, "bar")
+
+    def config(self) -> dict[str, Any]:
+        return self.ctx["foo"].config()
 
 
 @pytest.mark.upstream(
     "intercept.spec.ts::Intercept::merge context intercepts from outer to inner"
 )
 def test_context_intercepts_merge_from_outer_to_inner(root: Context) -> None:
-    foo = Foo(root)
+    Foo(root)
 
     ctx = root.intercept("foo", {"a": 1, "b": 1}).intercept("foo", {"b": 2})
 
-    assert foo.config(root) == {}
-    assert foo.config(ctx) == {"a": 1, "b": 2}
+    assert root["foo"].config() == {}
+    assert ctx["foo"].config() == {"a": 1, "b": 2}
 
 
 @pytest.mark.upstream(
@@ -37,7 +47,7 @@ def test_injected_config_merges_under_context_intercepts(root: Context) -> None:
 
     def reader(ctx: Context) -> None:
         inner = ctx.intercept("foo", {"c": 3})
-        configs.append(inner["foo"].config(inner))
+        configs.append(inner["foo"].config())
 
     root.intercept("foo", {"b": 2}).inject({"foo": {"a": 1, "b": 1}}, reader)
 
@@ -53,15 +63,23 @@ def test_the_nearest_declaring_fiber_gives_the_injected_config(root: Context) ->
 
     def outer(ctx: Context) -> None:
         # no declaration of its own, so the outer fiber admits the access
-        ctx.use(lambda ctx, _: configs.append(ctx["foo"].config(ctx)))
+        ctx.use(lambda ctx, _: configs.append(ctx["foo"].config()))
         # the nearest declaration wins, and the outer one is not merged in
-        ctx.inject(
-            {"foo": {"b": 2}}, lambda ctx: configs.append(ctx["foo"].config(ctx))
-        )
+        ctx.inject({"foo": {"b": 2}}, lambda ctx: configs.append(ctx["foo"].config()))
 
     root.inject({"foo": {"a": 1}}, outer)
 
     assert configs == [{"a": 1}, {"b": 2}]
+
+
+@pytest.mark.upstream(
+    "intercept.spec.ts::Intercept::take injected config from the def site"
+)
+def test_a_service_takes_the_injected_config_of_its_def_site(root: Context) -> None:
+    root.use(Foo)
+    root.use(Bar)
+
+    assert root.intercept("foo", {"b": 1})["bar"].config() == {"a": 2, "b": 1}
 
 
 @pytest.mark.upstream(
@@ -76,7 +94,7 @@ def test_an_isolation_boundary_hides_the_injected_config(root: Context) -> None:
 
     def reader(ctx: Context, _: object) -> None:
         isolated = ctx.isolate("foo", label)
-        configs.append(isolated.get("foo").config(isolated))
+        configs.append(isolated.get("foo").config())
 
     root.inject({"foo": {"a": 1}}, lambda ctx: ctx.use(reader))
 
@@ -92,15 +110,15 @@ def test_a_fiber_gets_no_injected_config_for_its_own_provision(root: Context) ->
 
     def provider(ctx: Context) -> None:
         isolated = ctx.isolate("foo")
-        own = Foo(isolated)
+        Foo(isolated)
         # the injected config belongs to the dependency, not to the service that the
         # fiber provides itself
         intercepted = isolated.intercept("foo", {"b": 2})
         configs.extend(
             [
-                ctx["foo"].config(ctx),
-                own.config(isolated),
-                own.config(intercepted),
+                ctx["foo"].config(),
+                isolated["foo"].config(),
+                intercepted["foo"].config(),
             ]
         )
 
@@ -122,7 +140,7 @@ def test_a_service_can_replace_the_merge_rule(root: Context) -> None:
 
     def reader(ctx: Context) -> None:
         inner = ctx.intercept("foo", {"tags": ["inner"]})
-        configs.append(inner["foo"].config(inner))
+        configs.append(inner["foo"].config())
 
     root.intercept("foo", {"tags": ["outer"]}).inject(
         {"foo": {"tags": ["inject"]}}, reader
@@ -134,4 +152,13 @@ def test_a_service_can_replace_the_merge_rule(root: Context) -> None:
 def test_the_caller_defaults_to_the_context_of_the_service(root: Context) -> None:
     foo = Foo(root.intercept("foo", {"a": 1}))
 
+    assert foo.cordis_caller is None
     assert foo.cordis_resolve_intercept() == {"a": 1}
+
+
+def test_a_hook_called_on_a_view_reads_the_use_site(root: Context) -> None:
+    Foo(root)
+    view = root.intercept("foo", {"a": 1})["foo"]
+
+    assert view.ctx.shadow is None
+    assert view.cordis_resolve_intercept() == {"a": 1}

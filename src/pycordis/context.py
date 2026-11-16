@@ -73,6 +73,8 @@ class Context:
         self._isolates: ChainMap[str, object] = ChainMap()
         self._intercepts: ChainMap[str, object] = ChainMap()
         self._meta: ChainMap[str, object] = ChainMap()
+        self._shadow: Context | None = None
+        self._use_site: Context | None = None
         self.events = EventsService(scheduler)
         self.reflect = ReflectService(scheduler)
         self.registry = RegistryService(scheduler)
@@ -115,6 +117,39 @@ class Context:
         return ctx.fiber.effect(setup, 'ctx.on("internal/update")')
 
     @property
+    def shadow(self) -> "Context | None":
+        """The def-site context, or `None`.
+
+        A service method runs with a context that acts for the caller (the use site) and
+        resolves services as the context of the service (the def site) would. This is
+        that def-site context. A context that is not such a context gives `None`.
+        """
+        return self._shadow
+
+    @property
+    def use_site(self) -> Self:
+        """This context without its `shadow`.
+
+        The methods that create fibers, providers, and listeners act on it, so that
+        nothing registered keeps a def-site link.
+        """
+        return self if self._use_site is None else self._use_site
+
+    def with_shadow(self, def_site: "Context") -> Self:
+        """Return a context that acts for this one and resolves services at `def_site`.
+
+        Only `ctx[key]` reads the def site. Isolation, intercept, effects, and every
+        other method are those of this context. A context derived from the result keeps
+        the def site.
+        """
+        use_site = self.use_site
+        shadowed = object.__new__(type(self))
+        shadowed.__dict__.update(use_site.__dict__)
+        shadowed._shadow = def_site
+        shadowed._use_site = use_site
+        return shadowed
+
+    @property
     def isolates(self) -> Mapping[str, object]:
         """The isolation labels by service name, as a read-only mapping."""
         return MappingProxyType(self._isolates)
@@ -153,7 +188,9 @@ class Context:
 
         A `Fiber` calls it for the context that its component receives.
         """
-        return self._derive(self._isolates, self._intercepts, self._meta, fiber)
+        return self.use_site._derive(
+            self._isolates, self._intercepts, self._meta, fiber
+        )
 
     def declare_realm(self, name: str) -> None:
         """Give the service `name` a default realm in the root context if it has none.
@@ -246,7 +283,9 @@ class Context:
             ```
         """
         with self.scheduler.call():
-            return self.registry.use(self, component, config, CallSite.capture(skip=1))
+            return self.registry.use(
+                self.use_site, component, config, CallSite.capture(skip=1)
+            )
 
     def inject(self, deps: object, callback: Callable[["Context"], Any]) -> Fiber:
         """Run `callback(ctx)` in a new fiber that requires the services `deps`.
@@ -261,7 +300,9 @@ class Context:
             The new fiber.
         """
         with self.scheduler.call():
-            return self.registry.inject(self, deps, callback, CallSite.capture(skip=1))
+            return self.registry.inject(
+                self.use_site, deps, callback, CallSite.capture(skip=1)
+            )
 
     def __getitem__(self, key: Keyable[Any]) -> Any:
         """Return the value that the accessor or the service `key` gives.
@@ -315,7 +356,7 @@ class Context:
         self,
         key: Keyable[T],
         value: T | None = None,
-        check: Callable[[], bool] | None = None,
+        check: Callable[[T], bool] | None = None,
     ) -> EffectHandle:
         """Make `value` available as the service `key`.
 
@@ -326,9 +367,9 @@ class Context:
         Args:
             key: The service key.
             value: The service value. Replace it later with `set`.
-            check: Called with no argument when a fiber that injects `key` looks for
-                its provider. The fiber does not use this provider while the call
-                returns a false value or raises.
+            check: Called with the value, as the context of a fiber that injects
+                `key` sees it, when that fiber looks for its provider. The fiber does
+                not use this provider while the call returns a false value or raises.
 
         Returns:
             The handle of the effect. Call it to remove the service.
@@ -345,21 +386,23 @@ class Context:
             >>> remove()
             ```
         """
-        return self.reflect.provide(self, key, value, check)
+        return self.reflect.provide(self.use_site, key, value, check)
 
     def accessor(
         self,
         key: Keyable[Any],
-        get: Callable[["Context"], Any],
-        set: Callable[["Context", Any], None] | None = None,
+        get: Callable[["Context", Any], Any],
+        set: Callable[["Context", Any, Any], None] | None = None,
     ) -> EffectHandle:
         """Compute the value of `ctx[key]` with `get`.
 
         Args:
             key: The property name.
-            get: Called with the context that is read. It gives the value.
-            set: Called with the context and the new value on `ctx[key] = value`.
-                Without it, an assignment raises `CordisError`.
+            get: Called with the context that is read and the receiver. It gives the
+                value. The receiver is the traceable view through which an associated
+                access came (see `Tracker`), or `None` for `ctx[key]`.
+            set: Called with the context, the new value, and the receiver on
+                `ctx[key] = value`. Without it, an assignment raises `CordisError`.
 
         Returns:
             The handle of the effect. Call it to remove the accessor.
@@ -367,7 +410,7 @@ class Context:
         Raises:
             CordisError: If `key` is already declared as a service or an accessor.
         """
-        return self.reflect.accessor(self, key, Accessor(get, set))
+        return self.reflect.accessor(self.use_site, key, Accessor(get, set))
 
     def mixin(
         self, source: Keyable[Any], mixins: Iterable[str] | Mapping[str, str]
@@ -389,7 +432,7 @@ class Context:
         Raises:
             CordisError: If a property name is already declared.
         """
-        return self.reflect.mixin(self, source, mixins)
+        return self.reflect.mixin(self.use_site, source, mixins)
 
     def on(
         self,
@@ -403,7 +446,9 @@ class Context:
 
         Args:
             name: The event name.
-            listener: The function to call with the arguments of the event.
+            listener: The function to call with the arguments of the event. An
+                argument that has a `Tracker` reaches it as its view for this
+                context, so its effects belong to this context's fiber.
             options: The `EventOptions`, or a `bool` for `prepend`.
 
         Returns:
@@ -420,7 +465,7 @@ class Context:
             >>> remove()
             ```
         """
-        return self.events.on(self, name, listener, options)
+        return self.events.on(self.use_site, name, listener, options)
 
     def once(
         self,
@@ -432,7 +477,7 @@ class Context:
 
         The arguments and the result are those of `on`.
         """
-        return self.events.once(self, name, listener, options)
+        return self.events.once(self.use_site, name, listener, options)
 
     def emit(self, name: EventName, *args: Any, this: object = None) -> None:
         """Call every listener of `name` with `args`, and ignore the results.
@@ -496,4 +541,6 @@ class Context:
         child._isolates = isolates
         child._intercepts = intercepts
         child._meta = meta
-        return child
+        child._shadow = None
+        child._use_site = None
+        return child if self._shadow is None else child.with_shadow(self._shadow)

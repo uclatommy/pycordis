@@ -24,6 +24,7 @@ from pycordis.deferred import Deferred
 from pycordis.disposables import DisposableList
 from pycordis.errors import CallSite, CordisError, Issue, ValidationError
 from pycordis.scheduler import Scheduler, spawn, start
+from pycordis.traceable import get_traceable
 
 if TYPE_CHECKING:
     from pycordis.context import Context
@@ -703,7 +704,7 @@ class Fiber:
         impl = self.ctx.reflect.find(self.ctx, name, True)
         if impl is not None and impl.check is not None:
             try:
-                accepted = impl.check()
+                accepted = impl.check(get_traceable(self.ctx, impl.value))
             except Exception as error:
                 impl.ctx.fiber.logger.error(
                     "error while checking service %r", name, exc_info=error

@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
-from conftest import FakeClock, Recorder, event, hook_snapshot
+from conftest import Counter, FakeClock, Recorder, event, hook_snapshot
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
@@ -36,6 +36,61 @@ def test_a_dependent_waits_for_an_asynchronous_init_hook(root: Context) -> None:
 
     root.emit(event)
     assert len(callback.calls) == 1
+
+
+class Counting(Service[Any]):
+    """A service whose methods change a counter that it may or may not inject."""
+
+    def __init__(self, ctx: Context, config: object = None) -> None:
+        super().__init__(ctx, "foo")
+
+    @property
+    def value(self) -> int:
+        return self.ctx["counter"].value
+
+    def increase(self) -> Any:
+        return self.ctx["counter"].increase()
+
+
+class InjectingCounting(Counting):
+    inject = ["counter"]
+
+
+@pytest.mark.upstream("service.spec.ts::Service::traceable effect (with inject)")
+@pytest.mark.upstream("service.spec.ts::Service::traceable effect (without inject)")
+@pytest.mark.parametrize("component", [InjectingCounting, Counting])
+def test_an_effect_through_a_root_view_outlives_the_fibers_that_read_it(
+    root: Context, component: type[Counting]
+) -> None:
+    root.provide("counter", Counter(root))
+    root.use(component)
+    root["foo"].increase()
+    assert root["foo"].value == 1
+    seen: list[int] = []
+
+    def reader(ctx: Context) -> None:
+        root["foo"].increase()
+        seen.append(root["foo"].value)
+
+    fiber = root.inject(["foo"], reader)
+    fiber.dispose()
+    root["foo"].increase()
+
+    assert seen == [2]
+    assert root["foo"].value == 3
+
+
+def test_an_effect_through_a_view_belongs_to_the_fiber_that_reads_it(
+    root: Context,
+) -> None:
+    root.provide("counter", Counter(root))
+    root.use(InjectingCounting)
+
+    fiber = root.inject(["foo"], lambda ctx: ctx["foo"].increase())
+    assert root["foo"].value == 1
+
+    fiber.dispose()
+    assert root["foo"].value == 0
 
 
 @pytest.mark.upstream("service.spec.ts::Service::compare snapshot")
@@ -112,7 +167,9 @@ def test_the_constructor_provides_the_service_under_its_name(
 ) -> None:
     service = make(root)
 
-    assert root.get(name) is service
+    view = root.get(name)
+    assert isinstance(view, Service)
+    assert view.cordis_original is service
     assert (service.ctx, service.name) == (root, name)
     assert isinstance(service, Service)
 
@@ -141,17 +198,22 @@ def test_a_dependent_loads_only_while_the_check_hook_accepts(
     outcome: object,
     expected: int,
 ) -> None:
+    checked_from: list[Any] = []
+
     class Checked(Foo):
         def cordis_check(self) -> bool:
+            checked_from.append(self.ctx.fiber)
             if isinstance(outcome, Exception):
                 raise outcome
             return bool(outcome)
 
     callback = Recorder()
     root.use(Checked)
-    root.inject(["foo"], callback)
+    fiber = root.inject(["foo"], callback)
 
     assert len(callback.calls) == expected
+    # the hook sees the context of the fiber that injects the service
+    assert fiber in checked_from
     # an error of the hook is reported, and a plain rejection is not
     logged = [r for r in caplog.records if r.levelno == logging.ERROR]
     assert len(logged) == isinstance(outcome, Exception)

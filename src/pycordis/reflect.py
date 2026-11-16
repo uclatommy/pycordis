@@ -10,6 +10,7 @@ A realm is the identity that groups the contexts that share one provider of a se
 name. `Context.isolate` gives a context its own realm for a name.
 """
 
+import functools
 import json
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
@@ -20,6 +21,7 @@ from pycordis.errors import CordisError
 from pycordis.fiber import EffectHandle, Fiber, FiberState
 from pycordis.keys import Keyable, key_name
 from pycordis.scheduler import Scheduler, start
+from pycordis.traceable import Overlay, get_traceable, get_with_receiver
 
 if TYPE_CHECKING:
     from pycordis.context import Context
@@ -30,13 +32,15 @@ class Accessor:
     """A property that a function computes.
 
     Attributes:
-        get: Called with the context that is read. It gives the value.
-        set: Called with the context and the new value, or `None` for a read-only
-            property.
+        get: Called with the context that is read and the receiver. It gives the value.
+            The receiver is the traceable view through which an associated access
+            came, or `None` for a plain `ctx[key]`.
+        set: Called with the context, the new value, and the receiver, or `None` for a
+            read-only property.
     """
 
-    get: Callable[["Context"], Any]
-    set: Callable[["Context", Any], None] | None = None
+    get: Callable[["Context", Any], Any]
+    set: Callable[["Context", Any, Any], None] | None = None
 
 
 @dataclass(eq=False, slots=True)
@@ -52,9 +56,9 @@ class Impl:
         dependents: The fibers that read the service. The provider's removal waits
             until they leave.
         release: Called when the last dependent leaves, while a removal waits.
-        check: Called with no argument when a fiber that injects the service looks for
-            its provider. A fiber does not use the provider when the call returns a
-            false value or raises.
+        check: Called with the value, as the view for the context of a fiber that
+            injects the service, when that fiber looks for its provider. The fiber does
+            not use the provider when the call returns a false value or raises.
     """
 
     uid: int
@@ -64,7 +68,7 @@ class Impl:
     isolate: object
     dependents: set[Any] = field(default_factory=set)
     release: Callable[[], None] | None = None
-    check: Callable[[], bool] | None = None
+    check: Callable[[Any], bool] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,12 +145,25 @@ class ReflectService:
         self._accessors: dict[str, Accessor] = {}
         self._impl_counter = 0
 
-    def read(self, ctx: "Context", key: Keyable[Any]) -> Any:
+    def has_property(self, name: str) -> bool:
+        """Return whether `name` is declared as a service or as an accessor."""
+        return name in self._services or name in self._accessors
+
+    def read(
+        self, ctx: "Context", key: Keyable[Any], receiver: object | None = None
+    ) -> Any:
         """Return `ctx[key]`: an accessor's value, or the value of a provider.
 
         A context whose fiber runs a component reads a service only if the fiber, or an
-        ancestor of the fiber, injects it or provides it. The root context reads
-        without this check.
+        ancestor of the fiber, injects it or provides it. The def site of `ctx` (see
+        `Context.shadow`) decides, and the root context reads without this check. A
+        service that has a `Tracker` is returned as a view for `ctx`.
+
+        Args:
+            ctx: The context that reads.
+            key: The accessor or service key.
+            receiver: The view through which an associated access came, for an
+                accessor.
 
         Raises:
             CordisError: If no fiber admits the access, or the fiber that admits it is
@@ -155,24 +172,31 @@ class ReflectService:
         name = key_name(key)
         accessor = self._accessors.get(name)
         if accessor is not None:
-            return accessor.get(ctx)
-        if ctx.fiber.runtime is None:
+            return accessor.get(ctx, receiver)
+        def_site = ctx if ctx.shadow is None else ctx.shadow
+        if def_site.fiber.runtime is None:
             return self.get(ctx, name, False)
         return ctx.waterfall(
-            "internal/get", ctx, name, lambda: self._checked(ctx, name)
+            "internal/get", ctx, name, lambda: self._checked(ctx, def_site, name)
         )
 
-    def _checked(self, ctx: "Context", name: str) -> Any:
-        found = locate(ctx, name)
+    def _checked(self, ctx: "Context", def_site: "Context", name: str) -> Any:
+        found = locate(def_site, name)
         if found is None:
             raise CordisError(f'cannot get property "{name}" without inject')
         if found.impl is None:
             raise CordisError(
                 f'cannot get required service "{name}" in inactive context'
             )
-        return found.impl.value
+        return get_traceable(ctx, found.impl.value)
 
-    def write(self, ctx: "Context", key: Keyable[Any], value: Any) -> None:
+    def write(
+        self,
+        ctx: "Context",
+        key: Keyable[Any],
+        value: Any,
+        receiver: object | None = None,
+    ) -> None:
         """Perform `ctx[key] = value`: call an accessor's setter, or set a service."""
         name = key_name(key)
         accessor = self._accessors.get(name)
@@ -185,12 +209,15 @@ class ReflectService:
         elif accessor.set is None:
             raise CordisError(f'property "{name}" is read-only')
         else:
-            accessor.set(ctx, value)
+            accessor.set(ctx, value, receiver)
 
     def get(self, ctx: "Context", key: Keyable[Any], strict: bool = True) -> Any:
-        """Return the value of the service `key` that `ctx` sees, or `None`."""
+        """Return the value of the service `key` that `ctx` sees, or `None`.
+
+        A service that has a `Tracker` is returned as a view for the use site of `ctx`.
+        """
         impl = self.find(ctx, key_name(key), strict)
-        return None if impl is None else impl.value
+        return None if impl is None else get_traceable(ctx.use_site, impl.value)
 
     def set(self, ctx: "Context", key: Keyable[Any], value: Any) -> None:
         """Replace the value of the service `key` that `ctx` sees.
@@ -212,13 +239,13 @@ class ReflectService:
         ctx: "Context",
         key: Keyable[Any],
         value: Any = None,
-        check: Callable[[], bool] | None = None,
+        check: Callable[[Any], bool] | None = None,
     ) -> EffectHandle:
         """Register `value` as the service `key` on the fiber of `ctx`.
 
-        A fiber that injects `key` uses this provider only while `check()` returns a
-        true value. A `check` that raises is logged, and the fiber does not use the
-        provider.
+        A fiber that injects `key` uses this provider only while `check(view)` returns
+        a true value, where `view` is the value as that fiber's context sees it. A
+        `check` that raises is logged, and the fiber does not use the provider.
 
         Returns:
             The handle of the effect. Its removal waits until every dependent of the
@@ -336,6 +363,20 @@ class ReflectService:
 
         return ctx.fiber.effect(setup, f"ctx.mixin({json.dumps(source_name)})")
 
+    def bind[**P, R](self, ctx: "Context", callback: Callable[P, R]) -> Callable[P, R]:
+        """Return a function that calls `callback` with its arguments traced for `ctx`.
+
+        An argument that has a `Tracker` reaches `callback` as its view for `ctx`, so an
+        effect that `callback` registers through it belongs to the fiber of `ctx`.
+        """
+
+        @functools.wraps(callback)
+        def bound(*args: P.args, **kwargs: P.kwargs) -> R:
+            traced = [get_traceable(ctx, arg) for arg in args]
+            return callback(*traced, **kwargs)  # type: ignore[arg-type]
+
+        return bound
+
     def find(self, ctx: "Context", name: str, strict: bool) -> Impl | None:
         """Return the provider of `name` that `ctx` sees, or `None`.
 
@@ -370,11 +411,20 @@ class ReflectService:
         impl.ctx.fiber.provisions.discard(impl)
 
     def _forward(self, source: str, attribute: str) -> Accessor:
-        def get(ctx: "Context") -> Any:
+        def get(ctx: "Context", receiver: object | None) -> Any:
             service = self.read(ctx, source)
-            return None if service is None else getattr(service, attribute)
+            if service is None:
+                return None
+            if receiver is None:
+                return getattr(service, attribute)
+            return get_with_receiver(service, attribute, Overlay(receiver, service))
 
-        def set_(ctx: "Context", value: Any) -> None:
-            setattr(self.read(ctx, source), attribute, value)
+        def set_(ctx: "Context", value: Any, receiver: object | None) -> None:
+            service = self.read(ctx, source)
+            setattr(
+                service if receiver is None else Overlay(receiver, service),
+                attribute,
+                value,
+            )
 
         return Accessor(get, set_)

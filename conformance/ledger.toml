@@ -21,22 +21,29 @@ pending = [
 ]
 
 [items."associate.spec.ts::Association::associated access follows the service fiber"]
-status = "pending"
+status = "ported"
+hash = "bd7bc977600f69c4f0ba4dcaa8340b2f0d0ae9795a0fc844fade70cb68dfaffa"
 
 [items."associate.spec.ts::Association::associated type - accessor injection"]
-status = "pending"
+status = "ported"
+hash = "1b7952f1ec96e89a13ea120dacba6a89158394936f7fc07ba197bd386fb78595"
+note = "Upstream passes an object as the mixin source, which `ctx[source]` reads as the property \"[object Object]\", and its inner callback never runs because nothing provides `bar`. The test provides `bar` and checks the result that the upstream assertions state."
 
 [items."associate.spec.ts::Association::associated type - service injection"]
-status = "pending"
+status = "ported"
+hash = "c610e096f279f7c47229433255a0d3dc573a1627c7d63400f78665efcbd66cd8"
 
 [items."associate.spec.ts::Association::inspect"]
-status = "pending"
+status = "ported"
+hash = "f2cb7e85feb3ed5d944711c624bf3fe03068aea8f4a2a68494cab7a3e2e2654e"
 
 [items."associate.spec.ts::Association::property injection"]
-status = "pending"
+status = "ported"
+hash = "6edd6b1fa4b6103c754dcffd3d3fcae4aab91a2c664f8cba4a006df0981e5413"
 
 [items."associate.spec.ts::Association::service injection"]
-status = "pending"
+status = "ported"
+hash = "dacc2948f378082fce16c2da2240ed7e8cfb53cc28c56a71f5ee1d15d336c270"
 
 [items."component.spec.ts::Component::Service.init"]
 status = "adapted"
@@ -437,43 +444,40 @@ status = "ported"
 hash = "9209b74a95447b0ea2e72646d29ac773c115643cb190f162425abc1dc5767db1"
 
 [items."intercept.spec.ts::Intercept::custom merge"]
-status = "adapted"
+status = "ported"
 hash = "1ae2ca48cd5f2c0e38d273babb23ed1c0ca518f69b95451d1f4b9bb2f7ffc636"
-divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::merge context intercepts from outer to inner"]
-status = "adapted"
+status = "ported"
 hash = "ac774fce05b11ccec869eb915a8f8f873e57b44fc062dd9681fb337f972e6158"
-divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::merge injected config under context intercepts"]
-status = "adapted"
+status = "ported"
 hash = "9fa35a6049053a57d40071435576de4963f64f2ef90192ca488d054710aa54c6"
-divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::stop looking for injected config at an isolation boundary"]
-status = "adapted"
+status = "ported"
 hash = "ae1f121917b78d71a8027ba39c30c5cab8111801bd8cd61895bb4bf4fdfb676f"
-divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::take injected config from the declaring fiber"]
-status = "adapted"
+status = "ported"
 hash = "68f9abfec6d959cb50e797c1caadfbb51b2cb16681909c1ec6befe7c2401ff51"
-divergence = "intercept-caller"
 
 [items."intercept.spec.ts::Intercept::take injected config from the def site"]
-status = "pending"
+status = "ported"
+hash = "5b09fa2ebf3bdbf3d7d686c50e8ad3c14e2af8db7eb83e410e4bd30cbd2d5857"
 
 [items."intercept.spec.ts::Intercept::take no injected config for own provisions"]
-status = "adapted"
+status = "ported"
 hash = "fc6211222beaec1cfaf8145d46f0ab54379bf1c083b741288d6de83fef7a2556"
-divergence = "intercept-caller"
 
 [items."invoke.spec.ts::Functional Service::functional service"]
-status = "pending"
+status = "ported"
+hash = "55e45fb3e038fd6a078adc6ea00c11b037f933ad1f6d0f4914e5ac9ea1511800"
 
 [items."invoke.spec.ts::Functional Service::uses the service shadow for callable extensions"]
-status = "pending"
+status = "ported"
+hash = "5fd198fd7c73044a151ede44f748eeacf643481416decdcd607a71b39f57a960"
 
 [items."isolate.spec.ts::Isolation::does not expose own provisions across isolation boundaries"]
 status = "ported"
@@ -798,10 +802,12 @@ hash = "f031b152772e9d4494441b16bf1a5a630841d2595a778118005187824a8c8945"
 divergence = "hook-names"
 
 [items."service.spec.ts::Service::traceable effect (with inject)"]
-status = "pending"
+status = "ported"
+hash = "1b23cc2de1e6290b9eb84c586237398f3b054e96262c67568e43750fb08e94f2"
 
 [items."service.spec.ts::Service::traceable effect (without inject)"]
-status = "pending"
+status = "ported"
+hash = "c9cd1012bed2685faf7eabd55962d7d7386caf3be76e6516ea89f66a87dd87f2"
 
 [items."service.spec.ts::Service[Symbol.hasInstance]::answers for a plain object after walking to the end of the chain"]
 status = "ported"
@@ -812,28 +818,36 @@ status = "ported"
 hash = "0f044e31c64c50295c98798d52e023f47e34f09d09cea02a62a5ac6316888cf4"
 
 [items."shadow.spec.ts::Traceable caller::applies the service inject when entered from root"]
-status = "pending"
+status = "ported"
+hash = "7dfe652a625aa26efbaa29365a1ea93b29c4cba3fb8e19d0cf060d26487ffc75"
 
 [items."shadow.spec.ts::Traceable caller::exposes the caller to callable services"]
-status = "pending"
+status = "ported"
+hash = "af2a0bacf48dce0f13bc13374f07f6eec6033c55c529668badb6c41502e827c0"
 
 [items."shadow.spec.ts::Traceable caller::exposes the caller without preserving shadow for noShadow services"]
-status = "pending"
+status = "ported"
+hash = "e5f9e398f4efe8c6a3f52359679285716d1cf3ef5752b73d1c3b0085b4909d42"
 
 [items."shadow.spec.ts::Traceable caller::keeps caller metadata separate from the service shadow"]
-status = "pending"
+status = "ported"
+hash = "60ba90ae8b465e0683240bf4f58cbc49a81d0f762f0e84b4b0d5c86ad7324769"
 
 [items."shadow.spec.ts::Traceable caller::keeps unchecked access for services provided on the root ctx"]
-status = "pending"
+status = "ported"
+hash = "83b10f10fb6ddfb2b33fcb5f0d68600252bc08fa543f194e2fec393d7bd4458b"
 
 [items."shadow.spec.ts::Traceable caller::resolves dependencies through a captured shadow"]
-status = "pending"
+status = "ported"
+hash = "9e6f15a1dfbf24ee6fe8b9837d6620827aaaf79281caf2e123b77f63687a0099"
 
 [items."shadow.spec.ts::Traceable caller::resolves same-name own provisions at their definition sites"]
-status = "pending"
+status = "ported"
+hash = "c978e405f9598bb0809ec6c07175c0d0b4199d69bf37e488376f6bf746159fec"
 
 [items."shadow.spec.ts::Traceable caller::strips service shadow before creating components"]
-status = "pending"
+status = "ported"
+hash = "e4bf620b47071f8743b770f9bebaf9af138740debb0e82fac042e1c1f94ab212"
 
 [items."src/context.ts:<rest>"]
 status = "pending"
@@ -924,10 +938,16 @@ hash = "95cca3e8bfc71cdd6b09e85bad9f7b351263e558e9963cfbd512dc2eeee9ecc1"
 divergence = "event-dispatch-args"
 
 [items."src/events.ts:EventsService.on"]
-status = "pending"
+status = "adapted"
+target = "pycordis.events.EventsService.on"
+hash = "56fe45e4b7c2d8b92f3e6c7c08bfab3f6ccce962a3507ebd1318cb33f571ce00"
+divergence = "event-dispatch-args"
 
 [items."src/events.ts:EventsService.once"]
-status = "pending"
+status = "adapted"
+target = "pycordis.events.EventsService.once"
+hash = "fe71c507358187cfc562c049ba8c722b49949303bee03a5785cf4801335e853a"
+divergence = "event-dispatch-args"
 
 [items."src/events.ts:EventsService.parallel"]
 status = "adapted"
@@ -1260,7 +1280,9 @@ hash = "fd1b842e7805e70d0b55b4d5c0e15b91509129b6b6b8e9434b0d694e671bfb15"
 note = "Imports of the TypeScript module."
 
 [items."src/reflect.ts:Impl"]
-status = "pending"
+status = "ported"
+target = "pycordis.reflect.Impl"
+hash = "07855d5e3a82ee7996eae861aab50ea95aab6ed7d3ad75af37855817c3826b67"
 
 [items."src/reflect.ts:Property"]
 status = "adapted"
@@ -1289,16 +1311,25 @@ hash = "a8ba13c5e54c854a7d02d9841afed144d06be41cf1ef6ca46185dad9fab9b6d5"
 divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.bind"]
-status = "pending"
+status = "adapted"
+target = "pycordis.reflect.ReflectService.bind"
+hash = "65f5b3a130d4ac902953371fa7a0c718b73c76128ee69bdfe322534c16cfa700"
+divergence = "traceable-view"
 
 [items."src/reflect.ts:ReflectService.constructor"]
 status = "pending"
 
 [items."src/reflect.ts:ReflectService.get"]
-status = "pending"
+status = "adapted"
+target = "pycordis.reflect.ReflectService.get"
+hash = "f226026815e02bced613ea2e9cb998cb6719a228e2b61cf26247901b13b0cf58"
+divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.mixin"]
-status = "pending"
+status = "adapted"
+target = "pycordis.reflect.ReflectService.mixin"
+hash = "eeccf361ca2ab65b66fcc774bf425e9f53e026a54f9a4fd261fa86b423f52c75"
+divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.notify"]
 status = "adapted"
@@ -1307,7 +1338,10 @@ hash = "f75f710f70d598ac20e2a1e65d00ec7905e88bad85188c194a231b34c58b9213"
 divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.provide"]
-status = "pending"
+status = "adapted"
+target = "pycordis.reflect.ReflectService.provide"
+hash = "ef3fe0c3d8a0ea2a13d4255531655816e6d1deb8f182f29f09fa235d546ff3e8"
+divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.set"]
 status = "adapted"
@@ -1316,7 +1350,10 @@ hash = "da0f54180f87549f3544d49a4b38e11d430d94b730a3ff5f71c67c60e810ce4c"
 divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.trace"]
-status = "pending"
+status = "adapted"
+target = "pycordis.traceable.get_traceable"
+hash = "683b29122da76e868e5a2302c9947348acc6544fcb3edb35039e10242b9dd334"
+divergence = "traceable-view"
 
 [items."src/reflect.ts:createAccessError"]
 status = "not-applicable"
@@ -1471,13 +1508,22 @@ status = "pending"
 status = "pending"
 
 [items."src/service.ts:Service"]
-status = "pending"
+status = "adapted"
+target = "pycordis.service.Service"
+hash = "2fc19fda13e1e239a5a2f00861af217d81ee7e9cd91e77f272d728ab3fd88df9"
+divergence = "traceable-view"
 
 [items."src/service.ts:Service.[Symbol.hasInstance]"]
-status = "pending"
+status = "adapted"
+target = "pycordis.traceable.TraceableView"
+hash = "f679a4d808098a0f7691391bce8c9567af1ffa39d00a97517aa8ae57131ca2b7"
+divergence = "traceable-view"
 
 [items."src/service.ts:Service.[symbols.extend]"]
-status = "pending"
+status = "adapted"
+target = "pycordis.service.Service.cordis_extend"
+hash = "9ee69f184efd7c888386200a5888be5c7736d0bcdd945557f71b0bcff0403eb8"
+divergence = "hook-names"
 
 [items."src/service.ts:Service.[symbols.filter]"]
 status = "adapted"
@@ -1495,10 +1541,13 @@ divergence = "hook-names"
 status = "adapted"
 target = "pycordis.service.Service.cordis_resolve_intercept"
 hash = "b8af0f76bab0a623b7eef09565f438e95587091f9c3ff5b88ae888975ddd9a39"
-divergence = "intercept-caller"
+divergence = "hook-names"
 
 [items."src/service.ts:Service.constructor"]
-status = "pending"
+status = "adapted"
+target = "pycordis.service.Service.__init__"
+hash = "a44aa91b5d64e7e3dd092fddfdf21fd6e334952d523ecb2eeb6bf9a6f1495ca7"
+divergence = "traceable-view"
 
 [items."src/utils.ts:<rest>"]
 status = "pending"
@@ -1556,10 +1605,15 @@ hash = "3dc7d6da73da48ebd72dd630f230b0b664ed85545b812d25db52506a8954dd03"
 divergence = "error-notes"
 
 [items."src/utils.ts:Tracker"]
-status = "pending"
+status = "ported"
+target = "pycordis.traceable.Tracker"
+hash = "a689ccc240c2164ccd9465ec0592f257bdef8a0815a4024be53b15f03fb0855d"
 
 [items."src/utils.ts:applyTraceable"]
-status = "pending"
+status = "adapted"
+target = "pycordis.traceable.CallableTraceableView.__call__"
+hash = "57e0da868f017766e82f4e9e345ff274e24c0902ba7ae9dd0b1dd6a5c4748a3a"
+divergence = "traceable-view"
 
 [items."src/utils.ts:buildOuterStack"]
 status = "adapted"
@@ -1574,22 +1628,39 @@ hash = "00a131b163081f5f3fcc1f34e855fc70425ee9ac17e2b9de30044588cc270297"
 divergence = "error-notes"
 
 [items."src/utils.ts:createCallable"]
-status = "pending"
+status = "adapted"
+target = "pycordis.service.Service.__init_subclass__"
+hash = "cdb8e883d329c99cf461940911b7f14ccf1a38a5f58e5b709ff55fd1f2714854"
+divergence = "traceable-view"
 
 [items."src/utils.ts:createShadow"]
-status = "pending"
+status = "adapted"
+target = "pycordis.traceable._create_shadow"
+hash = "145fc7ba09959e71f3cbf0fb8c8a3e8ed8b1394aa1c85debebdb55c7fbdec8ef"
+divergence = "traceable-view"
 
 [items."src/utils.ts:createShadowMethod"]
-status = "pending"
+status = "adapted"
+target = "pycordis.traceable._read_attribute"
+hash = "792a4d86817ad18fb6a4ed227cc0103a9f7156d3f5cb6e3cecde20032e32f394"
+divergence = "traceable-view"
 
 [items."src/utils.ts:createTraceable"]
-status = "pending"
+status = "adapted"
+target = "pycordis.traceable.create_traceable"
+hash = "c21172e5524004f03f05a78d0c9ebb6222c8ef074719e23d6a0f7c8be8eb0df9"
+divergence = "traceable-view"
 
 [items."src/utils.ts:getPropertyDescriptor"]
-status = "pending"
+status = "not-applicable"
+hash = "092bef87b6fde3e9e51920a61c67342b9fce35bc5428cacfe5ec53b247b96fc7"
+note = "Python attribute lookup (`inspect.getattr_static`) replaces the prototype walk."
 
 [items."src/utils.ts:getTraceable"]
-status = "pending"
+status = "adapted"
+target = "pycordis.traceable.get_traceable"
+hash = "3353678514bef4ab84487d50fd639c13113967b7506b051db9603c1be25330d6"
+divergence = "traceable-view"
 
 [items."src/utils.ts:handleError"]
 status = "adapted"
@@ -1610,10 +1681,16 @@ status = "pending"
 status = "pending"
 
 [items."src/utils.ts:withProp"]
-status = "pending"
+status = "adapted"
+target = "pycordis.traceable._Shadow"
+hash = "4c24832e53d0ace0747c2061b88bc8242c6a4f32840e400440f9027ce600237d"
+divergence = "traceable-view"
 
 [items."src/utils.ts:withProps"]
-status = "pending"
+status = "adapted"
+target = "pycordis.traceable.Overlay"
+hash = "ead420a45b46478242d51ac4cc486550508d151dcbdf37331d0d836511ec5160"
+divergence = "traceable-view"
 
 [items."state:ACTIVE"]
 status = "ported"
