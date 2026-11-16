@@ -438,7 +438,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pycordis"
+name = "pycordis2"
 version = "0.0.0"
 source = { editable = "." }
 

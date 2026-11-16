@@ -1,5 +1,5 @@
 [project]
-name = "pycordis"
+name = "pycordis2"
 version = "0.0.0"
 description = "A Python port of the Cordis core: plugin and service composition from revertible effects."
 readme = "README.md"
