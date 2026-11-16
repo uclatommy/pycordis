@@ -1,14 +1,14 @@
 """Ported upstream effect-disposal cases that need only the root context."""
 
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Iterator
 from typing import Any
 
 import pytest
-from conftest import FakeClock
+from conftest import FakeClock, event
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
-from pycordis.fiber import EffectMeta
+from pycordis.fiber import Disposer, EffectMeta
 
 Run = Callable[[Coroutine[Any, Any, Any]], Deferred[Any]]
 
@@ -229,3 +229,33 @@ def test_an_async_setup_that_fails_rejects_the_handle_and_reverts(
     with pytest.raises(error):
         run(body()).result()
     assert seq == expected
+
+
+@pytest.mark.upstream("dispose.spec.ts::Effects::yield dispose")
+def test_a_sync_iterator_effect_reverts_its_parts_newest_first(root: Context) -> None:
+    seq: list[int] = []
+
+    def inner() -> Iterator[Disposer]:
+        yield root.on(event, lambda: None)
+        yield lambda: seq.append(3)
+
+    def setup() -> Iterator[Disposer]:
+        yield lambda: seq.append(1)
+        yield root.on(event, lambda: None)
+        yield lambda: seq.append(2)
+        yield root.effect(inner)
+
+    dispose = root.effect(setup)
+    root.on(event, lambda: None)
+
+    # only the effects at the top level of the fiber are listed
+    on = EffectMeta(f'ctx.on("{event}")', [])
+    assert root.fiber.get_effects() == [
+        EffectMeta("anonymous", [on, EffectMeta("anonymous", [on])]),
+        on,
+    ]
+    assert seq == []
+    dispose()
+    assert seq == [3, 2, 1]
+    dispose()
+    assert seq == [3, 2, 1]

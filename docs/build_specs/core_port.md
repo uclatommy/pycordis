@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 4 of 12 complete
+**Status**: 🔄 In progress — Increment 5 of 12 complete
 
 ## Goal
 
@@ -621,7 +621,36 @@ provides, injects, and unloads cleanly — without the dependents guard or the f
 `test_dispose.py`, `test_reflect.py`
 **Validation**: `uv run pytest tests/test_component.py tests/test_dispose.py
 tests/test_reflect.py`
-**Status**: ⬜ Pending
+**Docs**: `docs/architecture.md` divergence rows; docstrings of `registry.py`, `Context.use`, and the new `Fiber` members
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/registry.py`: `Component`, `Applicable`, `Runtime`, `resolve_inject`, and `RegistryService` (`use`, `inject`, `resolve`, `get`, `has`, `keys`, `values`, `entries`, `for_each`, `unregister`, `next_uid`, `len`)
+- `src/pycordis/fiber.py`: non-root `Fiber` (uid, child context, `internal/plugin`, `ctx.use()` effect, `dispose`, `name`, `committed`, `inject`, `runtime`), the epoch digest in `_refresh`, `_check_impl`, `internal/status` and provider announcement in `_update_state`, `_apply` (function, class, and `cordis_init`), `_resolve` (the `internal/config` waterfall), and `resolve_config`
+- `src/pycordis/errors.py`: `ValidationError` and `Issue`
+- `src/pycordis/reflect.py`: `locate`, checked `read` with the `internal/get` waterfall, the `internal/set` waterfall in `write`, the `in multiple fibers` check in `set`, fiber refresh in `notify`, and `find` and `announce`
+- `src/pycordis/context.py`: `registry`, `use`, `inject`, `bind_fiber`, `isolated_since`, and the root listener of `internal/config`
+- `src/pycordis/events.py`: `EventsService.install`, and a waterfall without listeners that calls its final function at once
+- `conformance/ledger.toml`: 59 entries reviewed (18 `component.spec.ts`, `dispose.spec.ts`, and `reflect.spec.ts` cases; the state-machine items `_getState`, `_updateState`, `_setEpoch`, `_refresh` with `mirror = true`; `ValidationError`, `resolveConfig`, `locate`, and the registry items; six events)
+- `docs/architecture.md`: divergence row `config-schema`; row `service-access` covers checked access and the `internal/get` and `internal/set` arguments
+
+**Tests**:
+- `tests/test_component.py` (43 pass: 10 `component.spec.ts` cases, `dispose by component`, the three forms, names, `inject` spellings and errors, shared runtimes, `internal/plugin` and `internal/status`, config validation, loading by injection, and the call-site note), `tests/test_reflect.py` (58 pass, 5 `reflect.spec.ts` cases and Python-only tests of checked access, listeners, realms, and `set`), `tests/test_dispose.py` (14 pass, includes `yield dispose`)
+- Full suite: 340 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, `tests/test_docstrings.py`, `tests/test_events.py`, `tests/test_effect_forms.py`, and `tests/test_scheduler.py`
+- Disabling the checked-access error, or the realm check in `locate`, fails a test. A digest that leaves out the provider `uid` fails no test yet: a provider change always passes through `INACTIVE` until `replace` exists (Increment 7 and 8)
+
+**Deviations**:
+- `ctx.plugin` and `registry.plugin` are not ported: ledger status `diverged` with `deprecated-aliases`
+- The `access error` case does not assert JavaScript stack lines, `access check` does not read `prototype`, and `service injection` does not check logger warnings (the logger is Increment 10). A check of `ctx.meta` replaces the last one. These cases are `adapted` with `service-access`
+- `internal/get` and `internal/set` listeners get no `error` argument (row `service-access`)
+- `RegistryService.use` and `inject` take the calling context as the first argument, like `ReflectService`
+- `Fiber.parent` is the `Context` that created the fiber
+- `EventsService.install`, `Context.bind_fiber`, `Context.isolated_since`, `ReflectService.find`, and `ReflectService.announce` are added; the plan does not list them
+- The dependents tracking, the wait in `_unload`, `_forward`, and the alias table are not added (user-approved, Increment 8). The ledger items `Fiber`, `_reload`, `_unload`, `_replace`, `update`, `RegistryService.use`, `.get`, `.has`, `.replace`, and `._forward` stay `pending`
+- `Fiber._checkImpl` stays `pending` because `Impl.check` needs the `Service` base (Increment 6)
+- `dispose.spec.ts` `yield dispose` had no remaining blocker, so it is ported here
+- Three tests of `tests/test_events.py` compare listener counts with a baseline snapshot, because a root has the listener of `internal/config`
+- Owner-thread checks are not added yet (planned for the threading increment)
 
 ### Increment 6: Service base
 **Goal**: The `Service` base with provide on construct, the `cordis_*` hooks, and intercept merge

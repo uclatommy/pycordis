@@ -39,37 +39,50 @@ status = "pending"
 status = "pending"
 
 [items."component.spec.ts::Component::Service.init"]
-status = "pending"
+status = "adapted"
+hash = "b9fd0c6df59bd6467e900557dc69796eb2fc019bc5fe2a2c8ac2c93bbd5471b1"
+divergence = "hook-names"
 
 [items."component.spec.ts::Component::apply component through deprecated ctx.plugin()"]
-status = "pending"
+status = "diverged"
+hash = "4ce144753f8b04f82ab1aecd5dfb5d8af9db9bd34262d7967dcba05653ea34cf"
+divergence = "deprecated-aliases"
 
 [items."component.spec.ts::Component::apply functional component"]
-status = "pending"
+status = "ported"
+hash = "011b3182fa8fe78d54e466ea16f70b11e88c61365af3c96f62fec681cacd3d0a"
 
 [items."component.spec.ts::Component::apply invalid component"]
-status = "pending"
+status = "ported"
+hash = "e32249decbbd64fb5f0ff96d7e86ebd32cf7a2e19a32db64a4b2793597a4990b"
 
 [items."component.spec.ts::Component::apply object component"]
-status = "pending"
+status = "ported"
+hash = "b2cc2be9bf680767043478dc07fc8d4c401e485ae49704cecfd5254cb1dbcdeb"
 
 [items."component.spec.ts::Component::compare snapshot"]
-status = "pending"
+status = "ported"
+hash = "13251c643806c0ea56ed4d69748abf2c00f53122c7b8021d55ab1aae6bf041c4"
 
 [items."component.spec.ts::Component::context inspect"]
-status = "pending"
+status = "ported"
+hash = "d2e6e45bcbcae05d8f47bdb5dc43a5f73523e2ae0982e7435cd013df43cca96f"
 
 [items."component.spec.ts::Component::ctx.registry"]
-status = "pending"
+status = "ported"
+hash = "1d6c3b737270a86586766549816e6aad4683f6c112b204a23b7481350dd0cf33"
 
 [items."component.spec.ts::Component::inactive context"]
-status = "pending"
+status = "ported"
+hash = "413469a0fd430ddbb3c5237bc20dce896e8b652d0aa544ecf375583bc64a4d33"
 
 [items."component.spec.ts::Component::nested components"]
-status = "pending"
+status = "ported"
+hash = "78e24ff4866b41646c37d1732c0927197607ab20b68511af064668d9d99ec6af"
 
 [items."component.spec.ts::Component::root dispose"]
-status = "pending"
+status = "ported"
+hash = "eb8e6af3e536e11b9e1eddf32dc865c6be52152002dfd397ecb4af9152d32e55"
 
 [items."decorator.spec.ts::Decorator::@Inject on class method"]
 status = "pending"
@@ -115,7 +128,8 @@ status = "ported"
 hash = "933d549256a8562f741f90f84d277b5feb9dad294549c2de5d76341079b95481"
 
 [items."dispose.spec.ts::Effects::dispose by component"]
-status = "pending"
+status = "ported"
+hash = "766a2ab7d9825d652135f299dc0904db1b1f4cebd2809923e8793a26e88a3166"
 
 [items."dispose.spec.ts::Effects::dispose manually"]
 status = "ported"
@@ -126,7 +140,8 @@ status = "ported"
 hash = "88037c8e31caa6e90a0efbf8b351bd84d572e34154293c6659cf1ae75d715669"
 
 [items."dispose.spec.ts::Effects::yield dispose"]
-status = "pending"
+status = "ported"
+hash = "3d2821ecfa39ade2fd64cced5be67c21dd18f6ff9ceae00111d1c1fdbacebe91"
 
 [items."dispose.spec.ts::Effects::yield with error"]
 status = "ported"
@@ -136,32 +151,41 @@ hash = "a1981ef39b17e6e61227b6593e4d2f52624388e563e91282fc86cca9ae2f3930"
 status = "pending"
 
 [items."event:internal/config"]
-status = "pending"
+status = "ported"
+hash = "7fde6501cc56a280bf69d8d5b5d943307c0be041a924a8ec42e32ef2ad59d4c9"
 
 [items."event:internal/dispatch"]
 status = "ported"
 hash = "70c95e61a48f1087104821232e14e92f598d32e1344c6047bd53e0395dff0ee3"
 
 [items."event:internal/get"]
-status = "pending"
+status = "adapted"
+hash = "d494fa9581b7816c7fc05229431ce356b368108d1786a4e60231115493f28ae4"
+divergence = "service-access"
 
 [items."event:internal/listener"]
 status = "pending"
 
 [items."event:internal/plugin"]
-status = "pending"
+status = "ported"
+hash = "14cd354a0b2e377a20c8079dbe8adbf4185891acbb9aa3b54c4fc1b86ed14f33"
 
 [items."event:internal/replace"]
 status = "pending"
 
 [items."event:internal/service"]
-status = "pending"
+status = "adapted"
+hash = "2415c6983c7c4a8ffefafd81e5048c3efdf7bc28f5d937b7945cbcfc8f98e0a1"
+divergence = "event-dispatch-args"
 
 [items."event:internal/set"]
-status = "pending"
+status = "adapted"
+hash = "fe1937efbea755a2e76001363d37396a7428b5989c18580a6ca3ee0fc892b616"
+divergence = "service-access"
 
 [items."event:internal/status"]
-status = "pending"
+status = "ported"
+hash = "f5e494e80dbe4da452ad88063d8cefabef0efce078911f5e0ae25c6b0c738183"
 
 [items."event:internal/update"]
 status = "pending"
@@ -499,19 +523,27 @@ status = "ported"
 hash = "848b23aacbe31397ed3ec9e7aa44fcb3f96aef0fc2cbd0810388a1669650337f"
 
 [items."reflect.spec.ts::Reflect::access check"]
-status = "pending"
+status = "adapted"
+hash = "5f243e2eb5db5e6f479ba5ce2bfef6bc61a89c11196f5b1ee2f43ffc24ba24d7"
+divergence = "service-access"
 
 [items."reflect.spec.ts::Reflect::access error"]
-status = "pending"
+status = "adapted"
+hash = "5dfd388f3d503e9b896602772d2d3a70ab3a911b27a72798e053a77334ad4073"
+divergence = "service-access"
 
 [items."reflect.spec.ts::Reflect::does not load a fiber disposed during service notification"]
-status = "pending"
+status = "ported"
+hash = "2d30e11cac19db17dd338cccbb8d3aab9788de01eae87f6a94403c4729ca21d8"
 
 [items."reflect.spec.ts::Reflect::service inject leak"]
-status = "pending"
+status = "ported"
+hash = "afc40c750a3afee5ff9e3272bb8cf4e7f6401cf388804355041cb9e03f38a78d"
 
 [items."reflect.spec.ts::Reflect::service injection"]
-status = "pending"
+status = "adapted"
+hash = "e8da60f9c0172d92f35717b41ce993134cf1f01366a3d8935ee1d6d0d19c4eb3"
+divergence = "service-access"
 
 [items."replace.spec.ts::registry.replace()::emits internal/replace for each moved fiber"]
 status = "pending"
@@ -902,10 +934,16 @@ target = "pycordis.fiber.Fiber._execute"
 hash = "8e1ef987352caf86b6a3832f50e2a8ce99214f1551e901f02f386c88e4c68112"
 
 [items."src/fiber.ts:Fiber._getState"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._get_state"
+hash = "ef72aa6793d112644e45478f235418cbb2b420c5a6767bb7d7de71e1e2e580b3"
+mirror = true
 
 [items."src/fiber.ts:Fiber._refresh"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._refresh"
+hash = "19e5bd6e33db741fd4d7e468e87674a971a2dee22aedb27ee84a6c34685aac6f"
+mirror = true
 
 [items."src/fiber.ts:Fiber._reload"]
 status = "pending"
@@ -914,16 +952,24 @@ status = "pending"
 status = "pending"
 
 [items."src/fiber.ts:Fiber._resolve"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._resolve"
+hash = "7858e13ec614a38fe62ee672223f413b8941b2800ebcd919cfd53ec75fdecf54"
 
 [items."src/fiber.ts:Fiber._setEpoch"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._set_epoch"
+hash = "59735115ed5aa5ae323f512a6a05f0d53e12784c93bfeac7d7bcf65ba5a148eb"
+mirror = true
 
 [items."src/fiber.ts:Fiber._unload"]
 status = "pending"
 
 [items."src/fiber.ts:Fiber._updateState"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber._update_state"
+hash = "a2a4489289bb237f00f81fcb13f2f077970ae6a244065694e25b0162cc388a58"
+mirror = true
 
 [items."src/fiber.ts:Fiber.assertActive"]
 status = "ported"
@@ -937,7 +983,9 @@ hash = "bb88dbc01d2dbc49f0472759a780df31e5e1ffdb3c38f534e88e1567a0f496f7"
 divergence = "fiber-wait"
 
 [items."src/fiber.ts:Fiber.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber.__init__"
+hash = "e16d9639c99eaa1cb7b4388b171cc387e15e76cf908e6451c2267b596091319c"
 
 [items."src/fiber.ts:Fiber.effect"]
 status = "adapted"
@@ -951,7 +999,9 @@ target = "pycordis.fiber.Fiber.get_effects"
 hash = "5bce6273c75a1a2c517090f617a07394a22e429a6b04121eb5b217e3558d1fe2"
 
 [items."src/fiber.ts:Fiber.name"]
-status = "pending"
+status = "ported"
+target = "pycordis.fiber.Fiber.name"
+hash = "2355bfe31ae293e82649cc75dba8f59682900af969391643828835b12458a733"
 
 [items."src/fiber.ts:Fiber.restart"]
 status = "ported"
@@ -977,28 +1027,43 @@ target = "pycordis.fiber.EffectForm"
 hash = "1721814fb773cb7342d2e5ee21c36ed5b71cc4ed15e77452e8242a6f57491902"
 
 [items."src/fiber.ts:ValidationError"]
-status = "pending"
+status = "ported"
+target = "pycordis.errors.ValidationError"
+hash = "5f013f4387e20d1ecace2647fd059d2cb48846d019cad45127fd1619a36d64e1"
 
 [items."src/fiber.ts:ValidationError.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.errors.ValidationError.__init__"
+hash = "3d6893744d591ada70a825e45782bd0fabda41bc4db8ccc87dc512163560a37b"
 
 [items."src/fiber.ts:ValidationError.formatPath"]
-status = "pending"
+status = "ported"
+target = "pycordis.errors.ValidationError.format_path"
+hash = "30536794529f506c4fa9b5cf55fdd9e85f542dca40ded48e1ab3d22ce2fd6207"
 
 [items."src/fiber.ts:ValidationError.is"]
-status = "pending"
+status = "not-applicable"
+hash = "ee5ca11c52bc4357fa591cbe1b957ace0470988f790b57961d3fd659e64cced3"
+note = "isinstance(error, ValidationError) replaces the brand check"
 
 [items."src/fiber.ts:ValidationError.normalizePath"]
-status = "pending"
+status = "not-applicable"
+hash = "2480ea44c5d8c5e272958d1f851da1bbaa8fd276a4e1457f338db4900aee848b"
+note = "A Python issue path holds plain names and indexes, so it needs no normalization"
 
 [items."src/fiber.ts:kValidationError"]
-status = "pending"
+status = "not-applicable"
+hash = "006c123829f8b4c9da97b815ec4eae0a28e09c21c9d86437ca09e629d314141e"
+note = "isinstance replaces the symbol brand"
 
 [items."src/fiber.ts:module ./context.ts"]
 status = "pending"
 
 [items."src/fiber.ts:resolveConfig"]
-status = "pending"
+status = "adapted"
+target = "pycordis.fiber.resolve_config"
+hash = "792ca4135047d874e9c12031afa70892637816040468ccbaed23043a5981b9f4"
+divergence = "config-schema"
 
 [items."src/index.ts:<rest>"]
 status = "pending"
@@ -1092,7 +1157,10 @@ note = "Names that the JavaScript Proxy handler passes through. A Python context
 status = "pending"
 
 [items."src/reflect.ts:ReflectService._getImpl"]
-status = "pending"
+status = "adapted"
+target = "pycordis.reflect.ReflectService.find"
+hash = "249bf3f658a8fd402ce5c6aff6dc373ac9877a23016de2e015f1d7a469e3f5f1"
+divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.accessor"]
 status = "adapted"
@@ -1113,13 +1181,19 @@ status = "pending"
 status = "pending"
 
 [items."src/reflect.ts:ReflectService.notify"]
-status = "pending"
+status = "adapted"
+target = "pycordis.reflect.ReflectService.notify"
+hash = "f75f710f70d598ac20e2a1e65d00ec7905e88bad85188c194a231b34c58b9213"
+divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.provide"]
 status = "pending"
 
 [items."src/reflect.ts:ReflectService.set"]
-status = "pending"
+status = "adapted"
+target = "pycordis.reflect.ReflectService.set"
+hash = "da0f54180f87549f3544d49a4b38e11d430d94b730a3ff5f71c67c60e810ce4c"
+divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.trace"]
 status = "pending"
@@ -1140,7 +1214,9 @@ hash = "54be277dd60d3474ee4d4d5c3d29096f23a93e85563eb361bbfe9c6e9c65644b"
 note = "Selects the keys that the JavaScript Proxy handler passes through. A Python context has no property traps."
 
 [items."src/reflect.ts:locate"]
-status = "pending"
+status = "ported"
+target = "pycordis.reflect.locate"
+hash = "25d3264a80fb12ef7f293ebbc394f05dbdee42e88a0c390bb163d3bcf4170844"
 
 [items."src/reflect.ts:module ./context.ts"]
 status = "pending"
@@ -1149,43 +1225,61 @@ status = "pending"
 status = "pending"
 
 [items."src/registry.ts:Component"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.Component"
+hash = "25d4aec84d9f3d49bff695bc37616a864c67e346763e526c4c645d590dd465fe"
 
 [items."src/registry.ts:GetComponentConfig"]
-status = "pending"
+status = "not-applicable"
+hash = "869560d6ba2da8dbc22f0348a9a5ff8b0a715fe2d6205eace5dd45afaa350feb"
+note = "A TypeScript type that infers the config type; the Python signature takes the config as object"
 
 [items."src/registry.ts:GetComponentParameters"]
-status = "pending"
+status = "not-applicable"
+hash = "302c08dec9bf5fea2e32cbc24e66df1b2fbd975de1c82b843578edeaee4a566c"
+note = "A TypeScript type that infers the config type; the Python signature takes the config as object"
 
 [items."src/registry.ts:Inject"]
 status = "pending"
 
 [items."src/registry.ts:InjectKey"]
-status = "pending"
+status = "not-applicable"
+hash = "979b5c7155030fb75e90d32ee49d58abb4d96857861ef04221f344dedfa38a0c"
+note = "A TypeScript type of the service names that have metadata"
 
 [items."src/registry.ts:RegistryService"]
 status = "pending"
 
 [items."src/registry.ts:RegistryService._create"]
-status = "pending"
+status = "not-applicable"
+hash = "4feabe47655f9b193d3bf512434440a23b58019c9845ccf28bf2e2a9e263e8db"
+note = "RegistryService.use creates the Runtime where it is needed"
 
 [items."src/registry.ts:RegistryService._forward"]
 status = "pending"
 
 [items."src/registry.ts:RegistryService._unregister"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.unregister"
+hash = "9d94e65869374ed9bbb03c6126d2af1ca3d70f17a1fb03e7c0986875777f4baf"
 
 [items."src/registry.ts:RegistryService.constructor"]
 status = "pending"
 
 [items."src/registry.ts:RegistryService.counter"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.next_uid"
+hash = "6e8893af3a409a74efdfba3e4dc7158b60baf06acf4bba00a25a54f0ce5d7c70"
 
 [items."src/registry.ts:RegistryService.entries"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.entries"
+hash = "e7821f438c762fd120d8a96616b010e4f23140f8c0341e9ed0af1394e4db129e"
 
 [items."src/registry.ts:RegistryService.forEach"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.for_each"
+hash = "2ba3b246508a868c50a73a869159b45fc7494cb875e1500d0ba40aaa6fd73d87"
 
 [items."src/registry.ts:RegistryService.get"]
 status = "pending"
@@ -1194,34 +1288,51 @@ status = "pending"
 status = "pending"
 
 [items."src/registry.ts:RegistryService.inject"]
-status = "pending"
+status = "adapted"
+target = "pycordis.registry.RegistryService.inject"
+hash = "7f006dfa8351cbbabbabf338941571390f4e12b2a38337ce5c7f64383960e526"
+divergence = "service-access"
 
 [items."src/registry.ts:RegistryService.keys"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.keys"
+hash = "fce0f85d1d370ec9e29026278d8b758464fa04407838e92ad6816958cf7a6d54"
 
 [items."src/registry.ts:RegistryService.plugin"]
-status = "pending"
+status = "diverged"
+hash = "a78413f5b5b5c6e3da145a496788a11523afe139dd838727a9a9e313747a1840"
+divergence = "deprecated-aliases"
 
 [items."src/registry.ts:RegistryService.replace"]
 status = "pending"
 
 [items."src/registry.ts:RegistryService.resolve"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.resolve"
+hash = "88328d0cbe56ffb6e3af631540c622fcf97864e391160ecff520fdc3fd40fce0"
 
 [items."src/registry.ts:RegistryService.size"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.__len__"
+hash = "e96d7a660c471339d7c2cb8b907fad8c703fb326532388e482ce3b5c3a07fafa"
 
 [items."src/registry.ts:RegistryService.use"]
 status = "pending"
 
 [items."src/registry.ts:RegistryService.values"]
-status = "pending"
+status = "ported"
+target = "pycordis.registry.RegistryService.values"
+hash = "a95a5478d348bf85bf85d2682f86b7dcea7d39e0846f70fa612fe312fbc80965"
 
 [items."src/registry.ts:Spread"]
-status = "pending"
+status = "not-applicable"
+hash = "c76638a1f61100479bd1edea0768f29bc8e4c68cff2d3bbb2fc58aa9542fc68d"
+note = "A TypeScript type that infers the config type; the Python signature takes the config as object"
 
 [items."src/registry.ts:isApplicable"]
-status = "pending"
+status = "not-applicable"
+hash = "7c0492b0ff31d8afe0992a9234f029e8aed3b667a4e7949f65b4924dac4f851f"
+note = "RegistryService.resolve checks the apply method"
 
 [items."src/registry.ts:module ./context.ts"]
 status = "pending"

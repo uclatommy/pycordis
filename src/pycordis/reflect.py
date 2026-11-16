@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
-from pycordis.fiber import EffectHandle, FiberState
+from pycordis.fiber import EffectHandle, Fiber, FiberState
 from pycordis.keys import Keyable, key_name
 from pycordis.scheduler import Scheduler, start
 
@@ -63,6 +63,44 @@ class Impl:
     release: Callable[[], None] | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class Located:
+    """The result of `locate`: a fiber admits the access.
+
+    Attributes:
+        impl: The provider that the access reaches, or `None` when the fiber that
+            declares the service is not loaded.
+    """
+
+    impl: Impl | None
+
+
+def locate(ctx: "Context", name: str) -> Located | None:
+    """Find which fiber admits an access to the service `name` from `ctx`.
+
+    The walk starts at the fiber of `ctx` and goes to its ancestors. A fiber admits the
+    access when it provides `name` in the realm of `ctx`, or when it declares `name` in
+    `inject`. The walk stops at a context that isolates `name` again.
+
+    Returns:
+        The provider, or `None` when no fiber admits the access.
+    """
+    realm = ctx.isolates.get(name)
+    fiber = ctx.fiber
+    while True:
+        for provision in fiber.provisions:
+            if provision.name == name and provision.ctx.isolates.get(name) is realm:
+                return Located(provision)
+        if ctx.isolated_since(name, fiber.ctx):
+            return None
+        impl = None if fiber.committed is None else fiber.committed.get(name)
+        if impl is not None or name in fiber.inject:
+            return Located(impl)
+        if fiber.runtime is None:
+            return None
+        fiber = fiber.parent.fiber
+
+
 class _Filter:
     """The `this` object of an `internal/service` event.
 
@@ -97,19 +135,46 @@ class ReflectService:
         self._impl_counter = 0
 
     def read(self, ctx: "Context", key: Keyable[Any]) -> Any:
-        """Return `ctx[key]`: an accessor's value, or the value of a provider."""
+        """Return `ctx[key]`: an accessor's value, or the value of a provider.
+
+        A context whose fiber runs a component reads a service only if the fiber, or an
+        ancestor of the fiber, injects it or provides it. The root context reads
+        without this check.
+
+        Raises:
+            CordisError: If no fiber admits the access, or the fiber that admits it is
+                not loaded.
+        """
         name = key_name(key)
         accessor = self._accessors.get(name)
         if accessor is not None:
             return accessor.get(ctx)
-        return self.get(ctx, name, False)
+        if ctx.fiber.runtime is None:
+            return self.get(ctx, name, False)
+        return ctx.waterfall(
+            "internal/get", ctx, name, lambda: self._checked(ctx, name)
+        )
+
+    def _checked(self, ctx: "Context", name: str) -> Any:
+        found = locate(ctx, name)
+        if found is None:
+            raise CordisError(f'cannot get property "{name}" without inject')
+        if found.impl is None:
+            raise CordisError(
+                f'cannot get required service "{name}" in inactive context'
+            )
+        return found.impl.value
 
     def write(self, ctx: "Context", key: Keyable[Any], value: Any) -> None:
         """Perform `ctx[key] = value`: call an accessor's setter, or set a service."""
         name = key_name(key)
         accessor = self._accessors.get(name)
         if accessor is None:
-            self.set(ctx, name, value)
+            if name not in self._services:
+                raise CordisError(f'cannot set property "{name}" without provide')
+            ctx.waterfall(
+                "internal/set", ctx, name, value, lambda: self.set(ctx, name, value)
+            )
         elif accessor.set is None:
             raise CordisError(f'property "{name}" is read-only')
         else:
@@ -117,19 +182,22 @@ class ReflectService:
 
     def get(self, ctx: "Context", key: Keyable[Any], strict: bool = True) -> Any:
         """Return the value of the service `key` that `ctx` sees, or `None`."""
-        impl = self._impl(ctx, key_name(key), strict)
+        impl = self.find(ctx, key_name(key), strict)
         return None if impl is None else impl.value
 
     def set(self, ctx: "Context", key: Keyable[Any], value: Any) -> None:
         """Replace the value of the service `key` that `ctx` sees.
 
         Raises:
-            CordisError: If no provider is visible.
+            CordisError: If no provider is visible, or the provider belongs to another
+                fiber.
         """
         name = key_name(key)
-        impl = self._impl(ctx, name, False)
+        impl = self.find(ctx, name, False)
         if impl is None:
             raise CordisError(f'cannot set property "{name}" without provide')
+        if impl.ctx.fiber is not ctx.fiber:
+            raise CordisError(f'cannot set property "{name}" in multiple fibers')
         impl.value = value
 
     def provide(
@@ -171,17 +239,41 @@ class ReflectService:
     def notify(self, ctx: "Context", names: Iterable[str]) -> None:
         """Report a change of the providers of `names` to `internal/service` listeners.
 
-        A listener hears the event only when its context uses the same realm of the
-        name as `ctx`.
+        Each fiber that injects a changed name in the same realm as `ctx` looks for its
+        provider again, and loads or unloads if the provider changed. A listener hears
+        the event only when its context uses the same realm of the name as `ctx`.
         """
+        names = list(names)
+        for runtime in list(ctx.registry.values()):
+            for fiber in list(runtime.fibers):
+                changed = False
+                for name in names:
+                    if name not in fiber.inject:
+                        continue
+                    if fiber.ctx.isolates.get(name) is not ctx.isolates.get(name):
+                        continue
+                    changed = True
+                    fiber._check_impl(name)
+                if changed:
+                    fiber._refresh()
         for name in names:
-            impl = self._impl(ctx, name, False)
+            impl = self.find(ctx, name, False)
             ctx.events.emit(
                 "internal/service",
                 name,
                 None if impl is None else impl.value,
                 this=_Filter(name, ctx.isolates.get(name)),
             )
+
+    def announce(self, fiber: Fiber) -> None:
+        """Report that the providers of `fiber` became visible or hidden.
+
+        A fiber calls it when it enters or leaves `ACTIVE`. It notifies for each
+        service that the fiber provides and that is still published.
+        """
+        for impl in list(fiber.provisions):
+            if self._store.get(impl.isolate) is impl:
+                self.notify(fiber.ctx.isolate(impl.name, impl.isolate), [impl.name])
 
     def accessor(
         self, ctx: "Context", key: Keyable[Any], accessor: Accessor
@@ -229,7 +321,11 @@ class ReflectService:
 
         return ctx.fiber.effect(setup, f"ctx.mixin({json.dumps(source_name)})")
 
-    def _impl(self, ctx: "Context", name: str, strict: bool) -> Impl | None:
+    def find(self, ctx: "Context", name: str, strict: bool) -> Impl | None:
+        """Return the provider of `name` that `ctx` sees, or `None`.
+
+        With `strict`, a provider whose fiber is not `ACTIVE` gives `None`.
+        """
         realm = ctx.isolates.get(name)
         impl = None if realm is None else self._store.get(realm)
         if impl is None:

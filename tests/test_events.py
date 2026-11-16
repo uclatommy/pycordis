@@ -79,15 +79,16 @@ def test_names_of_object_attributes_are_ordinary_events(
     "events.spec.ts::Events::removes empty event buckets after disposal"
 )
 def test_an_event_without_listeners_has_no_bucket(root: Context) -> None:
+    baseline = hook_snapshot(root)
     name = Symbol("temporary")
     first = root.on(name, lambda: None)
     second = root.on(name, lambda: None)
 
     first()
-    assert hook_snapshot(root) == {"Symbol(temporary)": 1}
+    assert hook_snapshot(root) == {**baseline, "Symbol(temporary)": 1}
     second()
 
-    assert hook_snapshot(root) == {}
+    assert hook_snapshot(root) == baseline
 
 
 @pytest.mark.upstream("events.spec.ts::Events::ctx.on()")
@@ -479,6 +480,7 @@ def test_a_dispatch_without_listeners_does_nothing(root: Context, mode: str) -> 
 def test_listeners_do_not_run_after_their_effect_is_reverted_by_the_fiber(
     root: Context,
 ) -> None:
+    baseline = hook_snapshot(root)
     callback = Recorder()
     root.on(event, callback)
 
@@ -486,7 +488,7 @@ def test_listeners_do_not_run_after_their_effect_is_reverted_by_the_fiber(
     root.emit(event)
 
     assert callback.calls == []
-    assert hook_snapshot(root) == {}
+    assert hook_snapshot(root) == baseline
 
 
 @pytest.mark.parametrize("flag", [True, False])
@@ -526,12 +528,13 @@ def test_the_dispatch_report_lists_mode_name_and_arguments(root: Context) -> Non
 
 
 def test_an_internal_listener_event_can_replace_a_registration(root: Context) -> None:
+    baseline = hook_snapshot(root)
     replacement = root.effect(lambda: None, "replacement")
     seen = Recorder(lambda ctx, name, listener, options: replacement)
     root.on("internal/listener", seen)
 
     assert root.on(event, lambda: None) is replacement
-    assert hook_snapshot(root) == {"internal/listener": 1}
+    assert hook_snapshot(root) == {**baseline, "internal/listener": 1}
     assert seen.calls[0][1] == event
 
 

@@ -1,6 +1,7 @@
 """Services, accessors, and realms of the root context."""
 
 import random
+from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Any
 
@@ -9,6 +10,7 @@ from conftest import Recorder
 
 from pycordis.context import Context
 from pycordis.errors import CordisError
+from pycordis.fiber import FiberState
 from pycordis.keys import Key
 from pycordis.scheduler import ImmediateScheduler
 
@@ -273,3 +275,213 @@ def test_reverting_every_provision_restores_the_provider_tables(
     assert root.fiber.get_effects() == [], seed
     for name in names:
         root.provide(name)
+
+
+def message(call: Callable[[], object]) -> str | None:
+    """Return the message of the `CordisError` that `call` raises, or `None`."""
+    try:
+        call()
+    except CordisError as error:
+        return str(error)
+    return None
+
+
+@pytest.mark.upstream("reflect.spec.ts::Reflect::access check")
+def test_a_component_context_reads_and_sets_only_declared_services(
+    root: Context,
+) -> None:
+    results: list[object] = []
+
+    def first(ctx: Context, config: object) -> None:
+        results.append(message(lambda: ctx["bar"]))
+        results.append(message(lambda: ctx.__setitem__("bar", 0)))
+
+    def second(ctx: Context, config: object) -> None:
+        results.append(message(lambda: ctx.__setitem__("foo", 0)))
+        results.append(message(lambda: ctx.provide("foo")))
+        results.append(message(lambda: ctx.provide("foo")))
+        results.append(message(lambda: ctx.__setitem__("foo", 0)))
+
+    root.use(first)
+    root.use(second)
+
+    assert results == [
+        'cannot get property "bar" without inject',
+        'cannot set property "bar" without provide',
+        'cannot set property "foo" without provide',
+        None,
+        'service "foo" has been registered at <second>',
+        None,
+    ]
+
+
+@pytest.mark.upstream("reflect.spec.ts::Reflect::service injection")
+def test_a_derived_context_of_an_injecting_component_reads_its_meta(
+    root: Context,
+) -> None:
+    seen: list[object] = []
+    root.mixin("foo", ["bar"])
+    root.provide("foo")
+    root.set("foo", SimpleNamespace(bar=1))
+
+    def child(ctx: Context, config: object) -> None:
+        seen.append(ctx.meta["baz"])
+
+    root.inject(["foo"], lambda ctx: ctx.extend(baz=2).use(child))
+
+    assert root.get("foo") is not None
+    assert root.get("bar") is None
+    assert seen == [2]
+
+
+@pytest.mark.upstream("reflect.spec.ts::Reflect::access error")
+def test_an_access_error_names_the_rule_that_the_access_breaks(
+    root: Context,
+) -> None:
+    root.provide("foo")
+    root.set("foo", SimpleNamespace(bar=1))
+    results: list[object] = []
+
+    def inside(ctx: Context) -> None:
+        results.append(message(lambda: ctx["bar"]))
+        results.append(message(lambda: ctx.__setitem__("bar", 0)))
+
+    fiber = root.inject(["foo"], inside)
+    fiber.dispose()
+
+    assert results == [
+        'cannot get property "bar" without inject',
+        'cannot set property "bar" without provide',
+    ]
+    assert message(lambda: fiber.ctx["foo"]) == (
+        'cannot get required service "foo" in inactive context'
+    )
+
+
+@pytest.mark.upstream("reflect.spec.ts::Reflect::service inject leak")
+def test_a_disposed_fiber_cannot_read_its_service(root: Context) -> None:
+    root.provide("foo")
+    root.set("foo", SimpleNamespace(bar=1))
+    fiber = root.inject(["foo"], lambda ctx: None)
+
+    assert fiber.ctx["foo"] is not None
+    fiber.dispose()
+
+    assert message(lambda: fiber.ctx["foo"]) == (
+        'cannot get required service "foo" in inactive context'
+    )
+
+
+@pytest.mark.upstream(
+    "reflect.spec.ts::Reflect::does not load a fiber disposed during service "
+    "notification"
+)
+def test_a_fiber_disposed_during_notification_does_not_load(root: Context) -> None:
+    apply = Recorder()
+    component = SimpleNamespace(inject=["foo"], apply=apply)
+    fiber1 = root.use(component, {"id": 1})
+    fiber2 = root.use(component, {"id": 2})
+    root.on(
+        "internal/status",
+        lambda fiber, old: (
+            fiber2.dispose()
+            if fiber is fiber1 and fiber.state == FiberState.LOADING
+            else None
+        ),
+    )
+
+    root.provide("foo", {})
+
+    assert [call[1]["id"] for call in apply.calls] == [1]
+    assert fiber2.state == FiberState.DISPOSED
+    root.fiber.dispose()
+
+
+def test_a_component_context_reads_a_service_through_the_get_listener(
+    root: Context,
+) -> None:
+    root.provide("foo", 1)
+    seen: list[object] = []
+
+    def wrap(ctx: Context, name: str, next_: Callable[[], Any]) -> Any:
+        return next_() + 10
+
+    root.on("internal/get", wrap)
+
+    def reader(ctx: Context) -> None:
+        seen.append(ctx["foo"])
+
+    root.inject(["foo"], reader)
+
+    assert seen == [11]
+
+
+def test_the_get_listener_sees_an_access_that_no_fiber_admits(root: Context) -> None:
+    names: list[str] = []
+    root.on("internal/get", lambda ctx, name, next_: names.append(name) or next_())
+    results: list[object] = []
+
+    root.use(lambda ctx, config: results.append(message(lambda: ctx["nope"])))
+
+    assert names == ["nope"]
+    assert results == ['cannot get property "nope" without inject']
+
+
+def test_the_set_listener_wraps_a_write_to_a_service(root: Context) -> None:
+    seen: list[object] = []
+
+    def wrap(ctx: Context, name: str, value: Any, next_: Callable[[], Any]) -> Any:
+        seen.append((name, value))
+        return next_()
+
+    root.on("internal/set", wrap)
+
+    def component(ctx: Context, config: object) -> None:
+        ctx.provide("foo", 0)
+        ctx["foo"] = 5
+
+    root.use(component)
+
+    assert seen == [("foo", 5)]
+    assert root.get("foo") == 5
+
+
+def test_a_fiber_cannot_set_a_service_of_another_fiber(root: Context) -> None:
+    root.provide("foo", 0)
+    results: list[object] = []
+
+    root.inject(["foo"], lambda ctx: results.append(message(lambda: ctx.set("foo", 1))))
+
+    assert results == ['cannot set property "foo" in multiple fibers']
+    assert root.get("foo") == 0
+
+
+def test_a_component_reads_a_service_through_its_parent_injection(
+    root: Context,
+) -> None:
+    root.provide("foo", 1)
+    results: list[object] = []
+
+    def child(ctx: Context, config: object) -> None:
+        results.append(message(lambda: ctx["foo"]) or ctx["foo"])
+
+    def parent(ctx: Context) -> None:
+        ctx.use(child)
+        ctx.isolate("foo").use(child)
+
+    root.inject(["foo"], parent)
+
+    assert results == [1, 'cannot get property "foo" without inject']
+
+
+def test_only_the_fibers_in_the_realm_of_a_provider_load(root: Context) -> None:
+    apply = Recorder()
+    isolated = root.isolate("foo")
+    isolated.use(SimpleNamespace(inject=["foo"], apply=apply))
+    root.provide("foo", 1)
+
+    assert apply.calls == []
+
+    isolated.provide("foo", 2)
+
+    assert len(apply.calls) == 1

@@ -2,7 +2,9 @@
 
 A fiber owns the effects that a unit of work registers, and reverts them when the unit
 ends. An effect runs some setup and collects the inverses of what the setup changed.
-Start with `Fiber.effect` (through `Context.effect`) and `EffectHandle`.
+A component runs in its own fiber, which loads when every service that the component
+injects has a provider. Start with `Fiber.effect` (through `Context.effect`),
+`EffectHandle`, and `FiberState`.
 """
 
 import inspect
@@ -20,12 +22,13 @@ from typing import TYPE_CHECKING, Any, Self
 
 from pycordis.deferred import Deferred
 from pycordis.disposables import DisposableList
-from pycordis.errors import CallSite, CordisError
+from pycordis.errors import CallSite, CordisError, Issue, ValidationError
 from pycordis.scheduler import Scheduler, spawn, start
 
 if TYPE_CHECKING:
     from pycordis.context import Context
     from pycordis.reflect import Impl
+    from pycordis.registry import Runtime
 
 type Disposer = Callable[[], Deferred[None] | None]
 """A function that reverts one change. It returns a `Deferred` if it ends later."""
@@ -80,6 +83,44 @@ class _Runner:
     epoch: object
     collect: Callable[[Disposer], object]
     call_site: CallSite
+
+
+def _issues(error: Exception) -> list[Issue]:
+    """Read the issues of a validator error from its `errors()` method, if any."""
+    errors = getattr(error, "errors", None)
+    if not callable(errors):
+        return [Issue(str(error))]
+    return [Issue(str(item["msg"]), tuple(item.get("loc", ()))) for item in errors()]
+
+
+def resolve_config(schema: object | None, config: object) -> object:
+    """Validate `config` with the `Config` of a component, and return the result.
+
+    Args:
+        schema: An object with a `model_validate` method, a function that takes the raw
+            config and returns the validated one, or `None` for no validation.
+        config: The raw config.
+
+    Returns:
+        The config that the validator returns, or `config` when `schema` is `None`.
+
+    Raises:
+        ValidationError: If the validator raises. When the error has an `errors()`
+            method, each entry gives one issue with its `msg` and `loc`.
+        TypeError: If `schema` is neither an object with `model_validate` nor a
+            function.
+    """
+    if schema is None:
+        return config
+    validate = getattr(schema, "model_validate", schema)
+    if not callable(validate):
+        raise TypeError("Config must have a model_validate method or be callable")
+    try:
+        return validate(config)
+    except ValidationError:
+        raise
+    except Exception as error:
+        raise ValidationError(_issues(error)) from error
 
 
 def _hop() -> Deferred[None]:
@@ -216,32 +257,75 @@ class Fiber:
     """A unit of work that owns effects and reverts them when it ends.
 
     A fiber has a lifecycle state (`FiberState`). Register effects on it through
-    `Context.effect`. The root fiber is always `ACTIVE`, and `dispose` on it reverts
-    every effect of the root and leaves the root in use.
+    `Context.effect`. `Context.use` runs a component in a new fiber: the fiber loads
+    when every service in `inject` has a provider that is `ACTIVE`, reverts its
+    effects when one of them changes, and loads again against the new provider.
+
+    The root fiber is always `ACTIVE`, and `dispose` on it reverts every effect of the
+    root and leaves the root in use.
 
     Call fiber methods on the owner thread of the root context.
 
     Attributes:
+        parent: The context that created the fiber.
         ctx: The context that the fiber's effects belong to.
+        config: The config that the component receives.
+        inject: The services that the fiber requires, by name. The value is the
+            intercept configuration, or `None`.
+        runtime: The record of the fiber's component, or `None` for the root fiber.
+        committed: The providers that the running load resolved, by name, or `None`
+            while the fiber is not loaded.
         provisions: The services that the fiber provides.
     """
 
-    def __init__(self, ctx: "Context") -> None:
-        self.ctx = ctx
+    def __init__(
+        self,
+        parent: "Context",
+        config: object = None,
+        inject: dict[str, object] | None = None,
+        runtime: "Runtime | None" = None,
+        call_site: CallSite | None = None,
+    ) -> None:
+        self.parent = parent
+        self.config = config
+        self.inject: dict[str, object] = {} if inject is None else inject
+        self.runtime = runtime
+        self.committed: dict[str, Impl] | None = None
         self.provisions: set[Impl] = set()
-        self._scheduler = ctx.scheduler
-        self._uid: int | None = 0
-        self._state = FiberState.ACTIVE
+        self._scheduler = parent.scheduler
         self._error: BaseException | None = None
         self._revision = 0
         self._inertia: Deferred[None] | None = None
         self._reverting = False
         self._disposables = DisposableList[Disposer]()
+        self._store: dict[str, Impl] = {}
+        self._handle: EffectHandle | None = None
+        if runtime is None:
+            self._uid: int | None = 0
+            self._state = FiberState.ACTIVE
+            self.ctx = parent
+            self.committed = {}
+            self._runner = _Runner(
+                execute=lambda: None,
+                epoch="0",
+                collect=self._disposables.push,
+                call_site=CallSite(()),
+            )
+            return
+        self._uid = parent.registry.next_uid()
+        self._state = FiberState.PENDING
+        self.ctx = parent.bind_fiber(self)
         self._runner = _Runner(
-            execute=lambda: None,
-            epoch="0",
+            execute=self._apply,
+            epoch=INACTIVE,
             collect=self._disposables.push,
-            call_site=CallSite(()),
+            call_site=call_site if call_site is not None else CallSite(()),
+        )
+        self.ctx.emit("internal/plugin", self)
+        for name in self.inject:
+            self._check_impl(name)
+        self._handle = parent.fiber.effect(
+            self._attach, "ctx.use()", call_site=call_site
         )
 
     @property
@@ -261,8 +345,19 @@ class Fiber:
 
     @property
     def name(self) -> str:
-        """The name of the fiber."""
-        return "root"
+        """The name of the fiber.
+
+        It is the name of the fiber's component. A fiber whose component has no name
+        takes the name of the nearest ancestor that has one, or `"root"`.
+        """
+        fiber = self
+        while True:
+            if fiber.runtime is not None and fiber.runtime.name:
+                return fiber.runtime.name
+            parent = fiber.parent.fiber
+            if parent is fiber:
+                return "root"
+            fiber = parent
 
     @property
     def logger(self) -> logging.Logger:
@@ -383,11 +478,18 @@ class Fiber:
             return start(self._scheduler, self._restarted())
 
     def dispose(self) -> Deferred[None]:
-        """Revert every effect of the fiber.
+        """End the fiber: unload it, revert its effects, and remove it.
 
-        On the root fiber this is `restart`: the root stays in use.
+        The fiber goes to `DISPOSED`, and its child fibers end with it. A second call
+        does nothing. On the root fiber, `dispose` is `restart`: the root stays in use.
+
+        Returns:
+            A `Deferred` that resolves when the unload has finished.
         """
-        return self.restart()
+        if self._handle is None:
+            return self.restart()
+        result = self._handle()
+        return Deferred.resolved(None) if result is None else result
 
     async def _restarted(self) -> None:
         await self._settle()
@@ -463,6 +565,55 @@ class Fiber:
         except Exception as error:
             self._log_error(label, error)
 
+    def _apply(self) -> EffectForm:
+        """Run the component of the fiber with its resolved config."""
+        assert self.runtime is not None
+        callback = self.runtime.callback
+        config = self._resolve(self.config)
+        if not inspect.isclass(callback):
+            return callback(self.ctx, config)
+        instance = callback(self.ctx, config)
+        init = getattr(instance, "cordis_init", None)
+        return None if init is None else init()
+
+    def _resolve(self, config: object) -> Any:
+        return self.ctx.waterfall("internal/config", self, lambda: config)
+
+    def _attach(self) -> Disposer:
+        """Register the fiber with its runtime and start its load.
+
+        The effect of the parent fiber that runs this method owns the fiber: the
+        returned disposer ends it.
+        """
+        assert self.runtime is not None
+        self.runtime.fibers.push(self)
+        try:
+            self._refresh()
+        except Exception as error:
+            self.logger.error("error while loading", exc_info=error)
+            self._error = error
+        return self._leave
+
+    def _leave(self) -> Deferred[None]:
+        with self._scheduler.call():
+            return start(self._scheduler, self._left())
+
+    async def _left(self) -> None:
+        assert self.runtime is not None
+        self._uid = None
+        self.ctx.emit("internal/plugin", self)
+        runtime = self.runtime
+        runtime.fibers.delete(self)
+        if not len(runtime.fibers):
+            self.ctx.registry.unregister(runtime)
+        self._set_epoch(INACTIVE)
+        # `_reload` and `_unload` log their own errors, so `_inertia` never rejects
+        while self._inertia is not None:
+            await self._inertia
+        # `_set_epoch` returns early for a fiber that was not ACTIVE, so the state is
+        # derived again now that the uid is gone
+        self._update_state(lambda: None)
+
     # The lifecycle below keeps the structure of the fiber state machine: the epoch
     # decides every transition (LIFE-ORDER, LIFE-COHERENT).
 
@@ -476,13 +627,36 @@ class Fiber:
         return FiberState.PENDING
 
     def _update_state(self, callback: Callable[[], FiberState | None]) -> None:
+        old_state = self._state
         state = callback()
         self._state = state if state is not None else self._get_state()
+        if old_state == self._state:
+            return
+        self.ctx.emit("internal/status", self, old_state)
+        # only a change between ACTIVE and a state that is not ACTIVE is a change of
+        # the providers
+        if old_state != FiberState.ACTIVE and self._state != FiberState.ACTIVE:
+            return
+        self.ctx.reflect.announce(self)
+
+    def _check_impl(self, name: str) -> None:
+        impl = self.ctx.reflect.find(self.ctx, name, True)
+        if impl is None:
+            self._store.pop(name, None)
+        else:
+            self._store[name] = impl
 
     def _refresh(self) -> None:
         if self._uid is None:
             return
-        self._set_epoch(f"{self._revision}")
+        epoch = f"{self._revision}"
+        for name in self.inject:
+            impl = self._store.get(name)
+            if impl is None:
+                epoch = INACTIVE
+                break
+            epoch += f":{impl.uid}"
+        self._set_epoch(epoch)
 
     def _set_epoch(self, epoch: str) -> None:
         old_epoch = self._runner.epoch
@@ -505,6 +679,7 @@ class Fiber:
         self._update_state(transition)
 
     async def _reload(self) -> None:
+        self.committed = dict(self._store)
         old_epoch = self._runner.epoch
         try:
             await _hop()
@@ -552,6 +727,7 @@ class Fiber:
         for watcher in pending:
             await watcher
         self._reverting = False
+        self.committed = None
 
         def transition() -> FiberState | None:
             if self._runner.epoch == INACTIVE:

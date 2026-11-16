@@ -13,9 +13,10 @@ from typing import Any, Self
 from pycordis.deferred import Deferred
 from pycordis.errors import CallSite
 from pycordis.events import EventName, EventOptions, EventsService, Listener
-from pycordis.fiber import EffectForm, EffectHandle, Fiber
+from pycordis.fiber import EffectForm, EffectHandle, Fiber, resolve_config
 from pycordis.keys import Keyable
 from pycordis.reflect import Accessor, ReflectService
+from pycordis.registry import Component, RegistryService
 from pycordis.scheduler import Scheduler
 
 
@@ -45,6 +46,8 @@ class Context:
             derived context shares it.
         reflect: The service that stores the providers and accessors of the root
             context. Every derived context shares it.
+        registry: The service that records the loaded components of the root context.
+            Every derived context shares it.
     """
 
     def __init__(self, scheduler: Scheduler) -> None:
@@ -55,7 +58,13 @@ class Context:
         self._meta: ChainMap[str, object] = ChainMap()
         self.events = EventsService(scheduler)
         self.reflect = ReflectService(scheduler)
+        self.registry = RegistryService()
         self.fiber = Fiber(self)
+        self.events.install(
+            self,
+            "internal/config",
+            lambda fiber, next_: resolve_config(fiber.runtime.config, next_()),
+        )
 
     def __repr__(self) -> str:
         return f"Context <{self.fiber.name}>"
@@ -74,6 +83,23 @@ class Context:
     def meta(self) -> Mapping[str, object]:
         """The values that `extend` added, as a read-only mapping."""
         return MappingProxyType(self._meta)
+
+    def isolated_since(self, name: str, ancestor: "Context") -> bool:
+        """Return whether a context between `ancestor` and this one isolates `name`.
+
+        Args:
+            name: The service name.
+            ancestor: A context that this context derives from, or this context.
+        """
+        extra = len(self._isolates.maps) - len(ancestor._isolates.maps)
+        return any(name in layer for layer in self._isolates.maps[:extra])
+
+    def bind_fiber(self, fiber: Fiber) -> Self:
+        """Return a child context whose fiber is `fiber`.
+
+        A `Fiber` calls it for the context that its component receives.
+        """
+        return self._derive(self._isolates, self._intercepts, self._meta, fiber)
 
     def declare_realm(self, name: str) -> None:
         """Give the service `name` a default realm in the root context if it has none.
@@ -135,14 +161,67 @@ class Context:
         with self.scheduler.call():
             return self.fiber.effect(execute, label, call_site=CallSite.capture(skip=1))
 
+    def use(self, component: Component, config: object = None) -> Fiber:
+        """Run `component` in a new fiber that this context's fiber owns.
+
+        The fiber loads when every service in the component's `inject` has a provider,
+        and it ends when this context's fiber ends. Inside a task, the call returns
+        before the component runs; await the fiber to wait for the load.
+
+        Args:
+            component: A function `(ctx, config)`, a class whose constructor takes
+                `(ctx, config)`, or an object with an `apply(ctx, config)` method.
+            config: The raw config. The component's `Config` validates it.
+
+        Returns:
+            The new fiber. A task can `await` it.
+
+        Raises:
+            TypeError: If `component` is not a valid component.
+            CordisError: If this context's fiber is disposed.
+
+        Examples:
+            ```python
+            >>> def greet(ctx, config):
+            ...     print("hello", config)
+            ...     return lambda: print("bye", config)
+            >>> fiber = ctx.use(greet, "world")
+            hello world
+            >>> _ = fiber.dispose()
+            bye world
+            ```
+        """
+        with self.scheduler.call():
+            return self.registry.use(self, component, config, CallSite.capture(skip=1))
+
+    def inject(self, deps: object, callback: Callable[["Context"], Any]) -> Fiber:
+        """Run `callback(ctx)` in a new fiber that requires the services `deps`.
+
+        Args:
+            deps: Service names or keys, or a dict from a name to its intercept
+                configuration.
+            callback: The function to run. It gets the context of the new fiber and
+                can return an effect.
+
+        Returns:
+            The new fiber.
+        """
+        with self.scheduler.call():
+            return self.registry.inject(self, deps, callback, CallSite.capture(skip=1))
+
     def __getitem__(self, key: Keyable[Any]) -> Any:
         """Return the value that the accessor or the service `key` gives.
 
-        An accessor takes precedence over a service of the same name. The access is
-        unchecked: it gives the value of the provider whatever the state of the
-        provider's fiber, or `None` when no provider is visible from this context.
+        An accessor takes precedence over a service of the same name. At the root, the
+        access is unchecked: it gives the value of the provider whatever the state of
+        the provider's fiber, or `None` when no provider is visible.
+
+        A context that belongs to a component's fiber reads only the services that the
+        fiber or one of its ancestors injects or provides.
 
         Raises:
+            CordisError: In a component's context, if no fiber injects the service, or
+                if the fiber that injects it is not loaded.
             TypeError: If `key` is neither a `Key` nor a `str`.
         """
         return self.reflect.read(self, key)
@@ -343,13 +422,15 @@ class Context:
         isolates: ChainMap[str, object],
         intercepts: ChainMap[str, object],
         meta: ChainMap[str, object],
+        fiber: Fiber | None = None,
     ) -> Self:
         child = object.__new__(type(self))
         child.scheduler = self.scheduler
         child.root = self.root
-        child.fiber = self.fiber
+        child.fiber = self.fiber if fiber is None else fiber
         child.events = self.events
         child.reflect = self.reflect
+        child.registry = self.registry
         child._isolates = isolates
         child._intercepts = intercepts
         child._meta = meta

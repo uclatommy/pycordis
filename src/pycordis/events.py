@@ -207,6 +207,8 @@ class EventsService:
             CordisError: If a listener calls its `next` more than once.
         """
         hooks = self._resolve("waterfall", name, args, this)
+        if not hooks:
+            return args[-1]()
         *params, inner = args
         index = 0
 
@@ -281,6 +283,14 @@ class EventsService:
 
         dispose = self.on(ctx, name, call_once, options)
         return dispose
+
+    def install(self, ctx: "Context", name: EventName, listener: Listener) -> None:
+        """Register `listener` for `name` without a fiber, so that nothing removes it.
+
+        A root context uses it for the listeners that its own services need. The
+        listener is not reported to `internal/listener` listeners.
+        """
+        self._hooks.setdefault(name, []).append(Hook(ctx, listener))
 
     def _resolve(
         self, mode: DispatchMode, name: EventName, args: tuple[Any, ...], this: object
