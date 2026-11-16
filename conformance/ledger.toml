@@ -495,7 +495,8 @@ status = "pending"
 status = "pending"
 
 [items."reflect.spec.ts::Reflect::Context.is()"]
-status = "pending"
+status = "ported"
+hash = "848b23aacbe31397ed3ec9e7aa44fcb3f96aef0fc2cbd0810388a1669650337f"
 
 [items."reflect.spec.ts::Reflect::access check"]
 status = "pending"
@@ -1069,16 +1070,23 @@ status = "pending"
 status = "pending"
 
 [items."src/reflect.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "fd1b842e7805e70d0b55b4d5c0e15b91509129b6b6b8e9434b0d694e671bfb15"
+note = "Imports of the TypeScript module."
 
 [items."src/reflect.ts:Impl"]
 status = "pending"
 
 [items."src/reflect.ts:Property"]
-status = "pending"
+status = "adapted"
+target = "pycordis.reflect.Accessor"
+hash = "3c9cb770e2d9d2f260f2b983d9dd2569ad3236b13b627fc4f2f97da6cb1974a5"
+divergence = "service-access"
 
 [items."src/reflect.ts:RESERVED_WORDS"]
-status = "pending"
+status = "not-applicable"
+hash = "74cd1ec8af5ebed452dd376507c039b27f2ccd2cc86a88485708002b048ccde3"
+note = "Names that the JavaScript Proxy handler passes through. A Python context has no property traps."
 
 [items."src/reflect.ts:ReflectService"]
 status = "pending"
@@ -1087,7 +1095,10 @@ status = "pending"
 status = "pending"
 
 [items."src/reflect.ts:ReflectService.accessor"]
-status = "pending"
+status = "adapted"
+target = "pycordis.reflect.ReflectService.accessor"
+hash = "a8ba13c5e54c854a7d02d9841afed144d06be41cf1ef6ca46185dad9fab9b6d5"
+divergence = "service-access"
 
 [items."src/reflect.ts:ReflectService.bind"]
 status = "pending"
@@ -1114,13 +1125,19 @@ status = "pending"
 status = "pending"
 
 [items."src/reflect.ts:createAccessError"]
-status = "pending"
+status = "not-applicable"
+hash = "4540e2d8131b276fbd0d9cae4ea0427644c1e81039a017d968b1560b056a59bf"
+note = "Builds a JavaScript error placeholder for the Proxy trap stack. A Python error carries its own traceback."
 
 [items."src/reflect.ts:enhanceAccessError"]
-status = "pending"
+status = "not-applicable"
+hash = "fb93d6c57beb88e8fe81e30e5439e97a5e985913f41750714819193dd7adb110"
+note = "Rewrites a JavaScript stack for the Proxy trap. A Python error carries its own traceback."
 
 [items."src/reflect.ts:isSpecialProperty"]
-status = "pending"
+status = "not-applicable"
+hash = "54be277dd60d3474ee4d4d5c3d29096f23a93e85563eb361bbfe9c6e9c65644b"
+note = "Selects the keys that the JavaScript Proxy handler passes through. A Python context has no property traps."
 
 [items."src/reflect.ts:locate"]
 status = "pending"

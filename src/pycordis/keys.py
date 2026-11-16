@@ -49,3 +49,16 @@ class Key[T]:
 
 type Keyable[T] = Key[T] | str
 """A service key, or its plain name."""
+
+
+def key_name(key: Keyable[object]) -> str:
+    """Return the service name that `key` selects.
+
+    Raises:
+        TypeError: If `key` is neither a `Key` nor a `str`.
+    """
+    if isinstance(key, Key):
+        return key.name
+    if isinstance(key, str):
+        return key
+    raise TypeError(f"a service key must be a Key or a str, not {key!r}")

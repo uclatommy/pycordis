@@ -121,6 +121,7 @@ change removes the reason for a divergence, remove the divergence and its row.
 | `async-model` | adaptation | Promise, microtasks | `Deferred` + scheduler task trampoline | — | A GUI main thread with a frame loop has no event loop |
 | `exception-group` | adaptation | `AggregateError` | `ExceptionGroup` | — | Native Python type |
 | `event-dispatch-args` | adaptation | `emit(thisArg, name, ...args)` with the argument type deciding which is the `this` value; symbol event names; listeners run with `this` | `emit(name, *args, this=obj)`; any hashable event name; listeners never receive `this`; an internal event passes its receiver as the first argument | — | Python has no symbols and no way to tell a `this` value from an event name by type |
+| `service-access` | adaptation | `ctx.foo` through Proxy | `ctx[key]` (unchecked at the root), `ctx.get(key)` (lenient), `Key[T]`, accessor callbacks `get(ctx)` and `set(ctx, value)` | — | Static typing; no `__getattr__` fallback |
 | `root-late-effect` | improvement | An effect registered on the root during root teardown stays, with no report | It stays and is logged at `DEBUG` with its label | `EFF-REVERT` | The host sees the one effect that root disposal does not revert. Test: `divergence("root-late-effect")` |
 | `deprecated-aliases` | omission | `ctx.plugin` / `registry.plugin`, `events.dispatch` | Not ported | — | No vestigial API |
 

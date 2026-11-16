@@ -6,7 +6,7 @@ and meta tables. Start with `Context(scheduler)` to create a root context.
 """
 
 from collections import ChainMap
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -14,6 +14,8 @@ from pycordis.deferred import Deferred
 from pycordis.errors import CallSite
 from pycordis.events import EventName, EventOptions, EventsService, Listener
 from pycordis.fiber import EffectForm, EffectHandle, Fiber
+from pycordis.keys import Keyable
+from pycordis.reflect import Accessor, ReflectService
 from pycordis.scheduler import Scheduler
 
 
@@ -41,6 +43,8 @@ class Context:
         fiber: The fiber that owns the effects that this context registers.
         events: The service that stores the listeners of the root context. Every
             derived context shares it.
+        reflect: The service that stores the providers and accessors of the root
+            context. Every derived context shares it.
     """
 
     def __init__(self, scheduler: Scheduler) -> None:
@@ -50,6 +54,7 @@ class Context:
         self._intercepts: ChainMap[str, object] = ChainMap()
         self._meta: ChainMap[str, object] = ChainMap()
         self.events = EventsService(scheduler)
+        self.reflect = ReflectService(scheduler)
         self.fiber = Fiber(self)
 
     def __repr__(self) -> str:
@@ -69,6 +74,14 @@ class Context:
     def meta(self) -> Mapping[str, object]:
         """The values that `extend` added, as a read-only mapping."""
         return MappingProxyType(self._meta)
+
+    def declare_realm(self, name: str) -> None:
+        """Give the service `name` a default realm in the root context if it has none.
+
+        The default realm is shared by every context that does not isolate `name`. It is
+        stored in the root context, so a later `isolate` call hides it.
+        """
+        self.root._isolates.setdefault(name, object())
 
     def extend(self, **meta: object) -> Self:
         """Return a child context that adds `meta` to its `meta` mapping.
@@ -121,6 +134,121 @@ class Context:
         """
         with self.scheduler.call():
             return self.fiber.effect(execute, label, call_site=CallSite.capture(skip=1))
+
+    def __getitem__(self, key: Keyable[Any]) -> Any:
+        """Return the value that the accessor or the service `key` gives.
+
+        An accessor takes precedence over a service of the same name. The access is
+        unchecked: it gives the value of the provider whatever the state of the
+        provider's fiber, or `None` when no provider is visible from this context.
+
+        Raises:
+            TypeError: If `key` is neither a `Key` nor a `str`.
+        """
+        return self.reflect.read(self, key)
+
+    def __setitem__(self, key: Keyable[Any], value: Any) -> None:
+        """Set the value of the accessor or the service `key`.
+
+        Raises:
+            CordisError: If `key` is an accessor without a setter, or if no service
+                `key` is provided.
+            TypeError: If `key` is neither a `Key` nor a `str`.
+        """
+        self.reflect.write(self, key, value)
+
+    def get[T](self, key: Keyable[T], strict: bool = True) -> T | None:
+        """Return the value of the service `key`, or `None`.
+
+        Args:
+            key: The service key.
+            strict: When true, a provider whose fiber is not `ACTIVE` gives `None`.
+
+        Returns:
+            The value that the provider holds. `None` when no provider is visible from
+            this context, or when `strict` hides the provider.
+        """
+        return self.reflect.get(self, key, strict)
+
+    def set[T](self, key: Keyable[T], value: T) -> None:
+        """Replace the value of the service `key` that this context sees.
+
+        Raises:
+            CordisError: If no service `key` is provided.
+        """
+        self.reflect.set(self, key, value)
+
+    def provide[T](self, key: Keyable[T], value: T | None = None) -> EffectHandle:
+        """Make `value` available as the service `key`.
+
+        The service belongs to this context's fiber: the fiber removes it when it
+        unloads. The removal waits until the fibers that depend on the service have
+        unloaded. A context whose realm for `key` is isolated has its own providers.
+
+        Args:
+            key: The service key.
+            value: The service value. Replace it later with `set`.
+
+        Returns:
+            The handle of the effect. Call it to remove the service.
+
+        Raises:
+            CordisError: If the realm already has a provider of `key`, or if `key`
+                is declared as an accessor.
+
+        Examples:
+            ```python
+            >>> remove = ctx.provide("db", {"rows": 0})
+            >>> ctx.get("db")
+            {'rows': 0}
+            >>> remove()
+            ```
+        """
+        return self.reflect.provide(self, key, value)
+
+    def accessor(
+        self,
+        key: Keyable[Any],
+        get: Callable[["Context"], Any],
+        set: Callable[["Context", Any], None] | None = None,
+    ) -> EffectHandle:
+        """Compute the value of `ctx[key]` with `get`.
+
+        Args:
+            key: The property name.
+            get: Called with the context that is read. It gives the value.
+            set: Called with the context and the new value on `ctx[key] = value`.
+                Without it, an assignment raises `CordisError`.
+
+        Returns:
+            The handle of the effect. Call it to remove the accessor.
+
+        Raises:
+            CordisError: If `key` is already declared as a service or an accessor.
+        """
+        return self.reflect.accessor(self, key, Accessor(get, set))
+
+    def mixin(
+        self, source: Keyable[Any], mixins: Iterable[str] | Mapping[str, str]
+    ) -> EffectHandle:
+        """Expose attributes of the service `source` as properties of the context.
+
+        After the call, `ctx[name]` reads the attribute `name` of `ctx[source]`, and
+        `ctx[name] = value` sets it. A mapping gives the attribute name as the key and
+        the property name as the value.
+
+        Args:
+            source: The key of the service that has the attributes.
+            mixins: The attribute names, or a mapping from attribute name to property
+                name.
+
+        Returns:
+            The handle of the effect. Call it to remove the accessors.
+
+        Raises:
+            CordisError: If a property name is already declared.
+        """
+        return self.reflect.mixin(self, source, mixins)
 
     def on(
         self,
@@ -221,6 +349,7 @@ class Context:
         child.root = self.root
         child.fiber = self.fiber
         child.events = self.events
+        child.reflect = self.reflect
         child._isolates = isolates
         child._intercepts = intercepts
         child._meta = meta

@@ -25,6 +25,7 @@ from pycordis.scheduler import Scheduler, spawn, start
 
 if TYPE_CHECKING:
     from pycordis.context import Context
+    from pycordis.reflect import Impl
 
 type Disposer = Callable[[], Deferred[None] | None]
 """A function that reverts one change. It returns a `Deferred` if it ends later."""
@@ -222,10 +223,12 @@ class Fiber:
 
     Attributes:
         ctx: The context that the fiber's effects belong to.
+        provisions: The services that the fiber provides.
     """
 
     def __init__(self, ctx: "Context") -> None:
         self.ctx = ctx
+        self.provisions: set[Impl] = set()
         self._scheduler = ctx.scheduler
         self._uid: int | None = 0
         self._state = FiberState.ACTIVE

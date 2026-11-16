@@ -1,6 +1,6 @@
 # Build Spec: pycordis Core Port
 
-**Status**: 🔄 In progress — Increment 3 of 12 complete
+**Status**: 🔄 In progress — Increment 4 of 12 complete
 
 ## Goal
 
@@ -584,7 +584,34 @@ restart, and call-site notes.
 realm-scoped provision with duplicate detection.
 **Files**: `reflect.py` (~260), `test_reflect.py` (the cases that need no component loading)
 **Validation**: `uv run pytest tests/test_reflect.py`
-**Status**: ⬜ Pending
+**Docs**: `docs/architecture.md` divergence row; docstrings of `reflect.py` and the `Context` access methods
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/reflect.py`: `ReflectService` (`read`, `write`, `get`, `set`, `provide`, `notify`, `accessor`, `mixin`), `Impl`, and `Accessor`
+- `src/pycordis/context.py`: `Context.reflect`, `get`, `set`, `provide`, `accessor`, `mixin`, `declare_realm`, and item access (`ctx[key]`, `ctx[key] = value`)
+- `src/pycordis/fiber.py`: `Fiber.provisions`
+- `src/pycordis/keys.py`: `key_name`, which turns a `Key` or `str` into the service name
+- `conformance/ledger.toml`: reviewed `Context.is()`, `Property`, `ReflectService.accessor`, and five items of `reflect.ts` that a Python context does not need
+- `docs/architecture.md`: divergence row `service-access`
+
+**Tests**:
+- `tests/test_reflect.py`: 47 pass (one upstream case, the `EFF-REVERT` contract test over 20 seeds, and Python-only tests)
+- Full suite: 285 pass, which includes `tests/test_conformance.py`, `tests/test_inventory.py`, and `tests/test_docstrings.py`
+
+**Deviations**:
+- Checked access is not added: `locate`, the two access error messages, and the `internal/get` and `internal/set` waterfalls need a fiber with a runtime (user-approved, planned for Increment 5). `ctx[key]` is unchecked
+- `ReflectService.set` does not check `cannot set property "<name>" in multiple fibers`, and `notify` does not refresh fibers: no non-root fiber exists to test them (Increment 5)
+- `Impl.check` and the `check` argument of `provide` are not added: nothing reads them before the `Service` base (Increment 6)
+- `Context.__setitem__` is added, because an accessor setter and a service write have no other entry point
+- `Context.declare_realm` is added: the default realm of a service name lives in the root context, and `ReflectService` cannot write it through the read-only `isolates` mapping
+- The core mixins of the upstream constructor (`reflect`, `fiber`, `registry`, `events`) are not registered: `Context` has explicit methods
+- Ledger items `ReflectService`, `.constructor`, `.get`, `._getImpl`, `.set`, `.provide`, `.notify`, `.mixin`, `Impl`, and `module ./context.ts` stay `pending` until the deferred parts and the traceable views exist; the other five `reflect.spec.ts` cases need `ctx.use`
+- `ReflectService.mixin` accepts only a service key as its source, not an object
+- Provider removal uses `Scheduler.start`, so `impl.release` is set before the removal returns
+
+**Manual validation**:
+- A root context provides a service, reads it through `get`, `ctx[key]`, and a mixin, isolates a realm, hears `internal/service` on removal, and has no provisions afterward (confirmed by the user)
 
 ### Increment 5: Registry and core loading
 **Goal**: `ctx.use` / `ctx.inject` in the three component forms with `Config` validation, and the
