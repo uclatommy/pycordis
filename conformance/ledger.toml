@@ -4,6 +4,10 @@
 # running yet. The conformance checks reject a pending ID that has a running test, a
 # pending ID that is not in the contract table, and a contract ID that is neither
 # covered by a running test nor pending.
+#
+# [items."<inventory ID>"] records the review of one upstream item. Add entries for new
+# items with `scripts/upstream_inventory.py <clone> --ledger-stubs`, and copy a hash only
+# after the review of the upstream item.
 
 [contract]
 pending = [
@@ -16,3 +20,1375 @@ pending = [
     "LIFE-CONFLUENT",
     "LIFE-FAILURE",
 ]
+
+[items."associate.spec.ts::Association::associated access follows the service fiber"]
+status = "pending"
+
+[items."associate.spec.ts::Association::associated type - accessor injection"]
+status = "pending"
+
+[items."associate.spec.ts::Association::associated type - service injection"]
+status = "pending"
+
+[items."associate.spec.ts::Association::inspect"]
+status = "pending"
+
+[items."associate.spec.ts::Association::property injection"]
+status = "pending"
+
+[items."associate.spec.ts::Association::service injection"]
+status = "pending"
+
+[items."component.spec.ts::Component::Service.init"]
+status = "pending"
+
+[items."component.spec.ts::Component::apply component through deprecated ctx.plugin()"]
+status = "pending"
+
+[items."component.spec.ts::Component::apply functional component"]
+status = "pending"
+
+[items."component.spec.ts::Component::apply invalid component"]
+status = "pending"
+
+[items."component.spec.ts::Component::apply object component"]
+status = "pending"
+
+[items."component.spec.ts::Component::compare snapshot"]
+status = "pending"
+
+[items."component.spec.ts::Component::context inspect"]
+status = "pending"
+
+[items."component.spec.ts::Component::ctx.registry"]
+status = "pending"
+
+[items."component.spec.ts::Component::inactive context"]
+status = "pending"
+
+[items."component.spec.ts::Component::nested components"]
+status = "pending"
+
+[items."component.spec.ts::Component::root dispose"]
+status = "pending"
+
+[items."decorator.spec.ts::Decorator::@Inject on class method"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async return 1"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async return 2"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async return with error"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async yield (aborted, finally)"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async yield 1"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async yield 2 (aborted)"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async yield 3 (aborted)"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async yield 4 (await dispose)"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async yield invalid effect"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::async yield with error"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::dispose by component"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::dispose manually"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::return with error"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::yield dispose"]
+status = "pending"
+
+[items."dispose.spec.ts::Effects::yield with error"]
+status = "pending"
+
+[items."event:internal/commit"]
+status = "pending"
+
+[items."event:internal/config"]
+status = "pending"
+
+[items."event:internal/dispatch"]
+status = "pending"
+
+[items."event:internal/get"]
+status = "pending"
+
+[items."event:internal/listener"]
+status = "pending"
+
+[items."event:internal/plugin"]
+status = "pending"
+
+[items."event:internal/replace"]
+status = "pending"
+
+[items."event:internal/service"]
+status = "pending"
+
+[items."event:internal/set"]
+status = "pending"
+
+[items."event:internal/status"]
+status = "pending"
+
+[items."event:internal/update"]
+status = "pending"
+
+[items."events.spec.ts::Events::bail defers added listeners until the next dispatch"]
+status = "pending"
+
+[items."events.spec.ts::Events::bail skips listeners removed during dispatch"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.bail()"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.emit()"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.on()"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.once()"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.once() runs once across concurrent serial dispatches"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.once() runs once when an earlier listener emits recursively"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.parallel()"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.parallel() labels symbol events"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.serial()"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.waterfall()"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.waterfall() rejects continuations from outer frames"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.waterfall() rejects duplicate next()"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.waterfall() rejects duplicate next() after awaiting"]
+status = "pending"
+
+[items."events.spec.ts::Events::ctx.waterfall() supports nested async calls"]
+status = "pending"
+
+[items."events.spec.ts::Events::deprecated dispatch returns bound callbacks that respect later removal"]
+status = "pending"
+
+[items."events.spec.ts::Events::deprecated waterfall dispatch continues past a removed callback"]
+status = "pending"
+
+[items."events.spec.ts::Events::emit defers added listeners until the next dispatch"]
+status = "pending"
+
+[items."events.spec.ts::Events::emit skips listeners removed during dispatch"]
+status = "pending"
+
+[items."events.spec.ts::Events::internal/update continues past a removed fiber listener"]
+status = "pending"
+
+[items."events.spec.ts::Events::internal/update::can be disposed explicitly"]
+status = "pending"
+
+[items."events.spec.ts::Events::internal/update::does not accumulate across reloads"]
+status = "pending"
+
+[items."events.spec.ts::Events::internal/update::global listeners are not tied to a child fiber reload"]
+status = "pending"
+
+[items."events.spec.ts::Events::internal/update::runs prepended listeners first"]
+status = "pending"
+
+[items."events.spec.ts::Events::parallel defers added listeners until the next dispatch"]
+status = "pending"
+
+[items."events.spec.ts::Events::parallel skips listeners removed during dispatch"]
+status = "pending"
+
+[items."events.spec.ts::Events::removes empty event buckets after disposal"]
+status = "pending"
+
+[items."events.spec.ts::Events::serial defers added listeners until the next dispatch"]
+status = "pending"
+
+[items."events.spec.ts::Events::serial skips listeners removed during dispatch"]
+status = "pending"
+
+[items."events.spec.ts::Events::skips a listener disposed by an earlier component during dispatch"]
+status = "pending"
+
+[items."events.spec.ts::Events::supports symbol event names across dispatch modes"]
+status = "pending"
+
+[items."events.spec.ts::Events::supports symbol event names with ctx.once()"]
+status = "pending"
+
+[items."events.spec.ts::Events::treats prototype property names as ordinary events"]
+status = "pending"
+
+[items."events.spec.ts::Events::waterfall continues after a recursive dispatch has consumed a once listener"]
+status = "pending"
+
+[items."events.spec.ts::Events::waterfall continues past a removed listener"]
+status = "pending"
+
+[items."events.spec.ts::Events::waterfall defers added listeners until the next dispatch"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber: config validation::fail on first load"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber: config validation::keep a running component on update"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber: config validation::keep the issues and their paths"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber: config validation::keep the source config when a listener handles the update"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber: config validation::pass the resolved config to listeners"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::component error"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::dispose error"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::failed fiber does not re-enter on dependency refresh"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::inertia lock 1"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::inertia lock 2"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::inertia lock 3"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::keeps the active dispose sequence stable"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::restart wrapped fiber"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::settles a failed fiber to DISPOSED on dispose"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::settles a pending fiber to DISPOSED on dispose"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::update config on wrapped fiber"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::update config while injected service reloads"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::update does not leak a dropped failure"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::update recovers a failed fiber"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::update surfaces a failed recovery to its caller"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::update surfaces a failed reload to its caller"]
+status = "pending"
+
+[items."fiber.spec.ts::Fiber::update waits for asynchronous recovery"]
+status = "pending"
+
+[items."intercept.spec.ts::Intercept::custom merge"]
+status = "pending"
+
+[items."intercept.spec.ts::Intercept::merge context intercepts from outer to inner"]
+status = "pending"
+
+[items."intercept.spec.ts::Intercept::merge injected config under context intercepts"]
+status = "pending"
+
+[items."intercept.spec.ts::Intercept::stop looking for injected config at an isolation boundary"]
+status = "pending"
+
+[items."intercept.spec.ts::Intercept::take injected config from the declaring fiber"]
+status = "pending"
+
+[items."intercept.spec.ts::Intercept::take injected config from the def site"]
+status = "pending"
+
+[items."intercept.spec.ts::Intercept::take no injected config for own provisions"]
+status = "pending"
+
+[items."invoke.spec.ts::Functional Service::functional service"]
+status = "pending"
+
+[items."invoke.spec.ts::Functional Service::uses the service shadow for callable extensions"]
+status = "pending"
+
+[items."isolate.spec.ts::Isolation::does not expose own provisions across isolation boundaries"]
+status = "pending"
+
+[items."isolate.spec.ts::Isolation::does not inherit the injected view across isolation boundaries"]
+status = "pending"
+
+[items."isolate.spec.ts::Isolation::isolated context"]
+status = "pending"
+
+[items."isolate.spec.ts::Isolation::isolated event"]
+status = "pending"
+
+[items."isolate.spec.ts::Isolation::keeps own provisions separate from the injected view"]
+status = "pending"
+
+[items."isolate.spec.ts::Isolation::shared label"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::disposes the exporter that registered the disposer"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::flattens an aggregate error into its members"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::honours explicit name argument"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::honours intercept name"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::keeps the bounded buffer in place and chronological"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::logs an error whose errors array is empty"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::still lets outer caller intercept override the service-derived name"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::uses fiber name when called from outside any service"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::uses service name when called from inside [Service.init] (unchanged behaviour)"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::uses service name when called from inside a Service method (regression)"]
+status = "pending"
+
+[items."logger.spec.ts::Logger::uses the innermost service name and restores the outer service"]
+status = "pending"
+
+[items."message:@Inject() can only be used on class or class methods"]
+status = "pending"
+
+[items."message:Async config validation is not supported"]
+status = "pending"
+
+[items."message:Invalid effect"]
+status = "pending"
+
+[items."message:cannot create effect on inactive context"]
+status = "pending"
+
+[items."message:cannot get property \"{}\" without inject"]
+status = "pending"
+
+[items."message:cannot set property \"{}\" in multiple fibers"]
+status = "pending"
+
+[items."message:cannot set property \"{}\" without provide"]
+status = "pending"
+
+[items."message:invalid component, expect function or object with an \"apply\" method, received {}"]
+status = "pending"
+
+[items."message:next() called multiple times"]
+status = "pending"
+
+[items."message:one or more listeners of event {} failed"]
+status = "pending"
+
+[items."message:property \"{}\" is already declared as {}"]
+status = "pending"
+
+[items."message:service \"{}\" has been registered at <{}>"]
+status = "pending"
+
+[items."reflect.spec.ts::Reflect::Context.is()"]
+status = "pending"
+
+[items."reflect.spec.ts::Reflect::access check"]
+status = "pending"
+
+[items."reflect.spec.ts::Reflect::access error"]
+status = "pending"
+
+[items."reflect.spec.ts::Reflect::does not load a fiber disposed during service notification"]
+status = "pending"
+
+[items."reflect.spec.ts::Reflect::service inject leak"]
+status = "pending"
+
+[items."reflect.spec.ts::Reflect::service injection"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::emits internal/replace for each moved fiber"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::follows a chain of replacements"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::forwards a component that is not registered"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::forwards the old component to the new one"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::leaves a fiber failed when the new component fails to apply"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::merges the fibers into a registered component"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::reloads a consumer of a replaced service"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::restarts a failed fiber"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::starts a pending fiber when the new component drops the missing dependency"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::starts a pending fiber when the new component injects an available service"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::stops depending on a dependency that the new component drops"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::swaps the implementation behind a fiber in place"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::switches back to a replaced component"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::takes the dependencies of the new component"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::unregisters the new component when its last fiber is disposed"]
+status = "pending"
+
+[items."replace.spec.ts::registry.replace()::validates the config with the new schema"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::allows unrelated providers and sibling effects to clean up concurrently"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::keeps an inherited service accessible to a child in a composed effect"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::keeps provider listeners alive through the final consumer event"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::releases an injected binding after providing the same name in another realm (consumer)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::releases an injected binding after providing the same name in another realm (provider)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::releases an injected binding after providing the same name in another realm (root)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::releases dependencies after a cleanup error"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::replaces a binding from the same provider during consumer initialization"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::retains an ancestor injection until its child finishes cleanup"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::retains dependencies through in-flight setup and rollback (failure: false)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::retains dependencies through in-flight setup and rollback (failure: true)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (consumer first)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (provider first)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (provider)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (restart)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::retains resources during consumer cleanup (root)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::retains transitive dependencies while a consumer providing another service drains"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::supports composed provider effects (owner shutdown: false)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::supports composed provider effects (owner shutdown: true)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::tracks same-name services in separate isolation realms (root shutdown: false)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::tracks same-name services in separate isolation realms (root shutdown: true)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::waits for a child that explicitly injects its parent service"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::waits for a disposing consumer that has already left the registry"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::waits for current and withdrawn bindings during provider disposal (withdrawn first: false)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::waits for current and withdrawn bindings during provider disposal (withdrawn first: true)"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::withdraws one binding without waiting for another binding from the same provider"]
+status = "pending"
+
+[items."service-dispose.spec.ts::Service disposal::withdraws only the old binding without waiting for the next load"]
+status = "pending"
+
+[items."service.spec.ts::Service::compare snapshot"]
+status = "pending"
+
+[items."service.spec.ts::Service::dispose dependents before isolated provider"]
+status = "pending"
+
+[items."service.spec.ts::Service::dispose dependents before provider"]
+status = "pending"
+
+[items."service.spec.ts::Service::dispose dependents before provider restarts"]
+status = "pending"
+
+[items."service.spec.ts::Service::multiple injects"]
+status = "pending"
+
+[items."service.spec.ts::Service::pending inject"]
+status = "pending"
+
+[items."service.spec.ts::Service::traceable effect (with inject)"]
+status = "pending"
+
+[items."service.spec.ts::Service::traceable effect (without inject)"]
+status = "pending"
+
+[items."service.spec.ts::Service[Symbol.hasInstance]::answers for a plain object after walking to the end of the chain"]
+status = "pending"
+
+[items."service.spec.ts::Service[Symbol.hasInstance]::answers for null and undefined"]
+status = "pending"
+
+[items."shadow.spec.ts::Traceable caller::applies the service inject when entered from root"]
+status = "pending"
+
+[items."shadow.spec.ts::Traceable caller::exposes the caller to callable services"]
+status = "pending"
+
+[items."shadow.spec.ts::Traceable caller::exposes the caller without preserving shadow for noShadow services"]
+status = "pending"
+
+[items."shadow.spec.ts::Traceable caller::keeps caller metadata separate from the service shadow"]
+status = "pending"
+
+[items."shadow.spec.ts::Traceable caller::keeps unchecked access for services provided on the root ctx"]
+status = "pending"
+
+[items."shadow.spec.ts::Traceable caller::resolves dependencies through a captured shadow"]
+status = "pending"
+
+[items."shadow.spec.ts::Traceable caller::resolves same-name own provisions at their definition sites"]
+status = "pending"
+
+[items."shadow.spec.ts::Traceable caller::strips service shadow before creating components"]
+status = "pending"
+
+[items."src/context.ts:<rest>"]
+status = "pending"
+
+[items."src/context.ts:Context"]
+status = "pending"
+
+[items."src/context.ts:Context.[Symbol.for('nodejs.util.inspect.custom')]"]
+status = "pending"
+
+[items."src/context.ts:Context.constructor"]
+status = "pending"
+
+[items."src/context.ts:Context.extend"]
+status = "pending"
+
+[items."src/context.ts:Context.intercept"]
+status = "pending"
+
+[items."src/context.ts:Context.is"]
+status = "pending"
+
+[items."src/context.ts:Context.isolate"]
+status = "pending"
+
+[items."src/events.ts:<rest>"]
+status = "pending"
+
+[items."src/events.ts:DispatchMode"]
+status = "pending"
+
+[items."src/events.ts:EventOptions"]
+status = "pending"
+
+[items."src/events.ts:Events"]
+status = "pending"
+
+[items."src/events.ts:EventsService"]
+status = "pending"
+
+[items."src/events.ts:EventsService._resolve"]
+status = "pending"
+
+[items."src/events.ts:EventsService.bail"]
+status = "pending"
+
+[items."src/events.ts:EventsService.constructor"]
+status = "pending"
+
+[items."src/events.ts:EventsService.dispatch"]
+status = "pending"
+
+[items."src/events.ts:EventsService.emit"]
+status = "pending"
+
+[items."src/events.ts:EventsService.on"]
+status = "pending"
+
+[items."src/events.ts:EventsService.once"]
+status = "pending"
+
+[items."src/events.ts:EventsService.parallel"]
+status = "pending"
+
+[items."src/events.ts:EventsService.register"]
+status = "pending"
+
+[items."src/events.ts:EventsService.serial"]
+status = "pending"
+
+[items."src/events.ts:EventsService.unregister"]
+status = "pending"
+
+[items."src/events.ts:EventsService.waterfall"]
+status = "pending"
+
+[items."src/events.ts:Hook"]
+status = "pending"
+
+[items."src/events.ts:Parameters"]
+status = "pending"
+
+[items."src/events.ts:ReturnType"]
+status = "pending"
+
+[items."src/events.ts:ThisType"]
+status = "pending"
+
+[items."src/events.ts:isBailed"]
+status = "pending"
+
+[items."src/events.ts:module ./context.ts"]
+status = "pending"
+
+[items."src/fiber.ts:<rest>"]
+status = "pending"
+
+[items."src/fiber.ts:AsyncDisposable"]
+status = "pending"
+
+[items."src/fiber.ts:AsyncEffect"]
+status = "pending"
+
+[items."src/fiber.ts:CordisError"]
+status = "pending"
+
+[items."src/fiber.ts:CordisError.constructor"]
+status = "pending"
+
+[items."src/fiber.ts:Disposable"]
+status = "pending"
+
+[items."src/fiber.ts:Effect"]
+status = "pending"
+
+[items."src/fiber.ts:EffectMeta"]
+status = "pending"
+
+[items."src/fiber.ts:EffectRunner"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._checkImpl"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._execute"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._getState"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._refresh"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._reload"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._replace"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._resolve"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._setEpoch"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._unload"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber._updateState"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber.assertActive"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber.await"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber.constructor"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber.effect"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber.getEffects"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber.name"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber.restart"]
+status = "pending"
+
+[items."src/fiber.ts:Fiber.update"]
+status = "pending"
+
+[items."src/fiber.ts:FiberState"]
+status = "pending"
+
+[items."src/fiber.ts:INACTIVE"]
+status = "pending"
+
+[items."src/fiber.ts:SyncEffect"]
+status = "pending"
+
+[items."src/fiber.ts:ValidationError"]
+status = "pending"
+
+[items."src/fiber.ts:ValidationError.constructor"]
+status = "pending"
+
+[items."src/fiber.ts:ValidationError.formatPath"]
+status = "pending"
+
+[items."src/fiber.ts:ValidationError.is"]
+status = "pending"
+
+[items."src/fiber.ts:ValidationError.normalizePath"]
+status = "pending"
+
+[items."src/fiber.ts:kValidationError"]
+status = "pending"
+
+[items."src/fiber.ts:module ./context.ts"]
+status = "pending"
+
+[items."src/fiber.ts:resolveConfig"]
+status = "pending"
+
+[items."src/index.ts:<rest>"]
+status = "pending"
+
+[items."src/logger.ts:<rest>"]
+status = "pending"
+
+[items."src/logger.ts:Exporter"]
+status = "pending"
+
+[items."src/logger.ts:Formatter"]
+status = "pending"
+
+[items."src/logger.ts:Logger"]
+status = "pending"
+
+[items."src/logger.ts:Logger._method"]
+status = "pending"
+
+[items."src/logger.ts:Logger.code"]
+status = "pending"
+
+[items."src/logger.ts:Logger.color"]
+status = "pending"
+
+[items."src/logger.ts:Logger.constructor"]
+status = "pending"
+
+[items."src/logger.ts:Logger.format"]
+status = "pending"
+
+[items."src/logger.ts:LoggerLevel"]
+status = "pending"
+
+[items."src/logger.ts:LoggerMethod"]
+status = "pending"
+
+[items."src/logger.ts:LoggerOptions"]
+status = "pending"
+
+[items."src/logger.ts:LoggerService"]
+status = "pending"
+
+[items."src/logger.ts:LoggerService.[symbols.invoke]"]
+status = "pending"
+
+[items."src/logger.ts:LoggerService.constructor"]
+status = "pending"
+
+[items."src/logger.ts:LoggerService.exporter"]
+status = "pending"
+
+[items."src/logger.ts:LoggerType"]
+status = "pending"
+
+[items."src/logger.ts:Message"]
+status = "pending"
+
+[items."src/logger.ts:c16"]
+status = "pending"
+
+[items."src/logger.ts:c256"]
+status = "pending"
+
+[items."src/logger.ts:defaultFormatters"]
+status = "pending"
+
+[items."src/logger.ts:isAggregateError"]
+status = "pending"
+
+[items."src/reflect.ts:<rest>"]
+status = "pending"
+
+[items."src/reflect.ts:Impl"]
+status = "pending"
+
+[items."src/reflect.ts:Property"]
+status = "pending"
+
+[items."src/reflect.ts:RESERVED_WORDS"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService._getImpl"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService.accessor"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService.bind"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService.constructor"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService.get"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService.mixin"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService.notify"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService.provide"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService.set"]
+status = "pending"
+
+[items."src/reflect.ts:ReflectService.trace"]
+status = "pending"
+
+[items."src/reflect.ts:createAccessError"]
+status = "pending"
+
+[items."src/reflect.ts:enhanceAccessError"]
+status = "pending"
+
+[items."src/reflect.ts:isSpecialProperty"]
+status = "pending"
+
+[items."src/reflect.ts:locate"]
+status = "pending"
+
+[items."src/reflect.ts:module ./context.ts"]
+status = "pending"
+
+[items."src/registry.ts:<rest>"]
+status = "pending"
+
+[items."src/registry.ts:Component"]
+status = "pending"
+
+[items."src/registry.ts:GetComponentConfig"]
+status = "pending"
+
+[items."src/registry.ts:GetComponentParameters"]
+status = "pending"
+
+[items."src/registry.ts:Inject"]
+status = "pending"
+
+[items."src/registry.ts:InjectKey"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService._create"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService._forward"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService._unregister"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.constructor"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.counter"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.entries"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.forEach"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.get"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.has"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.inject"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.keys"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.plugin"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.replace"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.resolve"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.size"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.use"]
+status = "pending"
+
+[items."src/registry.ts:RegistryService.values"]
+status = "pending"
+
+[items."src/registry.ts:Spread"]
+status = "pending"
+
+[items."src/registry.ts:isApplicable"]
+status = "pending"
+
+[items."src/registry.ts:module ./context.ts"]
+status = "pending"
+
+[items."src/service.ts:<rest>"]
+status = "pending"
+
+[items."src/service.ts:Service"]
+status = "pending"
+
+[items."src/service.ts:Service.[Symbol.hasInstance]"]
+status = "pending"
+
+[items."src/service.ts:Service.[symbols.extend]"]
+status = "pending"
+
+[items."src/service.ts:Service.[symbols.filter]"]
+status = "pending"
+
+[items."src/service.ts:Service.[symbols.mergeIntercept]"]
+status = "pending"
+
+[items."src/service.ts:Service.[symbols.resolveIntercept]"]
+status = "pending"
+
+[items."src/service.ts:Service.constructor"]
+status = "pending"
+
+[items."src/utils.ts:<rest>"]
+status = "pending"
+
+[items."src/utils.ts:AsyncGeneratorFunction"]
+status = "pending"
+
+[items."src/utils.ts:DisposableList"]
+status = "pending"
+
+[items."src/utils.ts:DisposableList.[Symbol.for('nodejs.util.inspect.custom')]"]
+status = "pending"
+
+[items."src/utils.ts:DisposableList.[Symbol.iterator]"]
+status = "pending"
+
+[items."src/utils.ts:DisposableList.clear"]
+status = "pending"
+
+[items."src/utils.ts:DisposableList.delete"]
+status = "pending"
+
+[items."src/utils.ts:DisposableList.length"]
+status = "pending"
+
+[items."src/utils.ts:DisposableList.push"]
+status = "pending"
+
+[items."src/utils.ts:DisposableList.unshift"]
+status = "pending"
+
+[items."src/utils.ts:GeneratorFunction"]
+status = "pending"
+
+[items."src/utils.ts:StackInfo"]
+status = "pending"
+
+[items."src/utils.ts:Tracker"]
+status = "pending"
+
+[items."src/utils.ts:applyTraceable"]
+status = "pending"
+
+[items."src/utils.ts:buildOuterStack"]
+status = "pending"
+
+[items."src/utils.ts:composeError"]
+status = "pending"
+
+[items."src/utils.ts:createCallable"]
+status = "pending"
+
+[items."src/utils.ts:createShadow"]
+status = "pending"
+
+[items."src/utils.ts:createShadowMethod"]
+status = "pending"
+
+[items."src/utils.ts:createTraceable"]
+status = "pending"
+
+[items."src/utils.ts:getPropertyDescriptor"]
+status = "pending"
+
+[items."src/utils.ts:getTraceable"]
+status = "pending"
+
+[items."src/utils.ts:handleError"]
+status = "pending"
+
+[items."src/utils.ts:isConstructor"]
+status = "pending"
+
+[items."src/utils.ts:isObject"]
+status = "pending"
+
+[items."src/utils.ts:joinPrototype"]
+status = "pending"
+
+[items."src/utils.ts:symbols"]
+status = "pending"
+
+[items."src/utils.ts:withProp"]
+status = "pending"
+
+[items."src/utils.ts:withProps"]
+status = "pending"
+
+[items."state:ACTIVE"]
+status = "pending"
+
+[items."state:DISPOSED"]
+status = "pending"
+
+[items."state:FAILED"]
+status = "pending"
+
+[items."state:LOADING"]
+status = "pending"
+
+[items."state:PENDING"]
+status = "pending"
+
+[items."state:UNLOADING"]
+status = "pending"
+
+[items."tests/associate.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/component.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/decorator.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/dispose.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/events.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/events.spec.ts:createArray"]
+status = "pending"
+
+[items."tests/events.spec.ts:setup"]
+status = "pending"
+
+[items."tests/events.types.ts:<rest>"]
+status = "pending"
+
+[items."tests/events.types.ts:ctx"]
+status = "pending"
+
+[items."tests/events.types.ts:dynamicEvent"]
+status = "pending"
+
+[items."tests/events.types.ts:module ../src/events.ts"]
+status = "pending"
+
+[items."tests/events.types.ts:ready"]
+status = "pending"
+
+[items."tests/fiber.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/intercept.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/intercept.spec.ts:Bar"]
+status = "pending"
+
+[items."tests/intercept.spec.ts:Bar.config"]
+status = "pending"
+
+[items."tests/intercept.spec.ts:Bar.constructor"]
+status = "pending"
+
+[items."tests/intercept.spec.ts:Config"]
+status = "pending"
+
+[items."tests/intercept.spec.ts:Foo"]
+status = "pending"
+
+[items."tests/intercept.spec.ts:Foo.config"]
+status = "pending"
+
+[items."tests/intercept.spec.ts:Foo.constructor"]
+status = "pending"
+
+[items."tests/invoke.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/isolate.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/logger.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/logger.spec.ts:setup"]
+status = "pending"
+
+[items."tests/reflect.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/replace.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/service-dispose.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/service-dispose.spec.ts:fixture"]
+status = "pending"
+
+[items."tests/service.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/shadow.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/update.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/utils.spec.ts:<rest>"]
+status = "pending"
+
+[items."tests/utils.ts:<rest>"]
+status = "pending"
+
+[items."tests/utils.ts:Counter"]
+status = "pending"
+
+[items."tests/utils.ts:Counter.constructor"]
+status = "pending"
+
+[items."tests/utils.ts:Counter.increase"]
+status = "pending"
+
+[items."tests/utils.ts:Filter"]
+status = "pending"
+
+[items."tests/utils.ts:Filter.constructor"]
+status = "pending"
+
+[items."tests/utils.ts:Session"]
+status = "pending"
+
+[items."tests/utils.ts:Session.[Context.filter]"]
+status = "pending"
+
+[items."tests/utils.ts:Session.constructor"]
+status = "pending"
+
+[items."tests/utils.ts:event"]
+status = "pending"
+
+[items."tests/utils.ts:getHookSnapshot"]
+status = "pending"
+
+[items."tests/utils.ts:module ../src/context.ts"]
+status = "pending"
+
+[items."tests/utils.ts:module ../src/events.ts"]
+status = "pending"
+
+[items."tests/utils.ts:sleep"]
+status = "pending"
+
+[items."tests/utils.ts:withTimers"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::cleans up a superseded failure without failing the latest update"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::coalesces updates during unloading"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::does not load a queued config after disposal"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::does not restart when a listener accepts an update during loading"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::honors config ABA while loading even when config is unchanged"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::honors restart while loading even when config is unchanged"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::rejects all waiting updates when the latest load fails"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::settles concurrent updates on the latest config (inject: false)"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::settles concurrent updates on the latest config (inject: true)"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::skips superseded loads before executing the component"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::stops advancing an outdated async generator and collects its final yield"]
+status = "pending"
+
+[items."update.spec.ts::Fiber: concurrent updates::waits for dependencies and loads only the latest config"]
+status = "pending"
+
+[items."utils.spec.ts::DisposableList::clear removes every entry and returns them in order"]
+status = "pending"
+
+[items."utils.spec.ts::DisposableList::delete removes an unshifted entry"]
+status = "pending"
+
+[items."utils.spec.ts::DisposableList::delete removes the entry it was given"]
+status = "pending"
+
+[items."utils.spec.ts::DisposableList::disposer removes its own entry after a later push"]
+status = "pending"
+
+[items."utils.spec.ts::DisposableList::disposer removes its own entry after a later unshift"]
+status = "pending"
+
+[items."utils.spec.ts::DisposableList::iterates unshifted entries before pushed ones"]
+status = "pending"
+

@@ -4,6 +4,7 @@ Each check must pass on the committed conformance data and must fail with a mess
 naming the item on a minimal bad input.
 """
 
+import json
 from collections.abc import Callable
 from pathlib import Path
 
@@ -13,16 +14,51 @@ from conformance_checks import (
     DIVERGENCE_TABLE_HEADER,
     MarkerOccurrence,
     check_contract_coverage,
+    check_divergence_evidence,
+    check_hash_pinning,
+    check_inventory_coverage,
     check_marker_arguments,
     check_marker_ids,
+    check_revision,
+    check_status_consistency,
+    check_target_resolution,
+    check_upstream_markers,
+    check_vocabulary,
+    divergence_kinds,
+    divergence_rows,
+    ledger_entries,
     pending_contract_ids,
+    readme_revision,
+    resolves,
     scan_markers,
+    source_vocabulary,
     table_section_ids,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ARCHITECTURE_MD = (REPO_ROOT / "docs" / "architecture.md").read_text("utf-8")
 LEDGER_TOML = (REPO_ROOT / "conformance" / "ledger.toml").read_text("utf-8")
+README_MD = (REPO_ROOT / "README.md").read_text("utf-8")
+INVENTORY = json.loads((REPO_ROOT / "conformance" / "upstream.json").read_text("utf-8"))
+
+CASE = "fiber.spec.ts::Fiber::unloads"
+SYMBOL = "src/fiber.ts:Fiber"
+ITEMS = {
+    CASE: {"kind": "case", "hash": "h1"},
+    SYMBOL: {"kind": "symbol", "hash": "h2"},
+}
+VOCABULARY = source_vocabulary(
+    {
+        "m.py": (
+            "import enum\nclass S(enum.Enum):\n    ACTIVE = 1\n"
+            "x = 'a'\ny = f'b {x} c'\n"
+            "from enum import StrEnum\nclass T(StrEnum):\n    ONE = 'x'\n"
+            "class P:\n    NOT_STATE = 1\n"
+        )
+    }
+)
+LINK = "https://github.com/cordiverse/cordis/issues/1"
+DIVERGENCES = {"ADAPT-1": "adaptation", "OMIT-1": "omission"}
 
 
 def _suite_sources() -> dict[str, str]:
@@ -31,6 +67,14 @@ def _suite_sources() -> dict[str, str]:
     return {
         path.relative_to(REPO_ROOT).as_posix(): path.read_text("utf-8")
         for path in sorted(tests_dir.rglob("*.py"))
+    }
+
+
+def _src_sources() -> dict[str, str]:
+    """Read every module of the package."""
+    return {
+        path.relative_to(REPO_ROOT).as_posix(): path.read_text("utf-8")
+        for path in sorted((REPO_ROOT / "src" / "pycordis").rglob("*.py"))
     }
 
 
@@ -49,6 +93,41 @@ _DIVERGENCE_TABLE = (
     "| ID | Kind | Upstream | pycordis | Contract | Reason and evidence |\n"
     "|---|---|---|---|---|---|\n| `DIV-1` | omission | a | none |  | Not portable. |\n"
 )
+
+
+def _entry(**fields: object) -> dict[str, dict[str, object]]:
+    return {SYMBOL: {"status": "ported", "hash": "h2", **fields}}
+
+
+def _upstream_marker(id: str = CASE, running: bool = True) -> list[MarkerOccurrence]:
+    return _occurrences("upstream", id, running)
+
+
+def _status(
+    entries: dict[str, dict[str, object]],
+    occurrences: list[MarkerOccurrence] | None = None,
+) -> list[str]:
+    return check_status_consistency(ITEMS, entries, DIVERGENCES, occurrences or [])
+
+
+def _row(kind: str, contract: str = "", reason: str = "") -> list[dict[str, str]]:
+    row = {"ID": "D-1", "Kind": kind, "Contract": contract}
+    return [{**row, "Reason and evidence": reason}]
+
+
+def _evidence(
+    rows: list[dict[str, str]],
+    entries: dict[str, dict[str, object]] | None = None,
+    divergence_marker: bool = True,
+) -> list[str]:
+    marks = _occurrences("divergence", "D-1") if divergence_marker else []
+    return check_divergence_evidence(rows, ["EFF-REVERT"], entries or {}, marks)
+
+
+def _vocabulary(kind: str, text: str, **entry: object) -> list[str]:
+    items = {"x": {"kind": kind, "text": text}}
+    entries = {"x": {"status": "ported", "hash": "h", **entry}}
+    return check_vocabulary(items, entries, VOCABULARY)
 
 
 def _committed_occurrences() -> list[MarkerOccurrence]:
@@ -88,6 +167,180 @@ def _bad_cases() -> list[tuple[str, Callable[[], list[str]], str]]:
             lambda: check_contract_coverage(["EFF-REVERT"], ["EFF-REVERT"], occ()),
             "pending is stale: EFF-REVERT",
         ),
+        (
+            "inventory revision differs from the README",
+            lambda: check_revision("0" * 40, README_MD),
+            "README.md tracks",
+        ),
+        (
+            "inventory item has no ledger entry",
+            lambda: check_inventory_coverage(ITEMS, {}),
+            f"inventory item {CASE}: no ledger entry",
+        ),
+        (
+            "ledger entry has no inventory item",
+            lambda: check_inventory_coverage({}, {"gone": {"status": "pending"}}),
+            "ledger entry gone: no inventory item",
+        ),
+        (
+            "reviewed hash is stale",
+            lambda: check_hash_pinning(ITEMS, _entry(hash="old")),
+            f"review the upstream change to `{SYMBOL}`, then copy hash `h2`",
+        ),
+        (
+            "pending entry has a hash",
+            lambda: _status({SYMBOL: {"status": "pending", "hash": "h2"}}),
+            "a pending entry has no hash",
+        ),
+        (
+            "reviewed entry has no hash",
+            lambda: _status({SYMBOL: {"status": "ported"}}),
+            "needs the upstream hash",
+        ),
+        (
+            "not-applicable entry has no note",
+            lambda: _status(_entry(status="not-applicable")),
+            "needs a note",
+        ),
+        (
+            "status is unknown",
+            lambda: _status(_entry(status="done")),
+            "'done' is not one of",
+        ),
+        (
+            "field is misspelled",
+            lambda: _status(_entry(targt="pycordis")),
+            "'targt' is not a ledger field",
+        ),
+        (
+            "adapted entry has no divergence",
+            lambda: _status(_entry(status="adapted")),
+            "needs a divergence ID",
+        ),
+        (
+            "adapted entry names a divergence of another kind",
+            lambda: _status(_entry(status="adapted", divergence="OMIT-1")),
+            "has kind omission",
+        ),
+        (
+            "diverged entry names an unknown divergence",
+            lambda: _status(_entry(status="diverged", divergence="NO-ROW")),
+            "'NO-ROW' is not a row",
+        ),
+        (
+            "ported entry names a divergence",
+            lambda: _status(_entry(divergence="ADAPT-1")),
+            "has no divergence",
+        ),
+        (
+            "case entry has a target",
+            lambda: _status({CASE: {"status": "ported", "hash": "h1", "target": "x"}}),
+            "a case item has no target",
+        ),
+        (
+            "pending symbol entry has a target",
+            lambda: _status({SYMBOL: {"status": "pending", "target": "pycordis"}}),
+            "a pending entry names a target",
+        ),
+        (
+            "upstream marker names a pending case",
+            lambda: _status({CASE: {"status": "pending"}}, _upstream_marker()),
+            "whose ledger status is pending",
+        ),
+        (
+            "target does not resolve",
+            lambda: check_target_resolution(_entry(target="pycordis.no_such_name")),
+            "'pycordis.no_such_name' does not resolve",
+        ),
+        (
+            "upstream marker names an unknown ID",
+            lambda: check_upstream_markers(ITEMS, {}, _upstream_marker("no::such")),
+            "is not a case of conformance/upstream.json",
+        ),
+        (
+            "upstream marker names a non-case item",
+            lambda: check_upstream_markers(ITEMS, {}, _upstream_marker(SYMBOL)),
+            "is not a case",
+        ),
+        (
+            "ported case has no running test",
+            lambda: check_upstream_markers(
+                ITEMS,
+                {CASE: {"status": "ported", "hash": "h1"}},
+                _upstream_marker(running=False),
+            ),
+            "needs a running test marked upstream",
+        ),
+        (
+            "message is absent from the source",
+            lambda: _vocabulary("message", "gone {}"),
+            "the message 'gone {}' does not occur",
+        ),
+        (
+            "event is absent from the source",
+            lambda: _vocabulary("event", "internal/gone"),
+            "the event 'internal/gone'",
+        ),
+        (
+            "state is not an enum member",
+            lambda: _vocabulary("state", "a"),
+            "the state 'a'",
+        ),
+        (
+            "adaptation row is used by no adapted entry",
+            lambda: _evidence(_row("adaptation"), {"x": {"divergence": "D-1"}}),
+            "no adapted ledger entry names this row",
+        ),
+        (
+            "omission row has no reason",
+            lambda: _evidence(_row("omission")),
+            "the Reason cell is empty",
+        ),
+        (
+            "improvement names an unknown contract ID",
+            lambda: _evidence(_row("improvement", "NO-ID")),
+            "known contract IDs, not ['NO-ID']",
+        ),
+        (
+            "improvement names no contract ID",
+            lambda: _evidence(_row("improvement")),
+            "must name known contract IDs",
+        ),
+        (
+            "improvement has no running divergence test",
+            lambda: _evidence(_row("improvement", "EFF-REVERT"), {}, False),
+            "no running test is marked divergence",
+        ),
+        (
+            "improvement test is skipped",
+            lambda: check_divergence_evidence(
+                _row("improvement", "EFF-REVERT"),
+                ["EFF-REVERT"],
+                {},
+                _occurrences("divergence", "D-1", running=False),
+            ),
+            "no running test is marked divergence",
+        ),
+        (
+            "improvement names one unknown contract ID among known ones",
+            lambda: _evidence(_row("improvement", "EFF-REVERT, NO-ID")),
+            "not ['NO-ID']",
+        ),
+        (
+            "correction has no link",
+            lambda: _evidence(_row("correction", "EFF-REVERT", "Upstream bug.")),
+            "needs a link to an issue or pull request",
+        ),
+        (
+            "row is used by nothing",
+            lambda: _evidence(_row("omission", "", "Not portable."), {}, False),
+            "no ledger entry and no marker names this row",
+        ),
+        (
+            "row has an unknown kind",
+            lambda: _evidence(_row("change")),
+            "kind 'change' is not",
+        ),
     ]
 
 
@@ -112,6 +365,18 @@ def test_checks_pass_on_committed_data() -> None:
     assert check_marker_arguments(occurrences) == []
     assert check_marker_ids(occurrences, contract_ids, divergence_ids) == []
     assert check_contract_coverage(contract_ids, pending, occurrences) == []
+    items = INVENTORY["items"]
+    entries = ledger_entries(LEDGER_TOML)
+    divergences = divergence_kinds(ARCHITECTURE_MD)
+    assert check_revision(INVENTORY["revision"], README_MD) == []
+    assert check_inventory_coverage(items, entries) == []
+    assert check_hash_pinning(items, entries) == []
+    assert check_status_consistency(items, entries, divergences, occurrences) == []
+    assert check_target_resolution(entries) == []
+    assert check_upstream_markers(items, entries, occurrences) == []
+    assert check_vocabulary(items, entries, source_vocabulary(_src_sources())) == []
+    rows = divergence_rows(ARCHITECTURE_MD)
+    assert check_divergence_evidence(rows, contract_ids, entries, occurrences) == []
 
 
 def test_contract_marker_on_a_running_test_counts_as_coverage() -> None:
@@ -190,23 +455,6 @@ def test_divergence_rules_follow_the_same_decision() -> None:
     assert [(o.id, o.running) for o in occurrences] == [
         ("DIV-1", True),
         (None, True),
-    ]
-
-
-def test_divergence_marker_naming_an_unknown_row_fails() -> None:
-    occurrences = scan_markers(
-        {
-            "tests/test_a.py": (
-                "import pytest\n"
-                "@pytest.mark.divergence('DIV-404')\n"
-                "def test_gone():\n"
-                "    pass\n"
-            )
-        }
-    )
-    assert check_marker_ids(occurrences, [], ["DIV-1"]) == [
-        "tests/test_a.py::test_gone: @pytest.mark.divergence names 'DIV-404', "
-        "which is not a row of docs/architecture.md"
     ]
 
 
@@ -311,3 +559,60 @@ def test_tables_are_read_from_the_architecture_document() -> None:
     ) == ["A-1"]
     with pytest.raises(ValueError, match="no table with header"):
         table_section_ids("# no tables here\n", CONTRACT_TABLE_HEADER)
+
+
+def test_reviewed_entries_pass_every_ledger_check() -> None:
+    entries = {
+        CASE: {"status": "adapted", "hash": "h1", "divergence": "ADAPT-1"},
+        SYMBOL: {
+            "status": "ported",
+            "hash": "h2",
+            "target": "pycordis",
+            "mirror": True,
+        },
+    }
+    markers = _upstream_marker()
+    assert check_hash_pinning(ITEMS, entries) == []
+    assert _status(entries, markers) == []
+    assert check_target_resolution(entries) == []
+    assert check_upstream_markers(ITEMS, entries, markers) == []
+
+
+def test_resolves_follows_modules_then_attributes() -> None:
+    assert resolves("pycordis")
+    assert resolves("tests_missing") is False
+    assert resolves("collections.abc.Mapping")
+    assert resolves("collections.abc.NoSuchName") is False
+
+
+def test_readme_revision_is_the_tracked_hash() -> None:
+    assert readme_revision(README_MD) == INVENTORY["revision"]
+    with pytest.raises(ValueError, match="no tracked upstream revision"):
+        readme_revision("# no revision\n")
+
+
+def test_source_vocabulary_reads_literals_f_strings_and_enum_members() -> None:
+    assert {"a", "b {} c"} <= VOCABULARY.strings
+    assert "b " not in VOCABULARY.strings  # an f-string fragment is not a literal
+    # an Enum base is read as a name or as an attribute; a plain class is not read:
+    assert VOCABULARY.enum_members == {"ACTIVE", "ONE"}
+
+
+def test_vocabulary_accepts_present_names_and_divergent_or_pending_entries() -> None:
+    assert _vocabulary("message", "b {} c") == []
+    assert _vocabulary("event", "a") == []
+    assert _vocabulary("state", "ACTIVE") == []
+    assert _vocabulary("message", "gone", divergence="D-1") == []
+    assert _vocabulary("message", "gone", status="pending") == []
+
+
+def test_divergence_rows_with_full_evidence_pass() -> None:
+    entries = {"x": {"status": "adapted", "divergence": "D-1"}}
+    assert _evidence(_row("adaptation"), entries) == []
+    assert _evidence(_row("omission", "", "Not portable."), entries) == []
+    assert _evidence(_row("improvement", "EFF-REVERT")) == []
+    assert _evidence(_row("correction", "EFF-REVERT", f"See {LINK}")) == []
+    pull = LINK.replace("issues", "pull")
+    assert _evidence(_row("correction", "EFF-REVERT", f"See {pull}")) == []
+    # a marker alone keeps a row in use, with no ledger entry:
+    assert _evidence(_row("omission", "", "Not portable.")) == []
