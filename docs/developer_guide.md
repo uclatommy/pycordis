@@ -19,7 +19,7 @@ integrated work. The size of a change decides how it reaches them:
 | Change | Branch | How it merges |
 |---|---|---|
 | Small: a few commits that are complete alone, such as a documentation update, a bug fix, or a single-file change | Commit directly to `develop` | Push `develop` |
-| Small fix to released behavior | Commit directly to `master` | Push `master`, then merge `master` into `develop` |
+| Small fix to released behavior | `hotfix/<version>` from `master`, where `<version>` is the next patch version | Pull request to `master`, then merge `master` into `develop` |
 | Large: a build spec with increments, or work that needs review before it integrates | `feature/<name>` from `develop` | Pull request to `develop` |
 | Release | `release/<version>` from `develop` | Pull request to `master`, then merge `master` into `develop` |
 
@@ -31,16 +31,10 @@ does not export until the feature is complete.
 it after the push. Run the [checks](#checks) before the push, and fix a CI failure on `develop`
 at once, because `develop` is the source of each release.
 
-`master` is protected: every CI check must pass on a commit before that commit can be pushed to
-`master`. A commit reaches `master` through a pull request, or, for a small fix to released
-behavior, through a branch that runs CI first:
-
-```bash
-git push origin HEAD:refs/heads/hotfix/<name>   # ci.yml runs on every branch
-gh run watch --exit-status "$(gh run list --branch hotfix/<name> --limit 1 --json databaseId --jq '.[0].databaseId')"
-git push origin master                          # the same commit now has passing checks
-git push origin --delete hotfix/<name>
-```
+`master` is protected. A commit reaches `master` only through a pull request from a
+`release/<version>` or `hotfix/<version>` branch, and only after every CI check passes. Do not
+push to `master`. Merge each pull request to `master` with a **merge commit**, because
+GitVersion reads the version from the branch name in the merge message.
 
 ## Checks
 
@@ -135,7 +129,8 @@ do not edit it, and do not create a version tag by hand.
    then creates the tag `vX.Y.Z` on the built commit.
 4. Merge `master` into `develop`.
 
-A small fix that you commit directly to `master` publishes the next patch version.
+A small fix to released behavior follows the same steps, from `hotfix/<version>` that you
+create from `master`. The branch name sets the version, which is the next patch version.
 
 `ci.yml` runs the same version calculation and build on every push and pull request (the
 `build` job), so an error in `GitVersion.yml` fails CI before a release needs it. Only
@@ -146,14 +141,15 @@ If a release run fails, re-run the failed job:
 - If `publish` fails and the cause is outside the repository (for example, the PyPI trusted
   publisher), no tag exists. Correct the cause, then re-run the workflow.
 - If `publish` fails and the fix needs a change in the repository, commit the fix on the same
-  `release/<version>` branch, and merge it into `master` through a second pull request with a
-  merge commit. Its merge message names the release branch again, so the run calculates the
-  same version. Before `publish` starts, check that the `build` job shows that version.
+  `release/<version>` or `hotfix/<version>` branch, and merge it into `master` through a second
+  pull request with a merge commit. Its merge message names the branch again, so the run
+  calculates the same version. Before `publish` starts, check that the `build` job shows that
+  version.
 - If only `tag` fails, the upload is complete. Re-run **only** the failed job. A full re-run
   calculates the same version, and PyPI rejects a second upload of it.
 
-Do not push to `master` again until the tag exists. The version of the next push depends on
-the tag.
+Do not merge another pull request into `master` until the tag exists. The version of the next
+merge depends on the tag.
 
 ### One-time setup
 
