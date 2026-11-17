@@ -9,14 +9,15 @@ from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.events import EventOptions
 from pycordis.fiber import Fiber, FiberState
-from pycordis.loader._entry import Entry, own_options, run
+from pycordis.loader._entry import Entry, is_outer, own_options, run
 from pycordis.loader._tree import (
     EntryChange,
     EntryTree,
     ImportFunction,
     import_component,
 )
-from pycordis.service import Service
+from pycordis.service import Service, resolve_intercept
+from pycordis.traceable import Tracker
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +47,10 @@ class Loader(EntryTree, Service):
     that saves its plugin set overrides `commit`. A component that disposes its own
     fiber disables its entry, and the loader reports that change. A removal by the
     loader, the unload of a group, and the disposal of a tree are not reported.
+
+    A component that injects `loader` with `{"await": True}` (the `inject` option of
+    an entry, or a layer of `Context.intercept`) uses the loader only while no entry
+    loads, rebuilds, or has a fiber that loads or unloads (see `wait`).
 
     Call every method on the owner thread.
 
@@ -83,9 +88,11 @@ class Loader(EntryTree, Service):
             or partial(import_component, package=self.config.package),
         )
         Service.__init__(self, ctx)
-        # The loader acts for its own context, whoever reads it.
-        self.cordis_tracker = None  # type: ignore[assignment]
+        # A reader gets a view that shows the loader's own `ctx`: the loader acts for
+        # its own context, whoever reads it. The view tells the check who reads.
+        self.cordis_tracker = Tracker(no_shadow=True)  # type: ignore[assignment]
         self.enable_logs = self.config.enable_logs
+        ctx.on("internal/status", self._on_status)
         ctx.on("internal/plugin", self._on_plugin)
         ctx.on("internal/commit", self._on_commit)
         ctx.on(
@@ -99,6 +106,21 @@ class Loader(EntryTree, Service):
 
     def commit(self, change: EntryChange) -> None:
         """Do nothing: the root tree lives in memory. A host overrides it to save."""
+
+    def cordis_check(self) -> bool:
+        """Hold back a reader that sets `await` in its intercept configuration.
+
+        A fiber whose `inject` (or intercept layer) for `loader` has a true `await`
+        value uses the loader only while no entry loads, rebuilds, or has a fiber that
+        loads or unloads. The loader checks the readers again when it becomes idle.
+        """
+        config = self.cordis_resolve_intercept()
+        return not (config.get("await") and self.busy())
+
+    def cordis_resolve_intercept(self) -> dict[str, Any]:  # type: ignore[override]
+        """Return the intercept configuration for the reader of the loader."""
+        caller = self.cordis_caller
+        return resolve_intercept(self, self.ctx if caller is None else caller, None)
 
     def read(self, data: Sequence[Mapping[str, Any]]) -> Deferred[None]:
         """Replace the entries of the root group with `data`, and load them.
@@ -119,8 +141,18 @@ class Loader(EntryTree, Service):
         await self.root.update(config)
         await self.wait()
 
+    def busy(self) -> bool:
+        """Return whether an entry loads, or has a fiber that loads or unloads.
+
+        An entry that waits for a service is not busy.
+        """
+        return any(entry.busy() for entry in self.entries())
+
     def wait(self) -> Deferred[None]:
         """Wait until no entry loads its component or has a fiber that loads or unloads.
+
+        An entry that waits for a service, through its `inject` option or the `inject`
+        of its component, does not keep the wait open.
 
         Returns:
             A `Deferred` that completes when the whole tree is idle. A fiber that
@@ -130,17 +162,7 @@ class Loader(EntryTree, Service):
 
     async def _settled(self) -> None:
         while True:
-            tasks: list[Deferred[Any]] = []
-            for entry in self.entries():
-                if entry.pending is not None:
-                    tasks.append(entry.pending)
-                    continue
-                fiber = entry.live_fiber()
-                if fiber is not None and fiber.state in (
-                    FiberState.LOADING,
-                    FiberState.UNLOADING,
-                ):
-                    tasks.append(fiber.wait())
+            tasks = [task for entry in self.entries() for task in entry.tasks()]
             if not tasks:
                 return
             for task in tasks:
@@ -187,6 +209,14 @@ class Loader(EntryTree, Service):
             self._show_log(entry, "reload")
         return next_()
 
+    def _on_status(self, fiber: Fiber, old_state: FiberState) -> None:
+        """Forget the verdict of an entry when its outer fiber loses a service."""
+        if fiber.state != FiberState.UNLOADING or not is_outer(fiber):
+            return
+        entry: Entry = fiber.config  # type: ignore[assignment]
+        if entry.outer_fiber is fiber:
+            entry._verdict = None
+
     def _on_commit(self, fiber: Fiber, config: object) -> None:
         entry = self._links.get(fiber)
         if entry is None:
@@ -215,8 +245,9 @@ class Loader(EntryTree, Service):
         if group.tree.ctx.fiber.uid is None:
             return
         self._show_log(entry, "unload")
-        # 4. the group of the entry unloads, and takes the entry with it
-        if group.ctx.fiber.state == FiberState.UNLOADING:
+        # 4. the group of the entry, or the outer fiber of the entry, unloads and takes
+        # the entry with it
+        if FiberState.UNLOADING in (group.ctx.fiber.state, fiber.parent.fiber.state):
             return
         # 5. the loader removes the entry: it leaves the store before its disposal
         if group.tree.store.get(entry.options["id"]) is not entry:
@@ -233,3 +264,5 @@ class Loader(EntryTree, Service):
                 entry.options["id"], group, None, own_options(entry.options), legacy
             )
         )
+        if entry.outer_fiber is not None:
+            entry.dispose()

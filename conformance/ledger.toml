@@ -2233,124 +2233,211 @@ divergence = "loader-cross-tree-rebuild"
 note = "A moved group loads its members again, so the members are new entries."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service outside every inject in config"]
-status = "pending"
+status = "diverged"
+hash = "6544e8cb81d68ab33278e1f2126f110564ae8cf8edb6828fbd06367423cee63e"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `config`."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service outside the parent context and the entry inject in disabled"]
-status = "pending"
+status = "diverged"
+hash = "a3e7ab81381f4c83127c2732bdd104e3a01c9d5ac950338b1dd40f18fc7d3cdc"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service provided by a sibling in an inject value"]
-status = "pending"
+status = "diverged"
+hash = "ae421d615b5989ddcc9e4e8c3f9fd6ed3d1cad61f97276f6787e2705d967aabe"
+divergence = "loader-expressions"
+note = "It evaluates expressions in `inject` values."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::disposes the component when intercept stops evaluating on an update"]
-status = "pending"
+status = "diverged"
+hash = "348daa8853784b457f7590eb459abd3a40bf28e2a0fd1786fd6762484bfbcc0d"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `intercept`."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::does not evaluate intercept while disabled"]
-status = "pending"
+status = "diverged"
+hash = "2c96efb4a8e663ad0d422243ca1fc0ea3b02d09f513241516d386ff0cff6979c"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `intercept`."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::does not start the component when intercept cannot be evaluated"]
-status = "pending"
+status = "diverged"
+hash = "df9358a6f498273d008cdea896c1a782a35ca5b810e30fcc806c0c98acb5d20e"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `intercept`."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::evaluates config with the component inject"]
-status = "pending"
+status = "diverged"
+hash = "a64a190198e552b84987724ecf462d83c8434680b86030a64b0b5d6cbd41b649"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `config`."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::stops a group whose intercept stops evaluating on an update"]
-status = "pending"
+status = "diverged"
+hash = "a3b5685d2beacb6dd203b49daf492f629ba0fe5b081e66806ab8441a465b691c"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `intercept`."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::caches the verdict independently of reads and service mutations (group=false)"]
-status = "pending"
+status = "diverged"
+hash = "e0734c798fe9741847fc441a489845b0b47634441cb6c1723e8abe706c9ee5e2"
+divergence = "loader-expressions"
+note = "It counts the evaluations of a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::caches the verdict independently of reads and service mutations (group=true)"]
-status = "pending"
+status = "diverged"
+hash = "e0734c798fe9741847fc441a489845b0b47634441cb6c1723e8abe706c9ee5e2"
+divergence = "loader-expressions"
+note = "It counts the evaluations of a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::cannot read the entry inject from an inject value"]
-status = "pending"
+status = "diverged"
+hash = "ff1b8dc9e6e8567b9c9caadcddbd887e9d10910dc65e9e59eb8313b3b027127b"
+divergence = "loader-expressions"
+note = "It evaluates expressions in `inject` values."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::creates no outer fiber for an entry without inject"]
-status = "pending"
+status = "ported"
+hash = "d9420b47a64b51cdfe4b6f26f8ae61846037d502a96ecd09f1c1a25b59036bc5"
+note = "`disabled: False` replaces the expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::decides disabled before the component dependencies"]
-status = "pending"
+status = "diverged"
+hash = "90af6f125ef7e9d59de8b297f2486cf7d4193ed0da423c3eb5780fa22702bee7"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::disposes both fibers when the entry is removed"]
-status = "pending"
+status = "ported"
+hash = "3d3788b49b751ac39c5266069d0c93c588101b3b4a9a2002acf49ae83606004b"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::disposes the outer fiber when the component disposes itself"]
-status = "pending"
+status = "ported"
+hash = "a80042d107e3d28a236ace218bf1036ffc8e7a780f492105d1c63941fe266fbb"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::does not repeat a failing disabled expression when its verdict is read"]
-status = "pending"
+status = "diverged"
+hash = "56b9d2fadfd0c184e7f391b948661d2086e0123e2b4c22d7487ab6f7b1ef9438"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops an activation whose dependency is lost during the import"]
-status = "pending"
+status = "ported"
+hash = "e05f32bb3c7c74175767f2684fb20c13fff876aadb4e9532d33f3959eab3555c"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops entries removed or disabled during import"]
-status = "pending"
+status = "ported"
+hash = "0446209e3df2b92e79b5f10e8113fd5b3de670d31131d8bd1b29af6c75c6ba27"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops entries removed or disabled during patch"]
 status = "pending"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates a changed disabled expression once in either direction"]
-status = "pending"
+status = "diverged"
+hash = "83f9e1bedaf082eee16a105ce1738b064f7b376f0f38a7f4a0e3ce931df8a18f"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates disabled with the entry inject"]
-status = "pending"
+status = "diverged"
+hash = "aaef0bb57b59949fcda1868ac173725876df9c74e707bc05c82381d43f36dad4"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates inject values in the parent context"]
-status = "pending"
+status = "diverged"
+hash = "6356ff23c0677c780bfa1e8bab83ce822e3452451202fbc53bd69c343a390e78"
+divergence = "loader-expressions"
+note = "It evaluates expressions in `inject` values."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates intercept with the entry inject, for the component only"]
 status = "pending"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::invalidates the verdict before an asynchronous dependency unload"]
-status = "pending"
+status = "ported"
+hash = "be3a2be0746ae3b4acb4c3a757f6f3b0d4a3fbce6f8925603ec82700b9e2a9c1"
+note = "`disabled` is a plain bool. The test reads `Entry.disabled` during the unload."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps a disabled group verdict undecided when its dependency disappears"]
-status = "pending"
+status = "diverged"
+hash = "8849841c8c31b661d96d745dbb002d4a9a2798094363b105cc67ed1112f63b74"
+divergence = "loader-expressions"
+note = "It needs a verdict that a changed service value flips."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps a group structural and passes its verdict to the children"]
-status = "pending"
+status = "ported"
+hash = "6bfb320b54df84e4ed183b5612e0b1258e59e11c0c2b8225ad1b1622974f8c0d"
+note = "`disabled` is a plain bool."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps an inject value on the outer fiber when the component declares the service itself"]
-status = "pending"
+status = "ported"
+hash = "d2e96d152eaa0a79e1a1ebdc26492bc6c6d1ace68c5dd3728e781f8fc22e79cc"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the entry isolate without an inject"]
 status = "pending"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the options when a dependency is lost and recovered"]
-status = "pending"
+status = "ported"
+hash = "742ff79f304fae1fe8c02be3a34f03f688fb9ccc05168ee7fb1f3d62731a88ee"
+note = "`disabled` is a plain bool."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::nests the inner fiber under the outer fiber"]
-status = "pending"
+status = "ported"
+hash = "d3f6ec445287a1dd5d3902580ba1d3e0d92547bd5f84e3b3c3915270507c3ac2"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates a failing inject value on refresh"]
-status = "pending"
+status = "diverged"
+hash = "ee0d9ce810f6d9e8a940ae59706347bf59afe7c9b1b5a9d59d2dc2f827bc2094"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `inject`."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates disabled in the new parent context after a move"]
-status = "pending"
+status = "diverged"
+hash = "608c3c3c9b86bc5a3371f917340586378c8aae25cb7ce847978026c40eff9ff9"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates inject in the new parent context after a move"]
-status = "pending"
+status = "diverged"
+hash = "608c3c3c9b86bc5a3371f917340586378c8aae25cb7ce847978026c40eff9ff9"
+divergence = "loader-expressions"
+note = "It evaluates expressions in `inject` values."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates the verdict after changing the entry isolation"]
-status = "pending"
+status = "diverged"
+hash = "0f5595803fdb5297250e5b6723933c28052c838512394d817340086110d75f11"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::rebuilds the entry when inject changes"]
-status = "pending"
+status = "ported"
+hash = "360021d4ae32ed7c8d6c396fa77b5cc52291f304784548dcc4142fa466325bb5"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::rebuilds without a write-back when inject is added"]
-status = "pending"
+status = "ported"
+hash = "faa14c0bde470044684a58563c881f1e921b658d638eca85edd0c9450fffb3be"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::reloads the outer fiber when the verdict changes"]
-status = "pending"
+status = "diverged"
+hash = "fa816a40122eefe1c49ec24d56743017703cc003a62e7f0335199b169b8cd0eb"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::treats a failing expression as disabled"]
-status = "pending"
+status = "diverged"
+hash = "cdf54b8d3b65c2330784cd38aca6022777af2f31ea93d7424e7f3378f2fafaea"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::updates intercept in place"]
 status = "pending"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::waits for the entry inject while it is missing"]
-status = "pending"
+status = "ported"
+hash = "45e93fe37e083f086421d3a8d7048d4ff643a9b5b1fa0309be9b18041435a1bb"
+note = "`disabled` is plain data, so the test checks the wait for the service."
 
 [items."loader/group.spec.ts::Group: awaited reconciliation::config update settles children"]
 status = "ported"
@@ -2432,19 +2519,34 @@ status = "ported"
 hash = "4a35e59da966228b72591d1d95998f709e2c0335780ac8918ff704faa9b81a65"
 
 [items."loader/index.spec.ts::Loader: config interpolation::evaluate after dependencies are ready"]
-status = "pending"
+status = "diverged"
+hash = "1fbb89f865436eb5d9ec111c5a51f0b68c46871b8789d8d52f45e3f2d85064da"
+divergence = "loader-expressions"
+note = "It interpolates expressions in `config`."
 
 [items."loader/index.spec.ts::Loader: config interpolation::keep the source config unevaluated"]
-status = "pending"
+status = "diverged"
+hash = "50d9653bf1ed0fb5374df43b0d77886ec73e81a6bac20834493ce02c949fa759"
+divergence = "loader-expressions"
+note = "It interpolates expressions in `config`."
 
 [items."loader/index.spec.ts::Loader: config interpolation::re-evaluate when dependencies reload"]
-status = "pending"
+status = "diverged"
+hash = "ad0eb1be9d38745859869c92d9db63dbcea3ae13a9d2180424b781d760928350"
+divergence = "loader-expressions"
+note = "It interpolates expressions in `config`."
 
 [items."loader/index.spec.ts::Loader: config interpolation::wait for dependencies"]
-status = "pending"
+status = "diverged"
+hash = "6945ef440323e360f2ea744c389a0bcd4092b0a7bd1001fcbe64b134b507bc36"
+divergence = "loader-expressions"
+note = "It interpolates expressions in `config`."
 
 [items."loader/index.spec.ts::Loader: disabled js expression::evaluates the expression instead of treating the node as truthy"]
-status = "pending"
+status = "diverged"
+hash = "00a59c5b704d3b9325de67c8112cc56b4eb5e56e426ec1042fc0bd10a44ca8cb"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/index.spec.ts::Loader: entry failure::on an id containing the separator"]
 status = "ported"
@@ -2467,23 +2569,28 @@ status = "ported"
 hash = "f52c23b591123ff3cd2e4f006f7234ac03b3e858ecee2410e7dec09e82c96e68"
 
 [items."loader/index.spec.ts::Loader: intercept config::pending"]
-status = "pending"
+status = "ported"
+hash = "1c0f7129d9ef22c35a011b0231d11c2b663149619b0d810b9486678c76560863"
 
 [items."loader/index.spec.ts::Loader: intercept config::resolved"]
-status = "pending"
+status = "ported"
+hash = "7809417e16db25a1918c9c4fbb83a941ca8d3d86814f4fc40588db8383eff31c"
 
 [items."loader/index.spec.ts::Loader: nested component config::skip nested components"]
 status = "ported"
 hash = "a175c6484bfc098f6344ae3e60ebb1facbc693be5fe22ffc35914b0fb03fa4ae"
 
 [items."loader/index.spec.ts::Loader: parent teardown::keep children enabled when the parent loses a dependency"]
-status = "pending"
+status = "ported"
+hash = "8589edd0f0dbcd4fd352836e5ed6693fbd491286ea2f1a8a2968791b0c28d602"
 
 [items."loader/index.spec.ts::Loader: pending entry update::persist an update to a pending fiber"]
-status = "pending"
+status = "ported"
+hash = "5c25bb672caba5631ca0321f6e48316a4528152ff1658c015bd0781339046a93"
 
 [items."loader/index.spec.ts::Loader: replaced component::keeps the entry of a component replaced in place"]
-status = "pending"
+status = "ported"
+hash = "48b4cfeffeb9ee67f15b02772f16060058d6dfc0b779f01db1bf0a83d3f72075"
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::does not delete another realm when one impl moves"]
 status = "pending"
@@ -2588,58 +2695,76 @@ status = "pending"
 status = "pending"
 
 [items."loader/message:entry {} is waiting for its dependencies"]
-status = "pending"
+status = "diverged"
+hash = "c3160337004c194343165177061236e35852d3b4c3b7149e34da3edcca55b719"
+divergence = "loader-expressions"
+note = "The message belongs to the evaluation of an expression."
 
 [items."loader/message:expected service {} to be implemented"]
 status = "pending"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::does not apply a fiber removed while rebuild is disposing"]
-status = "pending"
+status = "ported"
+hash = "4274b8f56a97c824430ca0883823544e80957af231c8c457ef1d11e514dab04e"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::joins a second inject update while the first rebuild is disposing"]
-status = "pending"
+status = "ported"
+hash = "400a4c76e041e73c4dc7d2810cadc65a426d6b6170918d1f0000ef362b0b3b93"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::keeps a rebuild started during apply until its disposer settles"]
-status = "pending"
+status = "ported"
+hash = "0829ec2eb789be11d9407ca169b635903783f517398d1ff65279d935aeaaab7b"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::keeps the new outer fiber pending and drops the old listener when inject is missing"]
-status = "pending"
+status = "ported"
+hash = "edb208ae96fab8b99036f156a826511228d576fc61cdd6fbdd7993e44ac85874"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::reapplies when inject gains a service that is already provided"]
-status = "pending"
+status = "ported"
+hash = "484d8bca9956e873c0ab915a2391efa08d6d5df1357eb559f61636267f5bae0a"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::starts a pending entry when inject is cleared"]
-status = "pending"
+status = "ported"
+hash = "ae492e99d47fc88ab7d28ba4d1b547dc04d4ccd97830248f7efc7a384a4e07ac"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending context patch"]
 status = "pending"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending failed import"]
-status = "pending"
+status = "ported"
+hash = "1303acce7046d9f55bb13bc4d6ecb7b4f3913ee74008a6d207c990e2caedc5d9"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending import"]
-status = "pending"
+status = "ported"
+hash = "1303acce7046d9f55bb13bc4d6ecb7b4f3913ee74008a6d207c990e2caedc5d9"
 
 [items."loader/rebuild.spec.ts::Loader: entry rebuild::applies nothing when the entry is removed during the disposal"]
-status = "pending"
+status = "ported"
+hash = "fd5c771e85065edf7567a221bd08472f80ff7c947f479d4855ed6180df60fb5e"
 
 [items."loader/rebuild.spec.ts::Loader: entry rebuild::joins a second rename while the first disposal is pending (inject=[ 'settings' ])"]
-status = "pending"
+status = "ported"
+hash = "71db9c77751f1efb094bf9eecfeed3db7133253c48373e4e5c590eb606671d17"
 
 [items."loader/rebuild.spec.ts::Loader: entry rebuild::joins a second rename while the first disposal is pending (inject=undefined)"]
-status = "pending"
+status = "ported"
+hash = "71db9c77751f1efb094bf9eecfeed3db7133253c48373e4e5c590eb606671d17"
 
 [items."loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds an active entry when its name changes (inject=[ 'settings' ])"]
-status = "pending"
+status = "ported"
+hash = "36fbe39313cafdc4168f7a468fab49a5eac8944e2da40c29341e8e9e54020a7f"
 
 [items."loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds an active entry when its name changes (inject=undefined)"]
-status = "pending"
+status = "ported"
+hash = "36fbe39313cafdc4168f7a468fab49a5eac8944e2da40c29341e8e9e54020a7f"
 
 [items."loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds when the component renames its own entry"]
-status = "pending"
+status = "ported"
+hash = "3b5ed858c8f6fcff4b084d0ccc22b55822dd577c871f9c5176d8775d93709e7d"
 
 [items."loader/rebuild.spec.ts::Loader: entry rebuild::uses the new name when it changes during the import"]
-status = "pending"
+status = "ported"
+hash = "ace9bda900ad4dea461ef7098a4859ff1c238a3a2d5339338c10823be011731a"
 
 [items."loader/rebuild.spec.ts::Loader: entry rebuild::uses the new name when it changes during the patch"]
 status = "pending"
@@ -2741,10 +2866,16 @@ target = "pycordis.loader.Entry._dispose"
 hash = "89aff48b1b14ca8bf25ff63b4f008b756d4069f7cc6061ffe06598e6bfefca52"
 
 [items."loader/src/config/entry.ts:Entry._evaluationContext"]
-status = "pending"
+status = "diverged"
+hash = "e3c261f67ca6e2bda3a401dcfddf825ba98fac0d0106f4f4a58635a2ad4a6514"
+divergence = "loader-expressions"
+note = "It gives the context that evaluates an expression."
 
 [items."loader/src/config/entry.ts:Entry._hasOuter"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._init"
+hash = "d089f7def214ab8606d5df2c18b9c0960b6322f7fad459c01aa4ba28353dc3aa"
+note = "Inlined as the test of `Entry.inject` in `_init`."
 
 [items."loader/src/config/entry.ts:Entry._import"]
 status = "ported"
@@ -2786,7 +2917,11 @@ target = "pycordis.loader.Entry._resolve_disabled"
 hash = "db7f0d8ff9ac385e33bacc73ccfd240cefce5cc305e47ea8723cd099fad209df"
 
 [items."loader/src/config/entry.ts:Entry._resolveInject"]
-status = "pending"
+status = "diverged"
+target = "pycordis.loader.Entry._resolve_inject"
+hash = "766d238cbf7fec2961ab25d7c7ff71e9ffe6a7ce88e5f5c1cb0c346b503c2857"
+divergence = "loader-expressions"
+note = "It reads plain data and does not interpolate expressions."
 
 [items."loader/src/config/entry.ts:Entry._start"]
 status = "adapted"
@@ -2815,7 +2950,10 @@ target = "pycordis.loader.Entry.dispose"
 hash = "98373290081e998b6ecae2bafe0b0dd22a8dd40af91334984d0477340fddcd6c"
 
 [items."loader/src/config/entry.ts:Entry.evaluate"]
-status = "pending"
+status = "diverged"
+hash = "9d18bba068e4f6490e45cf7a50a8b1a4fe5f50ec38816110d2cbc8a6a15b5b66"
+divergence = "loader-expressions"
+note = "It evaluates an expression."
 
 [items."loader/src/config/entry.ts:Entry.getLocation"]
 status = "diverged"
@@ -2834,7 +2972,9 @@ target = "pycordis.loader.Entry.init"
 hash = "8a8df3ece52cd32403f59d98f9a30ef679d70fbaa5218de0ef25d97a481623dd"
 
 [items."loader/src/config/entry.ts:Entry.isOuter"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader._entry.is_outer"
+hash = "4478b5ac3dcc6c8ed68fdbb062ec6a136ff03ad475424e4892e1bdeb3fa6a40b"
 
 [items."loader/src/config/entry.ts:Entry.locateExpr"]
 status = "diverged"
@@ -2848,7 +2988,10 @@ target = "pycordis.loader._entry.merge_options"
 hash = "bc2f6acaea29d58dd228d14df615517b7a8abef87a9888eb5ac64efbc3a99aa4"
 
 [items."loader/src/config/entry.ts:Entry.refresh"]
-status = "pending"
+status = "diverged"
+hash = "550cd8d535538073291e2bca0d937bc11f19035f6be32c86e953fcd8448e23bd"
+divergence = "loader-expressions"
+note = "It evaluates `inject` again after a dependency change. `inject` is plain data, so `Entry.update` is the only entry point."
 
 [items."loader/src/config/entry.ts:Entry.traceValidation"]
 status = "diverged"
@@ -2867,7 +3010,9 @@ target = "pycordis.loader.EntryOptions"
 hash = "3dab699e4b67c3df2c8f8ab7243f7c8239a4b9902f1e543015c3bfce9397ee20"
 
 [items."loader/src/config/entry.ts:outer"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader._entry._outer_apply"
+hash = "2e0c79b424dd042c6bb4676944c8cdd7b19c568611293a4b2c296fe25ed896b0"
 
 [items."loader/src/config/entry.ts:sortKeys"]
 status = "not-applicable"
@@ -3252,7 +3397,10 @@ target = "pycordis.loader.Loader"
 hash = "156fd041b463127ce407f96ef48e8ec4d60bc3bc10d7c2e756f17b5ec5494a5f"
 
 [items."loader/src/index.ts:Loader.[Service.check]"]
-status = "pending"
+status = "adapted"
+target = "pycordis.loader.Loader.cordis_check"
+hash = "b697088ab938c1e18de60b7e158a83e4db97b7c1aa62d3a3e4f0f39b5313e38a"
+divergence = "hook-names"
 
 [items."loader/src/index.ts:Loader.commit"]
 status = "ported"

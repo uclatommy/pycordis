@@ -1,6 +1,6 @@
 # Build Spec: Declarative Loader
 
-**Status**: 🚧 In progress (Increment 2 of 5 done); spec 1 of 3 (see [Dependencies](#dependencies))
+**Status**: 🚧 In progress (Increment 3 of 5 done); spec 1 of 3 (see [Dependencies](#dependencies))
 
 ## Goal
 
@@ -461,7 +461,7 @@ fiber from inside its component
 - `EntryTree.create` and `EntryTree.update` raise `EntryValidationError` and `ValueError` at the call, not through the `Deferred`
 - The `Loader` sets `cordis_tracker` to `None`, so `ctx["loader"]` gives the loader itself and not a view. Its methods always act for the loader's own context
 - Case "transfers the entry to the store of the target tree" and "transfers the members of a moved group" are `diverged` (`loader-cross-tree-rebuild`): the component loads again after the move
-- `Entry.pending` (the task that loads the component) is public, because `Loader.wait` reads it from another module
+- `Entry.pending` (the task that loads the component) is public, because `Loader.wait` reads it from another module (Increment 3 replaces it with `Entry.tasks`)
 - The recovery cases of `index.spec.ts` use a component that declares `inject`, with plain config data, not an entry `inject`
 - Not done in this increment: `Group: intercept::initialize` and the other cases that use entry `inject`, `intercept`, or `isolate` stay `pending`
 
@@ -472,7 +472,28 @@ fiber from inside its component
 `test_loader.py` (intercept config, pending update, parent teardown, replaced component)
 **Validation**: `uv run pytest tests/test_loader*.py tests/test_replace.py`
 **Docs**: `loader-expressions` row; docstrings of `Entry` and `Loader.wait`
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+
+**Changed**:
+- `loader/_entry.py`: `Entry` has `inject` and `outer_fiber`; an entry with `inject` runs its component as the child of an outer fiber (`_outer_apply`, `is_outer`); `update` rebuilds once for a change of `inject`; `_reconcile` restarts the outer fiber when the component is not running; `busy` and `tasks` replace `pending`; `init` tells the `loader` service when the loader is idle
+- `loader/_service.py`: `Loader.cordis_check` holds a reader that sets `await`; `busy` and `wait` count outer fibers; an `internal/status` listener clears the verdict of an entry whose outer fiber unloads; the self-dispose rule also disposes the outer fiber and skips an inner fiber whose outer fiber unloads
+- `service.py`: `resolve_intercept` is the function behind `Service.cordis_resolve_intercept`, so a service with its own context can resolve the configuration for its reader
+- `conformance/ledger.toml`: 33 cases and 3 symbols `ported`, 28 cases, 1 message, and 4 symbols `diverged` (`loader-expressions`), `Loader.[Service.check]` `adapted` (`hook-names`)
+- `tests/loader_fakes.py`: `Mock` and `RecordingLoader.mock` take `inject`
+
+**Tests**:
+- `test_loader_evaluate.py` (19), `test_loader_rebuild.py` (14), `test_loader.py` (+4): 37 tests
+- `uv run pytest`: 959 passed; coverage of `pycordis.loader` is 99%
+- `uv run ruff check .` and `uv run ruff format --check .` are clean
+
+**Deviations**:
+- `Entry.init` starts `_init` with `spawn`, not `run`: `_init` can finish in its first step and release the task before `init` stores it, so a rename that the component starts during its own `apply` joined a finished task and was lost (`test_a_component_can_rename_its_own_entry`)
+- The `Loader` has a view with `Tracker(no_shadow=True)` and no tracked property, so a reader's `cordis_check` can find its own `inject` configuration. `ctx["loader"]` is a view that shows the loader's own `ctx`, and not the loader object; its methods still act for the loader's own context. This replaces the Increment 2 deviation that gave no view
+- `Entry.pending` is removed: `Entry.busy` and `Entry.tasks` give `Loader.busy` and `Loader.wait` what they need
+- The `patch` cases (`drops entries removed or disabled during patch`, `uses the new name when it changes during the patch`, `uses the latest name during a pending context patch`) stay `pending` until Increment 4, which decides their divergence with `loader-isolate-rebuild`
+- `evaluates intercept with the entry inject, for the component only`, `updates intercept in place`, `keeps the entry isolate without an inject`, and `Group: intercept::initialize` stay `pending` for Increment 4
+- Cases that need an expression result are `diverged` with `loader-expressions` and have no replacement test; `test_a_dict_is_not_an_expression_and_no_field_accepts_it` is the test of the divergence. The ledger entry `Entry._applyIntercept`, `Entry._patchContext`, and `swap` stay `pending` for Increment 4
+- `Entry._start` does not check `_registered` or `disabled` again: `_init` checks them before it creates the fiber, and the epoch of the outer fiber covers the wait in `_outer_apply`
 
 ### Increment 4: Intercept layer and isolation
 **Goal**: An intercept update changes a running component in place, and an `isolate` change or a

@@ -15,9 +15,13 @@ class Mock:
     """A component that records the config of each call, and runs `impl`."""
 
     def __init__(
-        self, name: str, impl: Callable[[Context, Any], Any] | None = None
+        self,
+        name: str,
+        impl: Callable[[Context, Any], Any] | None = None,
+        inject: Any = None,
     ) -> None:
         self.name = name
+        self.inject = inject
         self.calls: list[Any] = []
         self._impl = impl
 
@@ -76,10 +80,13 @@ class RecordingLoader(Loader):
         return result
 
     def mock(
-        self, name: str, impl: Callable[[Context, Any], Any] | None = None
+        self,
+        name: str,
+        impl: Callable[[Context, Any], Any] | None = None,
+        inject: Any = None,
     ) -> Mock:
-        """Add a component to the table, and return it."""
-        component = self.modules[name] = Mock(name, impl)
+        """Add a component to the table, and return it. `inject` is its `inject`."""
+        component = self.modules[name] = Mock(name, impl, inject)
         return component
 
     def fiber(self, identifier: str) -> Fiber:

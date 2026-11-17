@@ -6,14 +6,16 @@ and `EntryValidationError` reports options that are not valid.
 """
 
 import random
-from collections.abc import Coroutine, Mapping
+from collections.abc import AsyncIterator, Callable, Coroutine, Mapping
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError, Issue, ValidationError
-from pycordis.fiber import Fiber
-from pycordis.scheduler import Scheduler, start
+from pycordis.fiber import Fiber, FiberState
+from pycordis.registry import resolve_inject
+from pycordis.scheduler import Scheduler, spawn, start
 
 if TYPE_CHECKING:
     from pycordis.loader._group import EntryGroup
@@ -208,6 +210,27 @@ def _same_scope(a: Context, b: Context) -> bool:
     )
 
 
+async def _outer_apply(
+    ctx: Context, entry: "Entry"
+) -> AsyncIterator[Callable[[], None]]:
+    """Run the component of `entry` in a child fiber, after the services of the entry.
+
+    The fiber of this function injects the `inject` of the entry. The component is
+    imported again, so that a module that changed in the meantime is used. The first
+    `yield` ends the loop when the fiber has left its epoch: a service that went away
+    during the import stops the start.
+    """
+    component = await entry._import()
+    yield lambda: None
+    if component is not None:
+        entry._start(ctx, component)
+
+
+def is_outer(fiber: Fiber) -> bool:
+    """Return whether `fiber` holds the `inject` of an entry for its component."""
+    return fiber.runtime is not None and fiber.runtime.callback is _outer_apply
+
+
 class Entry:
     """One node of an `EntryTree`: its options and the fiber of its component.
 
@@ -217,7 +240,10 @@ class Entry:
 
     The fiber of an entry is a child of the fiber of the tree that holds the entry, also
     when the entry is in a group. Its context has the isolation, intercepts, and
-    `meta` of the context of its group. A change of `name`, or a move that changes the
+    `meta` of the context of its group. When the entry has an `inject` option, an outer
+    fiber injects those services and runs the fiber of the component as its child, so
+    the component loads only when the services exist, also when the component does
+    not declare them. A change of `name` or `inject`, or a move that changes the
     context of the entry or its tree, loads the component again in a new fiber. Any
     other change keeps the fiber.
 
@@ -225,6 +251,9 @@ class Entry:
         loader: The loader that owns the tree.
         parent: The group that holds the entry.
         options: The options of the entry. The entry owns this dict.
+        inject: The services of the `inject` option, by name. It is empty when the
+            entry has no outer fiber.
+        outer_fiber: The fiber that waits for `inject`, or `None`.
         inner_fiber: The fiber of the component, or `None` before the first load. It
             can be disposed.
         subgroup: The group that the component of the entry holds, or `None`.
@@ -235,6 +264,8 @@ class Entry:
         self.loader = loader
         self.parent = parent
         self.options: EntryOptions = {}
+        self.inject: dict[str, object] = {}
+        self.outer_fiber: Fiber | None = None
         self.inner_fiber: Fiber | None = None
         self.subgroup: EntryGroup | None = None
         self.subtree: EntryTree | None = None
@@ -261,15 +292,35 @@ class Entry:
             return False
         return self._verdict is not False or self._parent_disabled()
 
-    @property
-    def pending(self) -> Deferred[None] | None:
-        """The task that loads the component again, or `None`."""
-        return self._init_task
-
     def live_fiber(self) -> Fiber | None:
         """Return the fiber of the component while it is not disposed, else `None`."""
         fiber = self.inner_fiber
         return fiber if fiber is not None and fiber.uid is not None else None
+
+    def _active(self) -> bool:
+        """Return whether the entry has an outer fiber or a live component fiber."""
+        return self.outer_fiber is not None or self.live_fiber() is not None
+
+    def _busy_fibers(self) -> list[Fiber]:
+        return [
+            fiber
+            for fiber in (self.outer_fiber, self.live_fiber())
+            if fiber is not None
+            and fiber.state in (FiberState.LOADING, FiberState.UNLOADING)
+        ]
+
+    def busy(self) -> bool:
+        """Return whether the entry loads, or has a fiber that loads or unloads.
+
+        A fiber that waits for a service is not busy.
+        """
+        return self._init_task is not None or bool(self._busy_fibers())
+
+    def tasks(self) -> list[Deferred[Any]]:
+        """Return what the entry waits for: its load, or its busy fibers."""
+        if self._init_task is not None:
+            return [self._init_task]
+        return [fiber.wait() for fiber in self._busy_fibers()]
 
     def _parent_disabled(self) -> bool:
         group = self.parent
@@ -292,6 +343,13 @@ class Entry:
 
     def _registered(self) -> bool:
         return self.parent.tree.store.get(self.options["id"]) is self
+
+    def _resolve_inject(self) -> bool:
+        """Read `inject` from the options, and return whether it changed."""
+        inject = resolve_inject(self.options.get("inject"))
+        changed = inject != self.inject
+        self.inject = inject
+        return changed
 
     def _moved(self) -> bool:
         """Return whether the context of the live fiber differs from the group's."""
@@ -316,30 +374,46 @@ class Entry:
             self.options = options  # type: ignore[assignment]
         else:
             merge_options(self.options, options)
+        changed = self._resolve_inject()
         if self._blocked():
             self.dispose()
             return
-        fiber = self.live_fiber()
-        rebuild = self.options.get("name") != legacy.get("name") or (
-            fiber is not None and self._moved()
+        active = self._active()
+        # the component and the outer fiber are bound when they are created
+        rebuild = (
+            changed
+            or self.options.get("name") != legacy.get("name")
+            or (active and self._moved())
         )
-        if rebuild or fiber is None:
+        if rebuild or not active:
             # the disposal is part of the init task, so a concurrent update joins it
-            await self.init(self.dispose() if fiber is not None else None)
+            await self.init(self.dispose() if active else None)
             return
         keys = self.options.keys() | legacy.keys()
         diff = [key for key in keys if self.options.get(key) != legacy.get(key)]  # type: ignore[misc]
         if diff or force:
-            await self._reconcile(fiber, diff)
+            await self._reconcile(diff)
 
-    async def _reconcile(self, fiber: Fiber, diff: list[str]) -> None:
+    async def _reconcile(self, diff: list[str]) -> None:
+        outer = self.outer_fiber
+        # an outer fiber that is not active waits for its services
+        if outer is not None and outer.state != FiberState.ACTIVE:
+            return
+        fiber = self.live_fiber()
+        if fiber is None:
+            # the outer fiber starts the component again
+            assert outer is not None
+            await outer.restart()
+            return
         self._resolve_disabled()
         if "config" in diff or self.options.get("group"):
             await fiber.update(self.options.get("config"), no_save=True)
 
     def dispose(self) -> Deferred[None] | None:
-        """Dispose the fiber of the component. The loader does not report it."""
-        return self._dispose(self.inner_fiber)
+        """Dispose the fibers of the entry. The loader does not report it."""
+        fiber = self.outer_fiber or self.inner_fiber
+        self.outer_fiber = None
+        return self._dispose(fiber)
 
     def _dispose(self, fiber: Fiber | None) -> Deferred[None] | None:
         if fiber is None:
@@ -357,7 +431,9 @@ class Entry:
         """
         task = self._init_task
         if task is None:
-            task = self._init_task = run(self._scheduler, self._init(dispose_task))
+            # the first step runs after this assignment: `_init` releases the task
+            # before its component can start another load
+            task = self._init_task = spawn(self._scheduler, self._init(dispose_task))
         try:
             await task
         finally:
@@ -365,12 +441,26 @@ class Entry:
             # can start another
             if self._init_task is task:
                 self._init_task = None
+        spawn(self._scheduler, self._announce())
+
+    async def _announce(self) -> None:
+        """Tell the `loader` service to check its readers when the loader is idle."""
+        for fiber in (self.outer_fiber, self.inner_fiber):
+            if fiber is None:
+                continue
+            try:
+                await fiber.wait()
+            except Exception:
+                pass  # the fiber has logged its own failure
+        if not self.loader.busy():
+            ctx = self.loader.ctx
+            ctx.reflect.notify(ctx, ["loader"])
 
     async def _init(self, dispose_task: Deferred[None] | None) -> None:
         if dispose_task is not None:
             await dispose_task
         # a later update has already rebuilt the entry
-        if self.live_fiber() is not None:
+        if self._active():
             return
         self._verdict = None
         name = self.options["name"]
@@ -381,7 +471,18 @@ class Entry:
         if component is None or not self._registered() or self._blocked():
             return
         self._init_task = None
-        self._start(component)
+        tree = self.parent.tree
+        group_ctx = self.parent.ctx
+        ctx = group_ctx.bind_fiber(tree.ctx.fiber)
+        self._home = (tree, group_ctx)
+        if not self.inject:
+            self._start(ctx, component)
+            return
+        outer = SimpleNamespace(
+            name="loader:outer", inject=dict(self.inject), apply=_outer_apply
+        )
+        with self._scheduler.call():
+            self.outer_fiber = ctx.use(outer, self)
 
     async def _import(self) -> object | None:
         """Import the component of the entry. Log the failure and give `None`."""
@@ -400,15 +501,17 @@ class Entry:
             return None
         return component
 
-    def _start(self, component: Any) -> None:
+    def _start(self, ctx: Context, component: Any) -> None:
+        """Run `component` in a fiber of `ctx`.
+
+        The caller has checked that the entry is registered and not blocked: `_init`
+        before it creates the fiber, and the epoch of the outer fiber before it calls
+        this method.
+        """
         # a group still starts: its verdict only reaches its children
         self._resolve_disabled()
         self.loader._show_log(self, "apply")
-        tree = self.parent.tree
-        group_ctx = self.parent.ctx
-        ctx = group_ctx.bind_fiber(tree.ctx.fiber)
         # the fiber is linked before its component can run
         with self._scheduler.call():
             self.inner_fiber = ctx.use(component, self.options.get("config"))
             self.loader._link(self.inner_fiber, self)
-        self._home = (tree, group_ctx)

@@ -4,13 +4,13 @@ import logging
 from typing import Any
 
 import pytest
-from loader_fakes import GROUP, RecordingLoader
+from loader_fakes import GROUP, Mock, RecordingLoader
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.fiber import FiberState
-from pycordis.loader import Group, Loader, LoaderConfig
+from pycordis.loader import EntryChange, EntryTree, Group, Loader, LoaderConfig
 from pycordis.scheduler import ImmediateScheduler, spawn
 
 
@@ -389,3 +389,118 @@ def test_an_update_disables_enables_and_deletes_fields_of_an_entry(
     loader.update("1", {"config": None}).result()
     assert loader.resolve("1").options == {"id": "1", "name": "foo"}
     assert foo.calls == [{"a": 1}, {"a": 1}, None]
+
+
+@pytest.mark.upstream("loader/index.spec.ts::Loader: intercept config::pending")
+@pytest.mark.upstream("loader/index.spec.ts::Loader: intercept config::resolved")
+def test_a_reader_that_sets_await_uses_the_loader_when_no_entry_is_busy(
+    loader: RecordingLoader,
+) -> None:
+    gate = Deferred[None]()
+
+    async def slow(ctx: Context, config: Any) -> None:
+        await gate
+
+    loader.mock("foo", slow)
+    loader.mock("bar", silent_update, inject=["never"])
+    loader.mock("qux")
+
+    loader.create({"id": "foo", "name": "foo"})
+    loader.create({"id": "bar", "name": "bar"})
+    loader.create({"id": "qux", "name": "qux", "inject": {"loader": {"await": True}}})
+
+    assert loader.fiber("foo").state == FiberState.LOADING
+    assert loader.fiber("bar").state == FiberState.PENDING
+    qux = loader.resolve("qux")
+    assert qux.outer_fiber is not None
+    assert qux.outer_fiber.state == FiberState.PENDING
+    assert qux.inner_fiber is None
+
+    gate.resolve(None)
+
+    assert loader.fiber("foo").state == FiberState.ACTIVE
+    assert loader.fiber("bar").state == FiberState.PENDING
+    assert loader.fiber("qux").state == FiberState.ACTIVE
+
+
+@pytest.mark.upstream(
+    "loader/index.spec.ts::Loader: pending entry update::persist an update to a pending fiber"  # noqa: E501
+)
+def test_an_update_of_a_fiber_that_waits_for_a_service_changes_the_data(
+    loader: RecordingLoader,
+) -> None:
+    loader.mock("foo", inject=["never"])
+    loader.read([{"id": "1", "name": "foo"}]).result()
+    assert loader.fiber("1").state == FiberState.PENDING
+
+    loader.fiber("1").update({"a": 3})
+
+    assert loader.data == [{"id": "1", "name": "foo", "config": {"a": 3}}]
+
+
+def nested_tree(loader: RecordingLoader, changes: list[EntryChange]) -> type[EntryTree]:
+    """Return a component that holds a tree and stops its children before it leaves."""
+
+    class NestedTree(EntryTree):
+        inject = ["foo"]
+
+        def __init__(self, ctx: Context, config: Any) -> None:
+            super().__init__(ctx, import_function=loader.import_function)
+
+        def commit(self, change: EntryChange) -> None:
+            changes.append(change)
+
+        async def cordis_init(self) -> Any:
+            def stop() -> Deferred[None]:
+                async def later() -> None:
+                    # the children are disposed before they are unregistered
+                    await Deferred.resolved(None)
+                    self.root.stop()
+
+                return spawn(self.ctx.scheduler, later())
+
+            yield stop
+            await self.root.update([{"id": "a", "name": "bar"}])  # type: ignore[list-item]
+
+    return NestedTree
+
+
+@pytest.mark.upstream(
+    "loader/index.spec.ts::Loader: parent teardown::keep children enabled when the parent loses a dependency"  # noqa: E501
+)
+def test_the_children_of_a_tree_that_loses_a_service_keep_their_options(
+    root: Context, loader: RecordingLoader
+) -> None:
+    loader.mock("bar")
+    changes: list[EntryChange] = []
+    loader.modules["tree"] = nested_tree(loader, changes)
+    dispose = root.provide("foo", {})
+    loader.read([{"id": "1", "name": "tree"}]).result()
+    assert loader.fiber("1").state == FiberState.ACTIVE
+    assert loader.resolve("1:a").live_fiber() is not None
+
+    dispose()
+    loader.wait().result()
+
+    assert loader.fiber("1").state == FiberState.PENDING
+    assert changes == []
+
+
+@pytest.mark.upstream(
+    "loader/index.spec.ts::Loader: replaced component::keeps the entry of a component replaced in place"  # noqa: E501
+)
+def test_a_component_that_the_registry_replaces_keeps_its_entry(
+    root: Context, loader: RecordingLoader
+) -> None:
+    foo = loader.mock("foo")
+    loader.read([{"id": "1", "name": "foo", "config": {"a": 1}}]).result()
+    fiber = loader.fiber("1")
+    replacement = Mock("next")
+
+    root.registry.replace(foo, replacement)
+    fiber.wait().result()
+
+    assert loader.fiber("1") is fiber
+    assert replacement.calls == [{"a": 1}]
+    assert not loader.resolve("1").disabled
+    assert loader.root.data == [{"id": "1", "name": "foo", "config": {"a": 1}}]

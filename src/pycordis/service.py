@@ -150,14 +150,31 @@ class Service[T]:
         A fiber that provides the service itself adds no `inject` configuration. When
         the object is not a view, `self.ctx` is also the caller.
         """
-        values = self.ctx.intercept_layers(self.name)
-        caller = self.cordis_caller
-        found = locate(self.ctx if caller is None else caller, self.name)
-        if found is not None and found.fiber is not None:
-            config = found.fiber.inject[self.name]
-            if config is not None:
-                values.insert(0, config)
-        return self.cordis_merge_intercept(*values)
+        return resolve_intercept(self, self.ctx, self.cordis_caller)
+
+
+def resolve_intercept[T](
+    service: Service[T], use_site: "Context", caller: "Context | None"
+) -> T:
+    """Return the configuration of `service` for the fiber that reads it.
+
+    A service whose own context is not the use site calls this function from its
+    `cordis_resolve_intercept`. The result merges, from the outermost to the innermost,
+    the `inject` configuration of the fiber that admits the access, and each
+    `Context.intercept` configuration of `use_site`.
+
+    Args:
+        service: The service.
+        use_site: The context whose intercept layers apply.
+        caller: The context through which the service is read, or `None` for `use_site`.
+    """
+    values = use_site.intercept_layers(service.name)
+    found = locate(use_site if caller is None else caller, service.name)
+    if found is not None and found.fiber is not None:
+        config = found.fiber.inject[service.name]
+        if config is not None:
+            values.insert(0, config)
+    return service.cordis_merge_intercept(*values)
 
 
 def _invoke_through_view(self: Service[Any], *args: Any, **kwargs: Any) -> Any:
