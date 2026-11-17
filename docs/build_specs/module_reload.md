@@ -292,12 +292,12 @@ API:
 ## Dependencies
 
 - **Sequence**: spec 3 of 3. The specs are done one at a time, in this order:
-  [Declarative Loader](completed/declarative_loader.md), [Timer Service](timer_service.md), Module Reload.
+  [Declarative Loader](completed/declarative_loader.md), [Timer Service](completed/timer_service.md), Module Reload.
   Each spec changes `conformance/ledger.toml` and regenerates `conformance/upstream.json`, so two
   specs on separate feature branches at the same time conflict in those files.
 - **Prerequisite**: the [Declarative Loader](completed/declarative_loader.md) spec is complete (Increment 1
   for the package list and the public-module rule; the loader for the `index.spec.ts` cases).
-  This spec does not use the [Timer Service](timer_service.md); only the sequence puts it first.
+  This spec does not use the [Timer Service](completed/timer_service.md); only the sequence puts it first.
 - **Runtime**: none (standard library: `ast`, `importlib`, `sys`, `sysconfig`).
 - **Dev**: none new.
 

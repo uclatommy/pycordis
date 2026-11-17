@@ -229,6 +229,68 @@ The loader follows these rules:
 - **Waiting**: `loader.wait()` returns a `Deferred` that completes when no entry loads or
   unloads. An entry that waits for a service is not busy.
 
+## Timers
+
+A timer that a plugin starts and does not stop runs after the plugin unloads. The timer
+service avoids this: each timer is an effect of the fiber that starts it, so the fiber stops the
+timer when it unloads. `pycordis.timer` is a public module that `import pycordis` does not
+import.
+
+1. The host provides a clock as the service `clock`. The timer service reads it.
+2. The host uses `TimerService`.
+3. A plugin that injects `timer` reads the timer methods from its context, for example
+   `ctx["timeout"]`.
+
+```python
+from pycordis import Context, ImmediateScheduler
+from pycordis.timer import CLOCK, ManualClock, TimerService
+
+clock = ManualClock()
+root = Context(ImmediateScheduler())
+root.provide(CLOCK, clock)
+root.use(TimerService)
+
+
+def reminder(ctx: Context, config: object) -> None:
+    ctx["timeout"](lambda: print("time is up"), 1.0)
+
+
+reminder.inject = ["timer"]
+fiber = root.use(reminder)
+clock.advance(1.0)
+```
+
+The timer methods, with delays in seconds:
+
+| Method | Result |
+|---|---|
+| `timeout(callback, delay)` | Calls `callback` once. It returns the effect handle. |
+| `interval(callback, delay)` | Calls `callback` every `delay` seconds. It returns the effect handle. |
+| `sleep(delay)` | Returns a `Deferred` that a task awaits. |
+| `ticks(delay)` | Returns an async iterator for a task: `async for _ in ctx["ticks"](1.0)`. |
+| `throttle(callback, delay, trailing=True)` | Returns a function that runs `callback` at most once in each `delay` seconds. |
+| `debounce(callback, delay)` | Returns a function that runs `callback` after `delay` seconds with no call. |
+
+- **Unload**: when the fiber unloads, its timers stop. A `sleep` that is pending rejects with
+  `CordisError("Context has been disposed")`, and so do the pending reads of `ticks`. Call the
+  handle of a timer, or `dispose()` on the result of `throttle` or `debounce`, to stop one timer
+  earlier.
+- **Early exit from a loop**: `break` or an exception in `async for` does not close `ticks`.
+  Use `contextlib.aclosing` to stop the timer at the exit.
+- **Lost ticks**: `ticks` does not buffer. A tick that comes while no read is pending is lost.
+- **Errors**: an `Exception` from a callback that the clock runs is logged with the logger of
+  the plugin's fiber, and the other timers continue.
+- **A change of clock**: when the host provides a different clock, the timer service reloads,
+  and so does every plugin that injects `timer`. No timer runs on the old clock.
+
+Choose the clock for the host:
+
+- `ManualClock` moves only when the host calls `advance(seconds)` on the owner thread. Use it
+  in tests, and in a host with a frame loop: call `advance` each frame with the elapsed time.
+- `ThreadingClock(scheduler)` uses one worker thread, and the scheduler runs each callback on
+  the owner thread. Use it in a headless host. Call `close()` after the root context is
+  disposed.
+
 ## Where to Go Next
 
 - The [API Reference](api/index.md) has the full contract of every public name.

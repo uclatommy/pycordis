@@ -361,7 +361,7 @@ has no running test.
 ## Dependencies
 
 - **Sequence**: spec 1 of 3. The specs are done one at a time, in this order: Declarative
-  Loader, [Timer Service](../timer_service.md), [Module Reload](../module_reload.md). Each spec changes
+  Loader, [Timer Service](timer_service.md), [Module Reload](../module_reload.md). Each spec changes
   `conformance/ledger.toml` and regenerates `conformance/upstream.json`, so two specs on
   separate feature branches at the same time conflict in those files.
 - **Prerequisite** (before Increment 2): the upstream check of the move scenario is done. At the

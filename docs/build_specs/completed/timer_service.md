@@ -1,6 +1,6 @@
 # Build Spec: Timer Service
 
-**Status**: 🚧 In progress — Increment 1 done; spec 2 of 3 (see [Dependencies](#dependencies))
+**Status**: ✅ Completed — both increments done; spec 2 of 3 (see [Dependencies](#dependencies))
 
 ## Goal
 
@@ -14,7 +14,7 @@ A timer that a plugin starts and does not stop runs after the plugin unloads. Wi
 alone, each plugin wraps its timer in `ctx.effect`, and each plugin test needs its own fake time.
 The timer service does this once, and its clock protocol gives host and plugin tests
 deterministic time. The cost and benefit of this item are in the
-[core port follow-ups](completed/core_port.md#follow-ups) (item 4).
+[core port follow-ups](core_port.md#follow-ups) (item 4).
 
 ## Architecture
 
@@ -188,7 +188,7 @@ docs/
 ## Integration
 
 - `pycordis.timer` is a public module (the public-module rule is set by Increment 1 of the
-  [Declarative Loader](completed/declarative_loader.md) spec). It exports `TimerService`, `Clock`,
+  [Declarative Loader](declarative_loader.md) spec). It exports `TimerService`, `Clock`,
   `CLOCK`, `ManualClock`, `ThreadingClock`, `Scheduled`, and `Ticks`.
 - `pycordis/__init__.py` does not change.
 - `conformance/ledger.toml`: `timer` in the package list, and every timer item reviewed. IDs
@@ -239,10 +239,10 @@ docs/
 ## Dependencies
 
 - **Sequence**: spec 2 of 3. The specs are done one at a time, in this order:
-  [Declarative Loader](completed/declarative_loader.md), Timer Service, [Module Reload](module_reload.md).
+  [Declarative Loader](declarative_loader.md), Timer Service, [Module Reload](../module_reload.md).
   Each spec changes `conformance/ledger.toml` and regenerates `conformance/upstream.json`, so two
   specs on separate feature branches at the same time conflict in those files.
-- **Prerequisite**: Increment 1 of the [Declarative Loader](completed/declarative_loader.md) spec (the
+- **Prerequisite**: Increment 1 of the [Declarative Loader](declarative_loader.md) spec (the
   package list in the inventory, the prefixed IDs, the public-module rule, and the scanner
   support for `export default <name>`: the scanner at the tracked revision rejects
   `timer/src/index.ts` with "unnamed default export"). No code in this spec uses the rest of
@@ -291,15 +291,30 @@ timers, and the user guide describes them.
 **Validation**: `uv run pytest`; the full-suite unmarked slow tests section is empty; zero
 `pending` timer entries in the ledger
 **Docs**: `docs/user_guide.md` section; review of every `pycordis.timer` docstring
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/timer.py`: `TimerService.sleep` and `TimerService.ticks`, the public `Ticks` iterator, and the `sleep` and `ticks` mixins; `_every` takes an `unload` hook that runs after the timer is cancelled
+- `tests/test_timer.py`: 10 upstream cases for the wait forms (9 test functions), the `sleep` and `ticks` Python-only tests, `sleep` and `ticks` in the delay-validation tests, and both in the seeded `EFF-REVERT` schedule test
+- `conformance/ledger.toml`: zero `pending` timer entries; the wait-form cases are `ported` or `adapted` (`timer-api`), and `TimerService.timeout` and `TimerService.interval` are `adapted`
+- `docs/user_guide.md`: section "Timers" with a runnable example, the method table, the unload rules, and the choice of clock
+
+**Tests**:
+- `tests/test_timer.py`: 88 passed; full suite: 1161 passed; the unmarked slow tests section is empty
+- Regression: `tests/test_conformance.py`, `tests/test_inventory.py`, `tests/test_docstrings.py`, `tests/test_package.py`, `tests/test_doc_examples.py` pass; coverage of `pycordis.timer` is 100%
+- `uv run ruff check .` and `uv run ruff format --check .` are clean
+
+**Deviations**:
+- `timer.py` grows by about 190 lines (estimate 120), mostly docstrings
+- The message item `timer/message:Context has been disposed` is `ported` without a marker, as the other message items are
 
 ## Code Standards
 
-- [Contributing](../contributing.md): the test and docstring standards, with the pull request
+- [Contributing](../../contributing.md): the test and docstring standards, with the pull request
   checklist
-- [Developer Guide](../developer_guide.md): the upstream review procedure, slow tests, and
+- [Developer Guide](../../developer_guide.md): the upstream review procedure, slow tests, and
   release rules
-- [Architecture](../architecture.md): the semantic contract, conformance, and the divergence
+- [Architecture](../../architecture.md): the semantic contract, conformance, and the divergence
   table
 - The instruction files in `.github/instructions/`: Python Coding Standards, Docstrings &
   Markdown Style, Testing Standards, and Upstream Porting

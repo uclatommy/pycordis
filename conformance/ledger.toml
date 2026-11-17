@@ -3824,31 +3824,48 @@ status = "ported"
 hash = "c0cc9fdc8aaf6763d68f3fb98ea49972a10f2542f4ecc6724d748a0e9ebebe0f"
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break return)"]
-status = "pending"
+status = "adapted"
+hash = "934ae374675620fb3a0363fe5cb4bda70ae6db6b62b9765e89951dda9bb39e1b"
+divergence = "timer-api"
+note = "The loop uses `contextlib.aclosing`, because an early exit of `async for` does not close an iterator in Python."
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break throw)"]
-status = "pending"
+status = "adapted"
+hash = "da69dc8954f18bbcf48047fd853d1860d8cd1bc69bdb0c673f300515526dec18"
+divergence = "timer-api"
+note = "The loop uses `contextlib.aclosing`, because an early exit of `async for` does not close an iterator in Python."
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (concurrent reads)"]
-status = "pending"
+status = "ported"
+hash = "b438573abcde1808cad99d27651da3e311876c977d2150c25b3381f4c3a9411e"
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (context dispose with concurrent reads)"]
-status = "pending"
+status = "ported"
+hash = "0ed957c83623f5723ea741545f7f290ec544320180e6cc948c002f7aa45a52df"
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (context dispose)"]
-status = "pending"
+status = "ported"
+hash = "2a7d5d9bdf55c4401f290f1a16f97afdcd0256324052fc547864f9e415f1964e"
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual return)"]
-status = "pending"
+status = "ported"
+hash = "e99e5b7c5ad475fa3f9dab20df0a0a2bf483edd287b6a576b38265efa2b9b384"
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual throw)"]
-status = "pending"
+status = "ported"
+hash = "c4a04299c9f271cfdb389f577413d073f7b73a95290254f7fd6dac325a17f619"
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (return with concurrent reads)"]
-status = "pending"
+status = "adapted"
+hash = "86479f641e69632f2c17045f902f1da077d9a6ff8f0b906dc4dc4f64ea6a6af7"
+divergence = "timer-api"
+note = "`Ticks.aclose` takes no value, so the value of `return` is not ported; a pending read raises `StopAsyncIteration`."
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (throw with concurrent reads)"]
-status = "pending"
+status = "adapted"
+hash = "3d9900eb1fb687ca2cc86f5f2ac0b8dd9ea71abd38007ebaf25c47ebeb8437d7"
+divergence = "timer-api"
+note = "`Ticks.athrow` returns a `Deferred` that rejects with `StopAsyncIteration`."
 
 [items."timer/index.spec.ts::ctx.timer::ctx.interval()::basic support"]
 status = "ported"
@@ -3887,10 +3904,14 @@ status = "ported"
 hash = "b9aad8871db8f21c2434e41f80252a087cf9d575ae6c39d09e8a2ea383afe2f8"
 
 [items."timer/index.spec.ts::ctx.timer::ctx.timeout()::promise"]
-status = "pending"
+status = "adapted"
+hash = "7f0f55dec8527f52384366f90a2bd8b85fb4a9ae525f9108394104bc53c37334"
+divergence = "timer-api"
+note = "The wait form is `sleep`, which returns a `Deferred`."
 
 [items."timer/message:Context has been disposed"]
-status = "pending"
+status = "ported"
+hash = "3c3c082f462c725ecadef9f38673dee8fdbf1f029d73fc78b28726a1e84f478c"
 
 [items."timer/src/index.ts:<rest>"]
 status = "not-applicable"
@@ -3928,7 +3949,11 @@ hash = "431634c9ac3edaf8240cc3d99dd886e955cf3037112ad37e65a36735657f543c"
 divergence = "timer-api"
 
 [items."timer/src/index.ts:TimerService.interval"]
-status = "pending"
+status = "adapted"
+hash = "c6119046c27a030cd8d1b14e551f7847e9c12a70c00c688bd75492c2c49e0d76"
+target = "pycordis.timer.TimerService.interval"
+divergence = "timer-api"
+note = "The wait form is `ticks`."
 
 [items."timer/src/index.ts:TimerService.setInterval"]
 status = "diverged"
@@ -3947,7 +3972,11 @@ hash = "6bb005458b183d9c6151f76527bb6b00aaa4d67f81b8b6b965157b0bdc84d097"
 divergence = "timer-api"
 
 [items."timer/src/index.ts:TimerService.timeout"]
-status = "pending"
+status = "adapted"
+hash = "cce6be5a5863cfb478d75a76e0361f12920eaa34934a806859cce345fc906de9"
+target = "pycordis.timer.TimerService.timeout"
+divergence = "timer-api"
+note = "The wait form is `sleep`."
 
 [items."timer/src/index.ts:default"]
 status = "not-applicable"

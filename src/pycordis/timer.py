@@ -31,10 +31,12 @@ import logging
 import math
 import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from functools import partial
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, Self
 
+from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.keys import Key
 from pycordis.scheduler import Scheduler
@@ -42,7 +44,6 @@ from pycordis.service import Service
 
 if TYPE_CHECKING:
     from pycordis.context import Context
-    from pycordis.deferred import Deferred
     from pycordis.fiber import EffectHandle, Fiber
 
 __all__ = [
@@ -51,6 +52,7 @@ __all__ = [
     "ManualClock",
     "Scheduled",
     "ThreadingClock",
+    "Ticks",
     "TimerService",
 ]
 
@@ -335,6 +337,109 @@ class Scheduled[**P]:
             cancel()
 
 
+class Ticks:
+    """An async iterator that gives one item for each tick of a timer.
+
+    `TimerService.ticks` returns it. A task reads it with `async for`, or with
+    `await ticks.__anext__()`. Each read waits for one tick, and a tick resolves the
+    oldest pending read. A tick that comes while no read is pending is lost.
+
+    The iterator ends in one of three ways, and the first one stays:
+
+    - `aclose` ends it normally: every pending and later read raises
+      `StopAsyncIteration`.
+    - `athrow` ends it with an error: every pending and later read raises that error.
+    - The fiber that created it unloads: every pending and later read raises
+      `CordisError("Context has been disposed")`.
+
+    An exit from `async for` with `break` or with an exception does not close the
+    iterator. Use `contextlib.aclosing` to stop the timer at the exit.
+
+    Examples:
+        ```python
+        >>> async def watch(ctx):
+        ...     async with aclosing(ctx["ticks"](1.0)) as ticks:
+        ...         async for _ in ticks:
+        ...             print("tick")
+        ...             break
+        ```
+    """
+
+    def __init__(
+        self,
+        every: Callable[[Callable[[], None], Callable[[], None]], "EffectHandle"],
+    ) -> None:
+        self._pending: deque[Deferred[None]] = deque()
+        self._end: BaseException | None = None
+        self._handle = every(self._tick, self._unload)
+
+    def __aiter__(self) -> Self:
+        return self
+
+    def __anext__(self) -> Deferred[None]:
+        """Return a `Deferred` that completes at the next tick.
+
+        Returns:
+            A `Deferred` that resolves at a tick. After the iterator has ended, it is
+            already rejected with the error of the end.
+        """
+        read = Deferred[None]()
+        if self._end is not None:
+            read.reject(self._end)
+        else:
+            self._pending.append(read)
+        return read
+
+    def aclose(self) -> Deferred[None]:
+        """End the iterator, and stop the timer.
+
+        Every pending read and every later read raises `StopAsyncIteration`. If the
+        iterator has already ended, its end does not change.
+
+        Returns:
+            A `Deferred` that is already resolved.
+        """
+        self._finish(StopAsyncIteration())
+        return Deferred.resolved(None)
+
+    def athrow(self, error: BaseException) -> Deferred[None]:
+        """End the iterator with `error`, and stop the timer.
+
+        Every pending read and every later read raises `error`. If the iterator has
+        already ended, its end does not change.
+
+        Args:
+            error: The error for the reads.
+
+        Returns:
+            A `Deferred` that is already rejected with `StopAsyncIteration`.
+        """
+        self._finish(error)
+        result = Deferred[None]()
+        result.reject(StopAsyncIteration())
+        return result
+
+    def _tick(self) -> None:
+        if self._pending:
+            self._pending.popleft().resolve(None)
+
+    def _unload(self) -> None:
+        """End the iterator when its effect reverts without a terminal state."""
+        self._end_reads(CordisError("Context has been disposed"))
+
+    def _finish(self, error: BaseException) -> None:
+        self._end_reads(error)
+        self._handle()
+
+    def _end_reads(self, error: BaseException) -> None:
+        if self._end is not None:
+            return
+        self._end = error
+        pending, self._pending = self._pending, deque()
+        for read in pending:
+            read.reject(error)
+
+
 class TimerService(Service):
     """The timers of a plugin, as effects of its fiber.
 
@@ -366,7 +471,10 @@ class TimerService(Service):
         clock = ctx[CLOCK]
         super().__init__(ctx)
         self._clock: Clock = clock
-        ctx.mixin(self.name, ("timeout", "interval", "throttle", "debounce"))
+        ctx.mixin(
+            self.name,
+            ("timeout", "sleep", "interval", "ticks", "throttle", "debounce"),
+        )
 
     def timeout(self, callback: Callable[[], object], delay: float) -> "EffectHandle":
         """Call `callback` once, `delay` seconds from now.
@@ -396,6 +504,48 @@ class TimerService(Service):
         )
         return handle
 
+    def sleep(self, delay: float) -> Deferred[None]:
+        """Return a `Deferred` that resolves `delay` seconds from now.
+
+        The wait is an effect of the plugin's fiber with the label `ctx.timeout()`. The
+        effect ends when the `Deferred` resolves. If the fiber unloads first, the
+        `Deferred` rejects with `CordisError("Context has been disposed")`.
+
+        Args:
+            delay: The wait in seconds. `0` means "due now".
+
+        Returns:
+            A `Deferred` for a task to await.
+
+        Raises:
+            ValueError: If `delay` is negative.
+
+        Examples:
+            ```python
+            >>> async def pause(ctx):
+            ...     await ctx["sleep"](1.0)
+            ```
+        """
+        _check_delay(delay)
+        waiting = Deferred[None]()
+
+        def fire() -> None:
+            waiting.resolve(None)
+            handle()
+
+        def start() -> Cancel:
+            cancel = self._clock.call_later(delay, fire)
+
+            def revert() -> None:
+                cancel()
+                if not waiting.done():
+                    waiting.reject(CordisError("Context has been disposed"))
+
+            return revert
+
+        handle = self.ctx.effect(start, "ctx.timeout()")
+        return waiting
+
     def interval(self, callback: Callable[[], object], delay: float) -> "EffectHandle":
         """Call `callback` every `delay` seconds until the handle or the fiber stops it.
 
@@ -418,6 +568,26 @@ class TimerService(Service):
             delay,
             lambda: _run_logged(fiber, "ctx.interval()", callback),
             "ctx.interval()",
+        )
+
+    def ticks(self, delay: float) -> Ticks:
+        """Return an async iterator that gives one item every `delay` seconds.
+
+        The timer is an effect of the plugin's fiber with the label `ctx.interval()`.
+        Each tick is due at the deadline of the tick before it plus `delay`.
+
+        Args:
+            delay: The time between two ticks in seconds.
+
+        Returns:
+            The `Ticks` iterator. Close it with `Ticks.aclose` to stop the timer.
+
+        Raises:
+            ValueError: If `delay` is not positive.
+        """
+        _check_delay(delay, positive=True)
+        return Ticks(
+            lambda tick, unload: self._every(delay, tick, "ctx.interval()", unload)
         )
 
     def throttle[**P](
@@ -497,12 +667,17 @@ class TimerService(Service):
         return Scheduled(self.ctx, "ctx.debounce()", trigger)
 
     def _every(
-        self, delay: float, tick: Callable[[], None], label: str
+        self,
+        delay: float,
+        tick: Callable[[], None],
+        label: str,
+        unload: Callable[[], None] = lambda: None,
     ) -> "EffectHandle":
         """Register an effect that calls `tick` at each multiple of `delay`.
 
         The effect schedules the next tick before it runs `tick`, so a `tick` that
-        reverts the effect also cancels the next tick.
+        reverts the effect also cancels the next tick. The revert calls `unload`
+        after it cancels the timer.
         """
         clock = self._clock
 
@@ -516,6 +691,11 @@ class TimerService(Service):
                 tick()
 
             cancel = clock.call_later(delay, fire)
-            return lambda: cancel()
+
+            def stop() -> None:
+                cancel()
+                unload()
+
+            return stop
 
         return self.ctx.effect(start, label)

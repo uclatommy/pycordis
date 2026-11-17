@@ -4,6 +4,7 @@ import logging
 import random
 import threading
 from collections.abc import Callable
+from contextlib import aclosing
 from typing import Any
 
 import pytest
@@ -13,7 +14,7 @@ from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.fiber import Fiber
 from pycordis.scheduler import FramePumpScheduler, ImmediateScheduler, spawn
-from pycordis.timer import CLOCK, ManualClock, ThreadingClock, TimerService
+from pycordis.timer import CLOCK, ManualClock, ThreadingClock, Ticks, TimerService
 
 type Factory = Callable[[Context, Callable[..., Any]], Callable[..., Any]]
 
@@ -277,19 +278,24 @@ def test_a_callback_can_stop_its_own_interval(
     assert plugin.get_effects() == []
 
 
-@pytest.mark.parametrize("method", ["timeout", "interval", "throttle", "debounce"])
+@pytest.mark.parametrize(
+    "method", ["timeout", "interval", "throttle", "debounce", "sleep", "ticks"]
+)
 @pytest.mark.parametrize("delay", [-1.0, float("nan")])
 def test_a_timer_method_rejects_a_negative_delay(
     method: str, delay: float, plugin: Fiber
 ) -> None:
+    args = () if method in ("sleep", "ticks") else (lambda: None,)
     with pytest.raises(ValueError, match="delay"):
-        plugin.ctx[method](lambda: None, delay)
+        plugin.ctx[method](*args, delay)
     assert plugin.get_effects() == []
 
 
-def test_interval_rejects_a_delay_of_zero(plugin: Fiber) -> None:
+@pytest.mark.parametrize("method", ["interval", "ticks"])
+def test_a_periodic_timer_rejects_a_delay_of_zero(method: str, plugin: Fiber) -> None:
+    args = () if method == "ticks" else (lambda: None,)
     with pytest.raises(ValueError, match="positive"):
-        plugin.ctx["interval"](lambda: None, 0)
+        plugin.ctx[method](*args, 0)
 
 
 @pytest.mark.parametrize("method", ["timeout", "throttle", "debounce"])
@@ -301,6 +307,12 @@ def test_a_delay_of_zero_is_due_now(
         scheduled()
     manual.advance(0)
     assert len(calls) == 1
+
+
+def test_a_sleep_of_zero_is_due_now(plugin: Fiber, manual: ManualClock) -> None:
+    waiting = plugin.ctx["sleep"](0)
+    manual.advance(0)
+    assert waiting.done()
 
 
 def failing() -> None:
@@ -582,6 +594,239 @@ def test_a_threading_clock_drives_the_timer_service(
     assert fiber.get_effects() == []
 
 
+# -- wait forms ------------------------------------------------------------------------
+
+
+@pytest.mark.upstream("timer/index.spec.ts::ctx.timer::ctx.timeout()::promise")
+def test_sleep_resolves_at_its_deadline_and_a_later_unload_does_not_reject_it(
+    plugin: Fiber, manual: ManualClock
+) -> None:
+    waiting = plugin.ctx["sleep"](1.0)
+    manual.advance(0.5)
+    assert not waiting.done()
+    manual.advance(0.5)
+    assert waiting.result() is None
+    assert plugin.get_effects() == []
+    plugin.dispose()
+    manual.advance(2.0)
+    assert waiting.result() is None
+
+
+@pytest.mark.contract("EFF-REVERT")
+def test_a_pending_sleep_rejects_when_its_fiber_unloads(
+    plugin: Fiber, manual: ManualClock
+) -> None:
+    waiting = plugin.ctx["sleep"](1.0)
+    assert [meta.label for meta in plugin.get_effects()] == ["ctx.timeout()"]
+    plugin.dispose()
+    with pytest.raises(CordisError, match="Context has been disposed"):
+        waiting.result()
+    manual.advance(2.0)
+
+
+def read_ticks(
+    scheduler: ImmediateScheduler, ticks: Ticks, counter: Calls
+) -> Deferred[None]:
+    """Start a task that reads `ticks` with `async for` and counts each item."""
+
+    async def iterate() -> None:
+        async for _ in ticks:
+            counter()
+
+    return spawn(scheduler, iterate())
+
+
+@pytest.fixture
+def ticks(plugin: Fiber) -> Ticks:
+    return plugin.ctx["ticks"](1.0)
+
+
+@pytest.mark.upstream(
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual return)"
+)
+def test_aclose_ends_an_async_for_loop_and_stops_the_timer(
+    plugin: Fiber,
+    manual: ManualClock,
+    scheduler: ImmediateScheduler,
+    ticks: Ticks,
+    calls: Calls,
+) -> None:
+    loop = read_ticks(scheduler, ticks, calls)
+    manual.advance(1.0)
+    manual.advance(1.0)
+    assert len(calls) == 2
+    assert ticks.aclose().result() is None
+    manual.advance(1.0)
+    assert len(calls) == 2
+    assert loop.result() is None
+    assert plugin.get_effects() == []
+
+
+@pytest.mark.upstream(
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual throw)"
+)
+def test_athrow_ends_an_async_for_loop_with_the_error(
+    manual: ManualClock,
+    scheduler: ImmediateScheduler,
+    ticks: Ticks,
+    calls: Calls,
+) -> None:
+    loop = read_ticks(scheduler, ticks, calls)
+    manual.advance(1.0)
+    manual.advance(1.0)
+    assert len(calls) == 2
+    reason = ValueError("test")
+    with pytest.raises(StopAsyncIteration):
+        ticks.athrow(reason).result()
+    manual.advance(1.0)
+    assert len(calls) == 2
+    with pytest.raises(ValueError, match="test"):
+        loop.result()
+
+
+@pytest.mark.upstream(
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (concurrent reads)"
+)
+def test_a_tick_resolves_the_oldest_pending_read(
+    manual: ManualClock, ticks: Ticks
+) -> None:
+    first, second = ticks.__anext__(), ticks.__anext__()
+    manual.advance(1.0)
+    assert (first.done(), second.done()) == (True, False)
+    manual.advance(1.0)
+    assert (first.result(), second.result()) == (None, None)
+
+
+def test_a_tick_with_no_pending_read_is_lost(manual: ManualClock, ticks: Ticks) -> None:
+    manual.advance(3.0)
+    read = ticks.__anext__()
+    assert not read.done()
+    manual.advance(1.0)
+    assert read.done()
+
+
+@pytest.mark.upstream(
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator "
+    "(return with concurrent reads)"
+)
+def test_aclose_rejects_pending_and_later_reads_with_stop_async_iteration(
+    ticks: Ticks,
+) -> None:
+    reads = [ticks.__anext__() for _ in range(3)]
+    assert ticks.aclose().result() is None
+    for read in [*reads, ticks.__anext__()]:
+        with pytest.raises(StopAsyncIteration):
+            read.result()
+
+
+@pytest.mark.upstream(
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator "
+    "(throw with concurrent reads)"
+)
+def test_athrow_rejects_pending_and_later_reads_with_the_error(
+    plugin: Fiber, ticks: Ticks
+) -> None:
+    assert [meta.label for meta in plugin.get_effects()] == ["ctx.interval()"]
+    reads = [ticks.__anext__() for _ in range(3)]
+    reason = ValueError("test")
+    with pytest.raises(StopAsyncIteration):
+        ticks.athrow(reason).result()
+    for read in [*reads, ticks.__anext__()]:
+        with pytest.raises(ValueError) as info:
+            read.result()
+        assert info.value is reason
+    assert plugin.get_effects() == []
+
+
+@pytest.mark.parametrize(
+    ("first", "second", "expected"),
+    [
+        ("close", "throw", StopAsyncIteration),
+        ("throw", "close", ValueError),
+        ("unload", "close", CordisError),
+        ("unload", "throw", CordisError),
+    ],
+)
+def test_the_first_end_of_ticks_stays(
+    first: str, second: str, expected: type[BaseException], plugin: Fiber, ticks: Ticks
+) -> None:
+    ends: dict[str, Callable[[], object]] = {
+        "close": ticks.aclose,
+        "throw": lambda: ticks.athrow(ValueError("test")),
+        "unload": plugin.dispose,
+    }
+    ends[first]()
+    ends[second]()
+    with pytest.raises(expected):
+        ticks.__anext__().result()
+
+
+@pytest.mark.upstream(
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break return)"
+)
+@pytest.mark.upstream(
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break throw)"
+)
+@pytest.mark.parametrize("exit_kind", ["break", "raise"])
+def test_aclosing_stops_the_timer_when_a_loop_exits_early(
+    exit_kind: str,
+    plugin: Fiber,
+    manual: ManualClock,
+    scheduler: ImmediateScheduler,
+    calls: Calls,
+) -> None:
+    async def iterate() -> None:
+        seen = 0
+        async with aclosing(plugin.ctx["ticks"](1.0)) as ticks:
+            async for _ in ticks:
+                seen += 1
+                if seen > 2:
+                    if exit_kind == "raise":
+                        raise ValueError("test")
+                    break
+                calls()
+
+    loop = spawn(scheduler, iterate())
+    for _ in range(3):
+        manual.advance(1.0)
+    assert len(calls) == 2
+    assert plugin.get_effects() == []
+    if exit_kind == "raise":
+        with pytest.raises(ValueError, match="test"):
+            loop.result()
+    else:
+        assert loop.result() is None
+
+
+@pytest.mark.upstream(
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (context dispose)"
+)
+@pytest.mark.upstream(
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator "
+    "(context dispose with concurrent reads)"
+)
+def test_a_fiber_unload_rejects_pending_and_later_reads(
+    plugin: Fiber,
+    manual: ManualClock,
+    scheduler: ImmediateScheduler,
+    ticks: Ticks,
+    calls: Calls,
+) -> None:
+    loop = read_ticks(scheduler, ticks, calls)
+    manual.advance(1.0)
+    manual.advance(1.0)
+    assert len(calls) == 2
+    reads = [ticks.__anext__() for _ in range(3)]
+    plugin.dispose()
+    manual.advance(1.0)
+    assert len(calls) == 2
+    for read in [*reads, ticks.__anext__()]:
+        with pytest.raises(CordisError, match="Context has been disposed"):
+            read.result()
+    with pytest.raises(CordisError, match="Context has been disposed"):
+        loop.result()
+
+
 @pytest.mark.contract("EFF-REVERT")
 @pytest.mark.parametrize("seed", range(25))
 def test_no_timer_of_a_disposed_fiber_fires_in_a_random_schedule(
@@ -595,6 +840,18 @@ def test_no_timer_of_a_disposed_fiber_fires_in_a_random_schedule(
     disposed: set[int] = set()
     log: list[str] = []
     next_id = 0
+
+    def on_resolve(result: Deferred[None], callback: Callable[[], None]) -> None:
+        """Call `callback` when `result` resolves. A rejection is not a firing."""
+
+        def done(finished: Deferred[None]) -> None:
+            try:
+                finished.result()
+            except CordisError:
+                return
+            callback()
+
+        result.add_done_callback(done)
 
     def watch(owner: int, kind: str) -> Callable[..., None]:
         def fire(*args: Any) -> None:
@@ -613,10 +870,16 @@ def test_no_timer_of_a_disposed_fiber_fires_in_a_random_schedule(
         elif action == "timer" and live:
             owner = rng.choice(list(live))
             ctx = live[owner].ctx
-            kind = rng.choice(["timeout", "interval", "throttle", "debounce"])
+            kind = rng.choice(
+                ["timeout", "interval", "throttle", "debounce", "sleep", "ticks"]
+            )
             delay = rng.choice([0.25, 0.5, 1.0])
             callback = watch(owner, kind)
-            if kind in ("timeout", "interval"):
+            if kind == "sleep":
+                on_resolve(ctx[kind](delay), callback)
+            elif kind == "ticks":
+                on_resolve(ctx[kind](delay).__anext__(), callback)
+            elif kind in ("timeout", "interval"):
                 ctx[kind](callback, delay)
             else:
                 ctx[kind](callback, delay)()
