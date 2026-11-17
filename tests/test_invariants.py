@@ -14,7 +14,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from conftest import hook_snapshot
+from conftest import check_well_formed, hook_snapshot
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
@@ -209,24 +209,6 @@ def apply_op(
     else:
         ctx.registry.replace(slot.variants[0], slot.variants[1])
         slot.replaced = True
-
-
-def walk(fiber: Fiber) -> list[Fiber]:
-    return [fiber, *(node for child in fiber.children for node in walk(child))]
-
-
-def check_well_formed(root: Context, seed: int) -> None:
-    providers: dict[str, int] = {}
-    for fiber in walk(root.fiber):
-        parent = fiber.parent.fiber
-        assert parent is fiber or parent.state != FiberState.DISPOSED, (
-            f"seed {seed}: {fiber.name} has a disposed parent"
-        )
-        for impl in fiber.provisions:
-            providers[impl.name] = providers.get(impl.name, 0) + 1
-    assert all(count == 1 for count in providers.values()), (
-        f"seed {seed}: a key has more than one provider: {providers}"
-    )
 
 
 def settle(pump: FramePumpScheduler, seed: int) -> None:

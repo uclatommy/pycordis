@@ -1,6 +1,6 @@
 # Build Spec: Module Reload
 
-**Status**: 📝 Draft — reviewed, not started; spec 3 of 3 (see [Dependencies](#dependencies))
+**Status**: ✅ Completed — all four increments done; spec 3 of 3 (see [Dependencies](#dependencies))
 
 ## Goal
 
@@ -15,7 +15,7 @@ restart.
 modules that a change affects, evict and import them in an order that does not mix old and new
 code, find the new component, and keep the old code when an import fails. This service does that
 work. It is for development tools and interactive hosts; a production host can restart. The cost
-and benefit of this item are in the [core port follow-ups](completed/core_port.md#follow-ups)
+and benefit of this item are in the [core port follow-ups](core_port.md#follow-ups)
 (item 1).
 
 ## Architecture
@@ -230,7 +230,7 @@ API:
 ## Integration
 
 - `pycordis.hmr` is a public module (the public-module rule is set by Increment 1 of the
-  [Declarative Loader](completed/declarative_loader.md) spec). It exports `Hmr`, `HmrConfig`,
+  [Declarative Loader](declarative_loader.md) spec). It exports `Hmr`, `HmrConfig`,
   `ReloadResult`, `Abort`, `Skip`, `SkipReason`, `ModuleGraph`, and `source_graph`.
 - `pycordis.hmr` does not import `pycordis.loader`. The `index.spec.ts` tests use both.
 - `conformance/ledger.toml`: `hmr` in the package list, and every hmr item reviewed. IDs have
@@ -292,12 +292,12 @@ API:
 ## Dependencies
 
 - **Sequence**: spec 3 of 3. The specs are done one at a time, in this order:
-  [Declarative Loader](completed/declarative_loader.md), [Timer Service](completed/timer_service.md), Module Reload.
+  [Declarative Loader](declarative_loader.md), [Timer Service](timer_service.md), Module Reload.
   Each spec changes `conformance/ledger.toml` and regenerates `conformance/upstream.json`, so two
   specs on separate feature branches at the same time conflict in those files.
-- **Prerequisite**: the [Declarative Loader](completed/declarative_loader.md) spec is complete (Increment 1
+- **Prerequisite**: the [Declarative Loader](declarative_loader.md) spec is complete (Increment 1
   for the package list and the public-module rule; the loader for the `index.spec.ts` cases).
-  This spec does not use the [Timer Service](completed/timer_service.md); only the sequence puts it first.
+  This spec does not use the [Timer Service](timer_service.md); only the sequence puts it first.
 - **Runtime**: none (standard library: `ast`, `importlib`, `sys`, `sysconfig`).
 - **Dev**: none new.
 
@@ -410,15 +410,33 @@ the user guide describes the service.
 **Validation**: `uv run pytest`; the full-suite unmarked slow tests section is empty; zero
 `pending` hmr entries in the ledger
 **Docs**: `docs/user_guide.md` section; review of every `pycordis.hmr` docstring
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+
+**Changed**:
+- `tests/test_hmr.py`: the `index.spec.ts` cases and the three `reconcile.spec.ts` cases that use loader entries (tree host, slow unload, several entries, an entry that leaves or returns during an unload, a host that reuses a component)
+- `tests/test_hmr_contract.py`: `LIFE-FAILURE` and `REG-WELLFORMED` under 30 seeded schedules each, on a `FramePumpScheduler`
+- `tests/conftest.py`: `walk` and `check_well_formed` (moved from `tests/test_invariants.py`, which imports them)
+- `conformance/ledger.toml`: the 206 remaining hmr entries reviewed (the loader cases `ported`, the Node internals `not-applicable`, the manifest and link cases `diverged` with `hmr-resolution`); zero `pending`
+- `docs/user_guide.md`: the section "Reload modules" (runs as an example, rules, result fields, host limits)
+
+**Tests**:
+- `tests/test_hmr.py`: 12 tests; `tests/test_hmr_contract.py`: 60 cases; coverage of `pycordis.hmr` is 99%
+- Re-run: the full suite has 1301 passing tests, `ruff check` and `ruff format --check` are clean, and the unmarked slow tests section is empty
+
+**Deviations**:
+- The contract tests are in `tests/test_hmr_contract.py`, not in `tests/test_hmr.py`, as the loader contract tests are in their own file
+- The cases `should not start the new instance before the old one released` and `should not delay an unrelated component behind a slow one` share one test; both markers are on it
+- `waits for a second re-enable init` is `ported` with a note: upstream spies on a private method of the entry, and the test uses the public `update` calls. The loader starts the new fiber at once on a re-enable, so the test checks one apply for each enable and none from the reload
+- Messages of the Node patches are `diverged` with `hmr-resolution` (the vocabulary check needs a divergence for a message that is not in the source)
+- The `user_guide.md` example disposes `Hmr` at its end, because one `Hmr` is active in a process and the example test runs all blocks in one process
 
 ## Code Standards
 
-- [Contributing](../contributing.md): the test and docstring standards, with the pull request
+- [Contributing](../../contributing.md): the test and docstring standards, with the pull request
   checklist
-- [Developer Guide](../developer_guide.md): the upstream review procedure, slow tests, and
+- [Developer Guide](../../developer_guide.md): the upstream review procedure, slow tests, and
   release rules
-- [Architecture](../architecture.md): the semantic contract, conformance, and the divergence
+- [Architecture](../../architecture.md): the semantic contract, conformance, and the divergence
   table
 - The instruction files in `.github/instructions/`: Python Coding Standards, Docstrings &
   Markdown Style, Testing Standards, and Upstream Porting

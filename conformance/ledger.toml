@@ -3999,43 +3999,62 @@ hash = "4deba2d9f7f64a04e49285624e84cf9825f872be16fda6937b736fb72335616e"
 note = "The fixtures `manual` and `plugin` of `tests/test_timer.py` provide a `ManualClock`, the timer service, and a plugin fiber."
 
 [items."hmr/index.spec.ts::HMR::component with multiple entries::should rebuild every fiber, each keeping its own config"]
-status = "pending"
+status = "ported"
+hash = "9dd8c4b633349bcbbc83d3f16e572532157d70b49164f54450e2684343d16e4a"
 
 [items."hmr/index.spec.ts::HMR::entry changed during unload::does not rebuild an entry disabled during unload"]
-status = "pending"
+status = "ported"
+hash = "26e2785209c818967f813bcdaa8f4ed206234a9988925369d97d92f4a4c9b203"
 
 [items."hmr/index.spec.ts::HMR::entry changed during unload::does not rebuild an entry removed during unload"]
-status = "pending"
+status = "ported"
+hash = "bfd0a69e3434b271a98e8846b61daf786c392969f14e54a400f869755d2c7c62"
 
 [items."hmr/index.spec.ts::HMR::entry changed during unload::rebuilds a child of an active host that reused the component"]
-status = "pending"
+status = "ported"
+hash = "2254ed79a67eb3122dd0c0b1ae79891731f0e642da79dfc54ce3ba472692d969"
 
 [items."hmr/index.spec.ts::HMR::entry changed during unload::skips a child whose host is replaced during unload"]
-status = "pending"
+status = "ported"
+hash = "d4762462918db606eb80dda2943ff230f26da5a72705052ccf5fb9dbfbb483ca"
 
 [items."hmr/index.spec.ts::HMR::entry changed during unload::waits for a second re-enable init before deciding whether to rebuild"]
-status = "pending"
+status = "ported"
+hash = "9f803f41b99e26288f9f86044787c5b0d5616ad5ab784f68c2a259d60598ac9f"
+note = "Upstream spies on a private method of the entry to hold two re-enable loads. The test disables and enables the entry during the unload, then again, and checks one apply for each enable and none from the reload."
 
 [items."hmr/index.spec.ts::HMR::nested entry tree::should keep a single nested entry across a batch queued behind a stalled host"]
-status = "pending"
+status = "ported"
+hash = "95fa823ecdcc0a5626808542c9879db94105699dccff3bd4d8c56ac4391019a6"
 
 [items."hmr/index.spec.ts::HMR::nested entry tree::should keep a single nested entry when its host reloads too"]
-status = "pending"
+status = "ported"
+hash = "3225e3bff3c84efae62cd8b7226aa3a883836c8cbdb11189af8dc41db6666036"
 
 [items."hmr/index.spec.ts::HMR::resource handoff on reload::should not delay an unrelated component behind a slow one"]
-status = "pending"
+status = "ported"
+hash = "5744dc5d420e12f8650390387dade41c0f7bb9ba44de31f46f48ebff4701f4f4"
+note = "One test covers both resource handoff cases: the new instance does not start before the old one released, and an unrelated component does not wait for it."
 
 [items."hmr/index.spec.ts::HMR::resource handoff on reload::should not start the new instance before the old one released"]
-status = "pending"
+status = "ported"
+hash = "791350910bf6132cb281d12fb71587679c837ab825e3a3c009a46b196b6f233c"
+note = "One test covers both resource handoff cases: the new instance does not start before the old one released, and an unrelated component does not wait for it."
 
 [items."hmr/internal.spec.ts::ModuleLoader.fromInternal::tags the running loader with the resolver signature it accepts"]
-status = "pending"
+status = "not-applicable"
+hash = "6214c7e7b72b6e06399f677ad638f0b51254a90c87b28e5b5c58a3735e654dd1"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/message:another HMR instance is active in this thread"]
-status = "pending"
+status = "adapted"
+hash = "ac4fbcb69de07c14026d41c14bc03e94360fc7f4370d30990499d5942bacd9e9"
+divergence = "hmr-modules"
+note = "The text says `process`, because `sys.modules` belongs to the process."
 
 [items."hmr/message:cannot start a transaction inside another transaction"]
-status = "pending"
+status = "ported"
+hash = "319e8e4f4ec559af372941f07c8711a76273972ad4099bfd37a1a54d5fc9290f"
 
 [items."hmr/message:invalid component at {}, expect function or object with an \"apply\" method, received {}"]
 status = "ported"
@@ -4046,97 +4065,161 @@ status = "ported"
 hash = "b6f347c759894b261fa2b4436682991155836493a2bce35bb0c46029c44c197d"
 
 [items."hmr/message:loader internals are unavailable, pass --expose-internals or install node-addon-require-builtin"]
-status = "pending"
+status = "diverged"
+hash = "86029174b2dbb13433a14c03c2d49aba3b599363c999f50d9c652bf3b632971d"
+divergence = "hmr-resolution"
+note = "The message belongs to the patches of the Node module loader, which Python does not have."
 
 [items."hmr/message:the methods replaced by an earlier HMR cannot be restored, restart the process to use this one"]
-status = "pending"
+status = "diverged"
+hash = "1753314b3f7200ca64d37d1d661e7a5c544d2787957882e93ee997777743a9de"
+divergence = "hmr-resolution"
+note = "The message belongs to the patches of the Node module loader, which Python does not have."
 
 [items."hmr/message:{}."]
-status = "pending"
+status = "not-applicable"
+hash = "b4ecea9969b835e7698be34143aeecded3ff084e6ef1d35b27f6fd631670910b"
+note = "A message of the Node module-loader patches or of a bundler error; Python has none."
 
 [items."hmr/modules.spec.ts::ModuleCaches::evaluates an evicted module again on its next import"]
-status = "pending"
+status = "not-applicable"
+hash = "48e5811f6c877e7039f6d1cc33d66b8e49fb5756f525bf97b47c4998267f21c9"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::keeps the jobs that have not failed through a sweep"]
-status = "pending"
+status = "not-applicable"
+hash = "b5ec99150284718939bcc281a7bc880efa13037c46e0d60b33f6ca0b2af47ade"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::lets a module that failed to evaluate be imported again after a sweep"]
-status = "pending"
+status = "not-applicable"
+hash = "5346b76b3e811a1a4541727a2e8e167d360f52d7ae441fa728358aee5ac01e70"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::lets a module that failed to link be imported again after a sweep"]
-status = "pending"
+status = "not-applicable"
+hash = "13fe2090c47f306a3b66a70f4a6e805437f83886a735b51a4246091ad25dec05"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::lets a module that failed to load be imported again after a sweep"]
-status = "pending"
+status = "not-applicable"
+hash = "b0b280a907b58264b545912ee537c29fcd2066e690135730c92c228bb0c75c91"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::lists the modules of both caches"]
-status = "pending"
+status = "not-applicable"
+hash = "c2b8f9d5e489dc3853c5de03bfbd85fda1f00ed1e33c22896c7048847ac3c2c1"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::reads the exports of a CommonJS module that has finished loading only"]
-status = "pending"
+status = "not-applicable"
+hash = "024918803823a0a84eaf040acd0011444afe6643f69e3c5b3c670390a25ea5d5"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::reads the namespace of an evaluated module only"]
-status = "pending"
+status = "not-applicable"
+hash = "7fc74a49dfe841725be71ee8c28f25a3068111419aba6ecbda77a622685f099c"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::removes a module on restore that was not loaded when evicted"]
-status = "pending"
+status = "not-applicable"
+hash = "026224958ac1b2bc672429b6dfc9367256337618f12e125c37e4f14ca4f88ada"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::reports static imports and CommonJS children as edges"]
-status = "pending"
+status = "not-applicable"
+hash = "849168cab4fc950a0dc19f921669ca4e1a3b7dfc33913191912268af1fe7a98d"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/modules.spec.ts::ModuleCaches::restores the evicted instances"]
-status = "pending"
+status = "not-applicable"
+hash = "4e8c87cf8ccf4018b1d7dc437ccaac0a024ff2b6979c3b39f5b3a29d86c15097"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
 
 [items."hmr/patches.spec.ts::manifests::leaves Node unchanged when a replacement cannot be installed"]
-status = "pending"
+status = "not-applicable"
+hash = "32229a837f270952a5e1774b57420dbcc9d75775a5751ea35fa78ab636bef6a9"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::loads a hook-resolved file as the hook reports it, once replaced"]
-status = "pending"
+status = "not-applicable"
+hash = "8542b1ac571779ef9a44175b25f7a46f3d0d0fa65d96cf141181893690c98e22"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::loads a module that a load hook substitutes for `node:path` as a child, once"]
-status = "pending"
+status = "not-applicable"
+hash = "9bdf64a577ff6432df09e7b3f402448708e65ce5c16e0fac675848fcca4e946f"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::loads a module that a load hook substitutes for `node:test` as a child, once"]
-status = "pending"
+status = "not-applicable"
+hash = "9bdf64a577ff6432df09e7b3f402448708e65ce5c16e0fac675848fcca4e946f"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::reads an invalidated manifest as Node does"]
-status = "pending"
+status = "not-applicable"
+hash = "de8d8e475f7b1a95f459eeef14a47488620f90b78ee27f8e3fd0abbfc15f6601"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::reads the format of a file from the manifests added and removed around it"]
-status = "pending"
+status = "not-applicable"
+hash = "03885a3bb2ce4c7a4c6233a85d12fa406902d7c00c6de354ace89af53d09ebe1"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::refuses to take over replacements that another wrapper has covered"]
-status = "pending"
+status = "not-applicable"
+hash = "a07338a897780ea329d4d010035a8152636d4e92a0c3e688a69e6a6ffeed57d0"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::requires a `node:` builtin past a module cached under its name"]
-status = "pending"
+status = "not-applicable"
+hash = "e24905d775024b64471b0f06899add8e4e6b8764a23d4f35e0e8fa946122126a"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::requires a request that only a synchronous hook resolves"]
-status = "pending"
+status = "not-applicable"
+hash = "de9711730b6e554a6b042998b3ac603fa7d46f1c2200313792741eb61d7a27cb"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::resolves a CommonJS require through a retargeted link whose manifest differs"]
-status = "pending"
+status = "not-applicable"
+hash = "c4322dacccee5a4a44e35b96f31de1eb1219862b56edd42ccb23bbc8d8842c6c"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::resolves a later CommonJS require after a change confined to the manifest"]
-status = "pending"
+status = "not-applicable"
+hash = "779642aa6c0d973596824c7c2f240575f71e2299c1124a5be5ddf491943af427"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::resolves a later CommonJS require to a package added below the importer"]
-status = "pending"
+status = "not-applicable"
+hash = "768a3d1ff9b7bc001c6346b063ba5aef315a96bf9dc9c34e970d3c9aef388221"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::resolves a later require of a file to itself once the redirecting hook is deregistered"]
-status = "pending"
+status = "not-applicable"
+hash = "f62769a5f1535b5f2a0231b86bdd8dc44b91cb2db004d9b66a874160ffd876a4"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::resolves a later require to the builtin that a hook newly reports"]
-status = "pending"
+status = "not-applicable"
+hash = "3d1ffef74578a2ea4b0fa054f692736b8874bd463964f393a890f33b083acf0c"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::resolves an ESM import through a retargeted link whose manifest differs"]
-status = "pending"
+status = "not-applicable"
+hash = "4f388441af22e4d927dba8f005dded4ae5d8143e5aa7a0dd83c604f7ebc22fb5"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::takes over the manifests that a disposed HMR has invalidated, in another copy of the runtime"]
-status = "pending"
+status = "not-applicable"
+hash = "81d80a3c3d7c75b57cb1bf0dfb507d92f5185e70b9dec1664a818ad177850974"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/patches.spec.ts::manifests::throws from a later CommonJS require after `exports` is updated to exclude the request"]
-status = "pending"
+status = "not-applicable"
+hash = "c5fa5021e1ddc2050e717748903dbcde4213f86268a9d09f57172a5b481ccd54"
+note = "It tests the patches of the Node module loader, which Python does not have."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::aborts it with a component that imports a module that its new entry newly imports"]
 status = "diverged"
@@ -4271,7 +4354,8 @@ status = "ported"
 hash = "111047e3b8b634edc0567882bd023f238589d61157f9a2f8283f5468f4398c10"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a disabled component for when it is enabled again"]
-status = "pending"
+status = "ported"
+hash = "26946117385ba3ec3b352e3890c254a0d176561882dbc711d9b7d665feafdd17"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a module that no component depends on for its next import"]
 status = "ported"
@@ -4329,14 +4413,16 @@ status = "ported"
 hash = "065ee53d0dc7511166f7fa1f8ec40bb98112f29cc00d090c59227c4ce33ba54a"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces an entry component in place"]
-status = "pending"
+status = "ported"
+hash = "643570b729499f184b6b00dbc50a81243cbd37c06ea6bb08b7cc7373254e9b15"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces the components below a directory root"]
 status = "ported"
 hash = "be1f4c7582809726ea369bf642a2f9f94095d852339a02b3f20c968fd57b474a"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces the inner fiber of an entry with an injection scope in place"]
-status = "pending"
+status = "ported"
+hash = "e5f470ce09a2a3a19d285241afb92cf2a02edc79034604c527f3dab0829c4383"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::restores a changed module outside every component with the failed unit it imports"]
 status = "ported"
@@ -4373,52 +4459,91 @@ hash = "ba09ab08a9a1e487cfc44e8f41e6ead98858188e50992ed51116d65c89c378fe"
 divergence = "hmr-modules"
 
 [items."hmr/resolution.spec.ts::invalidateResolution::keeps resolving the version that another importer links"]
-status = "pending"
+status = "diverged"
+hash = "b0663d199e4b9e15b0f18c090c995d985267b2455991c9a12403d5a7adcb9fdb"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::reports realpath support under a synchronous hook that short-circuits file URLs"]
-status = "pending"
+status = "not-applicable"
+hash = "7023888de280e4d2a7f2e949dcfddf085074924d32b088cbdcaa9204cfedad6b"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::reports realpath support where Node passes the ESM realpath cache to fs.realpathSync"]
-status = "pending"
+status = "not-applicable"
+hash = "2d12ec54143178840fee074127fdf8db03c0a0d71a547398faf28d8279600b42"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::resolves a CommonJS require through a retargeted link when the ESM probe fails"]
-status = "pending"
+status = "not-applicable"
+hash = "1f211ba7bc100afbfb45cfa2d2c1bcfc01c02583eeb83c454f8acbb57f2551a9"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::resolves a CommonJS require to the hoisted copy after the nested one is removed"]
-status = "pending"
+status = "not-applicable"
+hash = "dc697d18ac54153d80fa58bc02ba35efc8ca5c4912075ce4105fafca8f117e1d"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import after only the manifest changes, keeping the static bindings"]
-status = "pending"
+status = "diverged"
+hash = "e0becae4460dd7af02a65a2ed77bcbad3bd335b14fe0c5e4722e443da2f9ba7e"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import of a package import after only the manifest changes"]
-status = "pending"
+status = "diverged"
+hash = "66d40cc595b2f72c6d00f0437ed9780fdb50f897bba9a6739591b0b61899fd39"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import to a package added below the importer"]
-status = "pending"
+status = "diverged"
+hash = "6b8d5b7fcd128b692e8e92a142edb095dd04be2a60391a8c6bc615e81e42cb0c"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import through a retargeted link after the runtime itself is removed"]
-status = "pending"
+status = "diverged"
+hash = "4520ffc9b86e2770dbd34207ebafc46a86dbbb269568d28a289b026e6f821bf2"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import to the hoisted copy after the nested one is removed"]
-status = "pending"
+status = "diverged"
+hash = "d9d7d09a4cc32fb1edffd749bdd7c7fb1e2c9d5e36f42078454eb262427d5c4d"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import to the hoisted copy under a synchronous hook that short-circuits file URLs"]
-status = "pending"
+status = "diverged"
+hash = "715076e7c420d402beddc981fc3739f4b6e6640d9152b612162cbbe09e26a5e2"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/resolution.spec.ts::invalidateResolution::retries a probe that failed"]
-status = "pending"
+status = "not-applicable"
+hash = "a1b296c159cefccc92ff42d9bfdd9437d095681c2cdd7e369b93ad233ae83ea0"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
 
 [items."hmr/src/error.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "3cbba59375626acbd89e1e0124b2f4cb5e6ebb7635282019384f86b007ed4e9a"
+note = "It formats the error of a bundler. Python has no bundler step."
 
 [items."hmr/src/error.ts:handleError"]
-status = "pending"
+status = "not-applicable"
+hash = "5229b1a95d6cf85240f0473ec37e26d5cb7249f2432353bd0339efd30dbad4c8"
+note = "It formats the error of a bundler. Python has no bundler step."
 
 [items."hmr/src/error.ts:isBuildFailure"]
-status = "pending"
+status = "not-applicable"
+hash = "8672ae48214c9d4a1df01b90b634895dc7c8eb7ae249cc19c668fba8f0a060fb"
+note = "It formats the error of a bundler. Python has no bundler step."
 
 [items."hmr/src/index.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "82a25bd0942a09346dee4436f2334de7a94b138ad210b0a7254bd3f38e0dc47d"
+note = "Imports of the TypeScript module."
 
 [items."hmr/src/index.ts:Awaitable"]
 status = "not-applicable"
@@ -4546,7 +4671,10 @@ divergence = "hmr-resolution"
 note = "It resolves a package manifest and a package location."
 
 [items."hmr/src/index.ts:default"]
-status = "pending"
+status = "adapted"
+hash = "f8ff6ad0a73a692f5f7cebefc35b6d32f3eef923f4c8aa28d6c5082b9e6036c0"
+divergence = "hmr-modules"
+note = "The default export is the `Hmr` service class (`pycordis.hmr.Hmr`)."
 
 [items."hmr/src/index.ts:driveLetter"]
 status = "not-applicable"
@@ -4571,7 +4699,9 @@ divergence = "hmr-resolution"
 note = "Python records no request of an import."
 
 [items."hmr/src/index.ts:module cordis"]
-status = "pending"
+status = "not-applicable"
+hash = "089ad5d37ab36aab13be3353533875dd28f8c8132c9cf4c4fa7c3015a020a127"
+note = "A TypeScript type augmentation. A context reads the service with `ctx.get(\"hmr\")`."
 
 [items."hmr/src/index.ts:scheme"]
 status = "not-applicable"
@@ -4590,427 +4720,709 @@ hash = "faf5fa25257d22934b6050e902ab1383bd76388eb995e29452c84d7faadd9b31"
 divergence = "hmr-modules"
 
 [items."hmr/src/runtime/index.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "a42913745ee8283f44ddadef2ae2ff232967c9ebe039372371560740a82eff34"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "659952f4bce827b2bbd340548960dbfadae042f438db27ddfce6799cb5688516"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:LoadCache"]
-status = "pending"
+status = "not-applicable"
+hash = "2efb24d52ea9b4dfd22409eb00431dd91575270fd1810faa2ae6a91c5035ca53"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:LoadCacheData"]
-status = "pending"
+status = "not-applicable"
+hash = "0adfc2b2861f1634040be2ce018384a1677e4d1a22762e24078fafbe36940424"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:LoadResult"]
-status = "pending"
+status = "not-applicable"
+hash = "260d2c89e2408ebd893407ef3a2c4793056d03605e85b426486f45071f7c05c1"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleFormat"]
-status = "pending"
+status = "not-applicable"
+hash = "5522fc5e6f407497a560508c8ba8ebcca05f43ab8a055bf259734e2cb21a2b89"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleJob"]
-status = "pending"
+status = "not-applicable"
+hash = "7f60486f310fe71304ecbe64ffe6f38df46f2a57989c9cea52badaffc3218250"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleLoader"]
-status = "pending"
+status = "not-applicable"
+hash = "28a2d460db0748e8e95d6e450a6cff0d1744169ce870f5000ba43d6a8a06df48"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleLoaderV1"]
-status = "pending"
+status = "not-applicable"
+hash = "07317f986f0bd00b3e947352095268557dbc514b862d59d96db5b1e5ff3c1322"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleLoaderV2"]
-status = "pending"
+status = "not-applicable"
+hash = "287b492d1056e487b5e2a113f7bf9d465af82d7a2ce2fffefca0551eca7f23f6"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModulePhase"]
-status = "pending"
+status = "not-applicable"
+hash = "ab4a6e1ec7177026c67b4ecf6eb1ac63f74e6f9d11e4cb914f5796d9d6d4acdb"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleRequest"]
-status = "pending"
+status = "not-applicable"
+hash = "b213f0bf41a91550159bf62bca4d8b4eb197d73fc9cbe27104375fc8814e098f"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleRequestType"]
-status = "pending"
+status = "not-applicable"
+hash = "e3bb98958988dff532951d10fecf06820e107f07df3850a9e19add46f8ee35f0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleSource"]
-status = "pending"
+status = "not-applicable"
+hash = "0a3dcb05e6099034ea81e739da19208a3e98ff7e7ee0da19c587df852bdbfba0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleStatus"]
-status = "pending"
+status = "not-applicable"
+hash = "7a284f7fcf0509d3595614637eb3ac11c3979ca2f54004cc4e17d1758bdf5095"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ModuleWrap"]
-status = "pending"
+status = "not-applicable"
+hash = "c9a73013582dabbc3b06c3181587a62a7995217343b86da608ff18c9c36d8af8"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:ResolveResult"]
-status = "pending"
+status = "not-applicable"
+hash = "69aed5a37663705acf4606f139d94bebfdb2f79a0cbef994431b082ffe4144ed"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:getModuleJobs"]
-status = "pending"
+status = "not-applicable"
+hash = "a093805b3d19e31139de83fffdea08e5a4c8b2ae46013fe3262da49227ee3db2"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:internalBinding"]
-status = "pending"
+status = "not-applicable"
+hash = "2500d909c4606f47ec0d3fd47da960faedb65dcbf1100e676fe4e64215214de6"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/internal.ts:requireInternal"]
-status = "pending"
+status = "not-applicable"
+hash = "edd6d2404158b3a3a9f1a0157076a503e625246bf56d8c9196ab1fd137552419"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "6778cda14679cfae9325385f1aa26014117e9579d02d02ada086a20f595b9e0e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleBackup"]
-status = "pending"
+status = "not-applicable"
+hash = "6899819b1c6765a0c182c8c9862faae27d5de80d9375083eec6f643da535972b"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches"]
-status = "pending"
+status = "not-applicable"
+hash = "bdb6600c7c8768f975bfc34717f0e22a0fd5dd951f858b383339e4c6f169615a"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches._delete"]
-status = "pending"
+status = "not-applicable"
+hash = "54857f4a50438770442f6bbceb58e660e29869b45523e83fd09fe44afa50c169"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches.children"]
-status = "pending"
+status = "not-applicable"
+hash = "7b88c1e20613b2002c249bd4517caa2a47c4a845e71303610119a80059b3ff68"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches.constructor"]
-status = "pending"
+status = "not-applicable"
+hash = "909a8cb2e850765a2ad2451bd098d37367f69ad3243ca95f5af566507efd7e3a"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches.edges"]
-status = "pending"
+status = "not-applicable"
+hash = "4f36d2fa0186177261ce9ef0ec668a2537a14e72d10917179973970c60436102"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches.evict"]
-status = "pending"
+status = "not-applicable"
+hash = "091bb7a2b3e66abe6b042b97694a93e163c9f27d2ddd18ac16a06503023a26d4"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches.exports"]
-status = "pending"
+status = "not-applicable"
+hash = "ef7c975038cb84ddbbe422df8c1bfc818faf6300c837950da038cfe3dc811dce"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches.has"]
-status = "pending"
+status = "not-applicable"
+hash = "1c5c04f7c663d54e191004df137515a11e1ba5554cc29999d0e3a8a9f1ee8539"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches.namespace"]
-status = "pending"
+status = "not-applicable"
+hash = "1f8905ad086722886ec07f8e2acde1b48b02c2c65fbf5f758c278edb95155187"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches.sweep"]
-status = "pending"
+status = "not-applicable"
+hash = "6ae0ff54ed09b88837d26be8146a95d752402c80663b0a079688d45091f691ee"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:ModuleCaches.urls"]
-status = "pending"
+status = "not-applicable"
+hash = "c745afdc46e6df2073557a6fb005d6bc31f3e828feb647d63188d6cac5885d2c"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:isBuiltin"]
-status = "pending"
+status = "not-applicable"
+hash = "48fe6b5d785141599be8367f304daf83a51f1d9359c8f6d00e0649d8d01ed066"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/modules.ts:toPath"]
-status = "pending"
+status = "not-applicable"
+hash = "129180770f7f7e624cbba90e83403d73ba5757f17867ebd4e786b980a4d51cd4"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "264c08ac8a6eac8c463074a815f3709696c6eb5597511481e59328a22a24eda1"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:Binding"]
-status = "pending"
+status = "not-applicable"
+hash = "75e6c4d26dc40b56682b7f6141c9642af34a72366b4ae39cf0965b6222a8716e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:ErrorContext"]
-status = "pending"
+status = "not-applicable"
+hash = "a1540f5d555fd03bdaff5e91cc8ec1a2d510d57eb91b40d1bcbf5ca051deaa22"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:Load"]
-status = "pending"
+status = "not-applicable"
+hash = "21773fb8842781095b80bc6c417c3ed9260dcc2f320336d771172839e2bdd9d8"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:Manifest"]
-status = "pending"
+status = "not-applicable"
+hash = "7b37b9d45dc21d96a96f13c3828041a2927d9511fe5da06ac71c85b2b224c360"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:ManifestState"]
-status = "pending"
+status = "not-applicable"
+hash = "14629e5ca49f335b4e00144009c73d6d6f72484a7c8988fbc008269308755024"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:PackageJSON"]
-status = "pending"
+status = "not-applicable"
+hash = "660c99167f18e5ae7f58d283d7e0894bb0a09283dc3bb8cb3bf9028e9b1d2fc8"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:Patches"]
-status = "pending"
+status = "not-applicable"
+hash = "7fb3ea3b160ca129303b8dd0079a834671d80f263efe36ee7a799268c40c73be"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:Reader"]
-status = "pending"
+status = "not-applicable"
+hash = "b358ba27667073af65a41bf5f065833c2e5863a485ea45139694bd6400afb926"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:Resolution"]
-status = "pending"
+status = "not-applicable"
+hash = "d948bf49145a9aa27dadbfd9a31e517bf25dc8d6d2ce4b5fd307893e6689f60e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:ResolveForCJSWithHooks"]
-status = "pending"
+status = "not-applicable"
+hash = "29eed47f978f5c36ad6241f63284bb18ead3d75c04e64174352ed5d4ed8b98a2"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:ResolveHook"]
-status = "pending"
+status = "not-applicable"
+hash = "2ab2619378d27adca59a821a213278ccfac3bd204cf3c9a2c4932525067f3d36"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:activate"]
-status = "pending"
+status = "not-applicable"
+hash = "3bc7503e883b2cd65ec0a9b97396118f89e3171613c9d9eb4f03346d24ed1e21"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:current"]
-status = "pending"
+status = "not-applicable"
+hash = "40daa97389a49c3bad9ba045c90ba0be0db12339829a0999789b784fd49eb02a"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:deserialize"]
-status = "pending"
+status = "not-applicable"
+hash = "782543f3f2e2b42bd2c4e35096f85ea123cb9d12bf4d292fa37ba97b5ecc2978"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:install"]
-status = "pending"
+status = "not-applicable"
+hash = "4f0b78e053e6fa01c766ad6a852804154ea18ce041a70fc4d56a369535a992a8"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:invalidateManifests"]
-status = "pending"
+status = "not-applicable"
+hash = "16cbdd819235954d10fba6ec8e6b44c22b939156791aecb19f59694d5b2fadcb"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:isInvalidated"]
-status = "pending"
+status = "not-applicable"
+hash = "23244208d827fa8a123b6870140e517476bb5ad18b6a4000b276f2f7ad445458"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:kDefer"]
-status = "pending"
+status = "not-applicable"
+hash = "7bae41a0c55c475d03c6c099d4d7a8b0b1fcbb3e3fc051cd66e2aee73ffec584"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:key"]
-status = "pending"
+status = "not-applicable"
+hash = "c360f501d58af1476279df1a9cb314d8180f24d4914de2f99c821a6931cbc16b"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:nearest"]
-status = "pending"
+status = "not-applicable"
+hash = "38998451ec4af0fb779446e046a44554bac76e0b0d40eba7a4bd99b3259bfb39"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:parseManifest"]
-status = "pending"
+status = "not-applicable"
+hash = "328972cfabe8a75b40f59fc87d95fab96e2efd50c1fcd0aacd7a64b0f3ca78b0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:read"]
-status = "pending"
+status = "not-applicable"
+hash = "0e2129308b86c617330802f5fcffe74a51164f4d81d737983e4082edce28bed1"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:scope"]
-status = "pending"
+status = "not-applicable"
+hash = "c64506514d4e59582ad04437171d104e85a484947f8e1817c112db1a9fdf8337"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:setup"]
-status = "pending"
+status = "not-applicable"
+hash = "ef9855fb3a8a2d0f4b875c5f73f92156b04b44a8d3d76e5d932e522cc3172b62"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/patches.ts:within"]
-status = "pending"
+status = "not-applicable"
+hash = "cc6529bdeab803ecb81ba752680f37e7481f0df4e44a5b0973ca26fa56020f6a"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "629e1f4122a36551193e6a2281e229f4d8c6250f662829d8c3a67e0ab8e55a12"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:Captured"]
-status = "pending"
+status = "not-applicable"
+hash = "29726f363b8a45581a017399ee81696806ff8f09103492f4033658e6f444cc2e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:Resolution"]
-status = "pending"
+status = "not-applicable"
+hash = "8eb1a7a1219ff0be6487325c39419ac39d0190284f888f091e1ebdf7fc4be0f0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:ResolutionSupport"]
-status = "pending"
+status = "not-applicable"
+hash = "959d7e54ddb3012e9de382179186c60cb9fb021ad2dbecfba514297ba22d1843"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:capture"]
-status = "pending"
+status = "not-applicable"
+hash = "4228c63d80e9510f9a32c18ceccece93c39c7696e9a445a96bae27b3548e3c2e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:captureCJS"]
-status = "pending"
+status = "not-applicable"
+hash = "85ffadd2e09893657d7c25259ad0491691f3f2795c6b194979259ba60fb07a01"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:captureESM"]
-status = "pending"
+status = "not-applicable"
+hash = "0fe00bacae17c14da46e7ce164fe9d84a5e821edd1e61f97e0d53e9dccfe90c4"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:captured"]
-status = "pending"
+status = "not-applicable"
+hash = "54cb527bde9a9902cb7db6083609b1784a9861d667b7c8183dc9f06f81d24b31"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:getCaptured"]
-status = "pending"
+status = "not-applicable"
+hash = "efe2bebbe81b9172fcc48097e8f53157b7780c352ef6faeaa9c974a07771c632"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:getResolutionSupport"]
-status = "pending"
+status = "not-applicable"
+hash = "260ac29d5af5f1f0386b1b90153112e53d0df988a1a2772abe2de15cc46b0a76"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:invalidateResolution"]
-status = "pending"
+status = "not-applicable"
+hash = "bf87f32c3ac7aa40b08fabdcb01b6ea57ae1e9670c6a4ae518abe52179e82b1c"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:locatePackage"]
-status = "pending"
+status = "not-applicable"
+hash = "39ca32b3e823b06c4dfb4e068a179c9f0c1f984c24d149e8e690d41755430114"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:packageName"]
-status = "pending"
+status = "not-applicable"
+hash = "3946e60e18802cdcf691cd6d38e59482bfea890394ef8208cbe33ec8ca8d00c3"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:parseKey"]
-status = "pending"
+status = "not-applicable"
+hash = "c1b2bf30d1021199821f1ba4051c7a4358bbd4a556997621ee944ad95994bada"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:removeResolutions"]
-status = "pending"
+status = "not-applicable"
+hash = "1ff2c8a4209414e427666306c421e5e8a645b5efe9f0a1376905c0a62505d4e4"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:resolveRequest"]
-status = "pending"
+status = "not-applicable"
+hash = "5da6e07f877ebbfa3f15f57520f4b4433312407b8d7e3cc0c1a5eb49c2d5e841"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:restoreResolutions"]
-status = "pending"
+status = "not-applicable"
+hash = "a483999ddd470a3f502c079d3f9517f84e15ad5af004e1451796011d6aefcd52"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:toPath"]
-status = "pending"
+status = "not-applicable"
+hash = "3ff9a28b9bf53a940c48efe7b3f74b71c58cb0c4a52dc6d33b2437d43c7ea893"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/src/runtime/resolution.ts:within"]
-status = "pending"
+status = "not-applicable"
+hash = "dc9f923b96872c18c310a7b4c0f2cdac4c42ef45f3ae65a0e96bb2cbf6b4c8a0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
 
 [items."hmr/tests/index.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "aef6d9f70a8b10bfb7bc3f19a4a36e9abc87e094c70ce2134cae5fb373b85f57"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:Gate"]
-status = "pending"
+status = "not-applicable"
+hash = "184c6f6d2418064d0d4a22c0a49db27304a7b6235c82987d0769dd0f454369ce"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:arm"]
-status = "pending"
+status = "not-applicable"
+hash = "198317987abb4fbf399fcc852d581084623e8be8b43238c078dd93957763406e"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:configTree"]
-status = "pending"
+status = "not-applicable"
+hash = "1cc58a246ce2462c6bf17a5b5962a17421dde6948e47f35dbedb58bdbe217ef4"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:copyFixtures"]
-status = "pending"
+status = "not-applicable"
+hash = "fb41b2ca5739443379c9baf60d9fdae6ea06f425804c1a46547566b757fdb91e"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:createContext"]
-status = "pending"
+status = "not-applicable"
+hash = "2c5d5f30f9fca1d4204c9a73bb27f71753a214b19d0f067522143e085d120038"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:disarm"]
-status = "pending"
+status = "not-applicable"
+hash = "01ddae5da8cc5ef4d33069817ac06fa94fcae9b7a28765253bfe31aaa7625e53"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:dropCached"]
-status = "pending"
+status = "not-applicable"
+hash = "3257597b4064c9edf2ca318aa5be7b319385ccb842e94b8a1d0641328cd47e10"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:findEntry"]
-status = "pending"
+status = "not-applicable"
+hash = "ef6d2cd4916c2e1cb8a607458192f5b62ed52f38d14f131a9a871065edde16d3"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:fixture"]
-status = "pending"
+status = "not-applicable"
+hash = "325eed7a0965cb6d1ef6d1f9801d3f65752dc4d397d48252513207ecc4c3b178"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:fixtureDir"]
-status = "pending"
+status = "not-applicable"
+hash = "ea2588540a1eab8a05d54019059ea097fceb971b87b4ea81102c02d1e876f815"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:installGate"]
-status = "pending"
+status = "not-applicable"
+hash = "96673eda90d3582f74b97cf7fd305ae7767192f16e09efbe763b1d0ca98ef7ad"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:liveNested"]
-status = "pending"
+status = "not-applicable"
+hash = "939bd614a20c0acf68e82b790fb948a0b317ec173b206b3b7b1f48fbfe088d19"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:liveUids"]
-status = "pending"
+status = "not-applicable"
+hash = "41c1e36e022876fc466aebb970090a0925f6faf5dfc4854ef9d432f0294982b8"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:templateDir"]
-status = "pending"
+status = "not-applicable"
+hash = "e9f9e1d8e26577ee62207f87dde9a97408a6b82220279d4210171c471974bc5d"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:testDir"]
-status = "pending"
+status = "not-applicable"
+hash = "05c0a5e69137a6b19b176dbb8f0ad2581c46f3d7e518a47d4e6a93edd3b68ef1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/index.spec.ts:waitFor"]
-status = "pending"
+status = "not-applicable"
+hash = "63c48aefc3f16d094c7edf95fc55178f147e427dcb60e1323ea337c76a709b63"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/internal.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "89589c2dd01add5bc0ba74c00342f55de93bfeb48bcad4727ddf01ed2cd94c52"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/modules.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "72245aef688196b26eb5b3370ccc5ee7bf821bf3d9cd1bb4b0df88d56558b295"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/modules.spec.ts:counted"]
-status = "pending"
+status = "not-applicable"
+hash = "5eaa8dab39bcbff51660f562d6b8a8483799f80bde28a46a22854509bbabd27e"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/modules.spec.ts:counts"]
-status = "pending"
+status = "not-applicable"
+hash = "c955f0f89faa69f852fecb89d5f66f470990d73439d259b80368571c8d23e559"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/modules.spec.ts:dir"]
-status = "pending"
+status = "not-applicable"
+hash = "170244d4ebc272c1611aeaea0bcba780200a31a2959d457c38307d01930a2f1e"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/modules.spec.ts:fixture"]
-status = "pending"
+status = "not-applicable"
+hash = "7e911968733ffb16f25c93ba4042c0f7662292efddacab3149695a227314ba24"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/modules.spec.ts:importModule"]
-status = "pending"
+status = "not-applicable"
+hash = "fdc2cf860892e9e691a0da03b4d9f4bf23c1b2f3c8fa077e19792b2e7b4f39e1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/modules.spec.ts:loader"]
-status = "pending"
+status = "not-applicable"
+hash = "21b74fd8071a153768beb613d92b2fb7aef3470b111fb03874ba706952365719"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/patches.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "e8bd687daab0703868f95a1942ab538f544f2ad7cc85c0fde8a2946da86dc903"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/patches.spec.ts:baz"]
-status = "pending"
+status = "not-applicable"
+hash = "d2a9c69fa00d0e3b7bc2f89c79850a6f8830c35a051b50d59844333a08ab3432"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/patches.spec.ts:fixtures"]
-status = "pending"
+status = "not-applicable"
+hash = "11edb1d96c35df40ecebe90d0c9a6b9fe95f9aa398fa6bcd250dadf81ca535d3"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/patches.spec.ts:importModule"]
-status = "pending"
+status = "not-applicable"
+hash = "fdc2cf860892e9e691a0da03b4d9f4bf23c1b2f3c8fa077e19792b2e7b4f39e1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/patches.spec.ts:loader"]
-status = "pending"
+status = "not-applicable"
+hash = "21b74fd8071a153768beb613d92b2fb7aef3470b111fb03874ba706952365719"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/patches.spec.ts:require"]
-status = "pending"
+status = "not-applicable"
+hash = "74af4cf6e0a3b7d1c6995502b5691a3cffe44062ee50e79c21cb66953d3780b0"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/patches.spec.ts:url"]
-status = "pending"
+status = "not-applicable"
+hash = "c308b57215ce409f67512224a22c32c270ee82b645f2f1ca96dd0e1646d805f5"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/patches.spec.ts:{ fixture , runESM }"]
-status = "pending"
+status = "not-applicable"
+hash = "7352c80cc164390d961a78fff6768b043d07df862be6e22e1cbe4327061aff12"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/reconcile.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "1ddfbca63736a6c0089ff0c20e83fafb18121f2606d033992fd630c08a95871c"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/reconcile.spec.ts:component"]
-status = "pending"
+status = "not-applicable"
+hash = "1dbdf3d375da091513836abfe8708aeb4de051522748a0fc43aaa5570e39b789"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/reconcile.spec.ts:fixture"]
-status = "pending"
+status = "not-applicable"
+hash = "66a20fdcc1e4efb53343520e4961404b1ad7f38d1d75094432b53f70877d1147"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/reconcile.spec.ts:fixtureDir"]
-status = "pending"
+status = "not-applicable"
+hash = "7b0fadffe2f42f865180c0add7035b1011f87cd17b0d01abd27c37388950ad27"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/reconcile.spec.ts:loader"]
-status = "pending"
+status = "not-applicable"
+hash = "005fc25d472c9ef01735248d2bdc2f02bc0c8b1bd412e15c158a2b6b52a5303c"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/reconcile.spec.ts:stats"]
-status = "pending"
+status = "not-applicable"
+hash = "476ba58e156cdb33a4d684539f4065fe6c128419b45f08e86f0a21fe1b917ef9"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/reconcile.spec.ts:testDir"]
-status = "pending"
+status = "not-applicable"
+hash = "05c0a5e69137a6b19b176dbb8f0ad2581c46f3d7e518a47d4e6a93edd3b68ef1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/resolution.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "0d081a63d07fbc6ab6e5b2f5c7c56a0001a37c4f6144f9fb097dfad860a12010"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/resolution.spec.ts:fixtures"]
-status = "pending"
+status = "not-applicable"
+hash = "dfe3f1c200f279d670f55a0fcf96ce0947c18e43eeb1a4e5e056f4744da44132"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/resolution.spec.ts:importModule"]
-status = "pending"
+status = "not-applicable"
+hash = "fdc2cf860892e9e691a0da03b4d9f4bf23c1b2f3c8fa077e19792b2e7b4f39e1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/resolution.spec.ts:install"]
-status = "pending"
+status = "not-applicable"
+hash = "82c0d223c0b5d97e26e3f1d56894ded7b65da5e92fcdb900e3e854c05cfc7210"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/resolution.spec.ts:link"]
-status = "pending"
+status = "not-applicable"
+hash = "5bfe211ef2e39bfb08900cf1ab6f9ac9710eb8444121a8f4b7a264182b680c20"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/resolution.spec.ts:loader"]
-status = "pending"
+status = "not-applicable"
+hash = "5fb8baf97dfdb63d7782ffbcc6afc1be2269ef1548163e237463c2b02ff2a745"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/resolution.spec.ts:modules"]
-status = "pending"
+status = "not-applicable"
+hash = "67c6cff0ddaea210bb9ce672955e76178e19a9ec32dcea7736ba3bd4be540da0"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/resolution.spec.ts:{ fixture , runESM }"]
-status = "pending"
+status = "not-applicable"
+hash = "7352c80cc164390d961a78fff6768b043d07df862be6e22e1cbe4327061aff12"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/utils.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "6c8e4bbcd642899c723a6b816280cb3859a93bbb204734ea195b20dc68b7a6b9"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/utils.ts:RunOptions"]
-status = "pending"
+status = "not-applicable"
+hash = "0c499fe08cc30e11eba41a1aa7da4ef8fd5f090650e8b5ac80131ff947e639a5"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/utils.ts:realpathESM"]
-status = "pending"
+status = "not-applicable"
+hash = "fbfaccba45b3e37e7a1bfc9e848fb5200d18370a6a75e98bcc8afc55776f51f2"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/utils.ts:useFixtures"]
-status = "pending"
+status = "not-applicable"
+hash = "cf3e51b1947e9bcb572f21f29343542dba579d9fe00e46fe3869e722aa3f4cd2"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/watch.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "211fe08eb2e34e464edc46814d28f4f05c51a892662756d327e78889249ada95"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/watch.spec.ts:FakeFs"]
-status = "pending"
+status = "not-applicable"
+hash = "0e466bf74c009f3c919af588175a388c10ffbc06df73713de09d76fca6008aa4"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/watch.spec.ts:FakeFs.constructor"]
-status = "pending"
+status = "not-applicable"
+hash = "6c0f9fdcc26a2f445a2897833b9ea6558ec5f5592943b3d1fbc1d915593e5e8c"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/watch.spec.ts:FakeFs.watch"]
-status = "pending"
+status = "not-applicable"
+hash = "dfb1ec8d5c65fb02d59daf761beceb034cc198a4a8ccd8892f51660c7dd25334"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/watch.spec.ts:Watch"]
-status = "pending"
+status = "not-applicable"
+hash = "86880a1c6b3fa6fb2b49e7e74f0bfe45c2351e5731488c45b406fb5ba034d433"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/watch.spec.ts:change"]
-status = "pending"
+status = "not-applicable"
+hash = "b2f3b40a7f5abfabd8e0f309a12389f3dd1a437619bdc55e582c5371484aa60c"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/watch.spec.ts:component"]
-status = "pending"
+status = "not-applicable"
+hash = "8daae61a2c6f48db37cfc3195b6a09244e3973cef1a185e1655ee0af82526d90"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/watch.spec.ts:fixtureDir"]
-status = "pending"
+status = "not-applicable"
+hash = "3caa4ec0f4bd2d2e32bc004db5d2ddd9fca9bf216781102cbd56c842e63df3eb"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/tests/watch.spec.ts:testDir"]
-status = "pending"
+status = "not-applicable"
+hash = "05c0a5e69137a6b19b176dbb8f0ad2581c46f3d7e518a47d4e6a93edd3b68ef1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
 
 [items."hmr/watch.spec.ts::Hmr with fs::base::accepts a absolute path without a context directory"]
 status = "diverged"

@@ -1081,7 +1081,7 @@ Each item is a separate spec. Items 1, 2, 4, 5, and 6 port packages other than
 these specs to start extends the inventory and the ledger to the packages it ports.
 
 Items 2, 4, and 1 have specs, in that order: [Declarative Loader](declarative_loader.md),
-[Timer Service](timer_service.md), and [Module Reload](../module_reload.md). Items 5 and 6
+[Timer Service](timer_service.md), and [Module Reload](module_reload.md). Items 5 and 6
 are not planned: the library leaves the file system and the config file to the host.
 
 Each of items 1, 2, 4, 5, and 6 adds a service that a host can also write alone. Each item gives

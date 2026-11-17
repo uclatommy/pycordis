@@ -291,6 +291,90 @@ Choose the clock for the host:
   the owner thread. Use it in a headless host. Call `close()` after the root context is
   disposed.
 
+## Reload modules
+
+A development tool or an interactive host can load new code into a running system. The `Hmr`
+service takes the paths of the files that changed, imports the changed modules again, and moves
+the live fibers of their components to the new code. A fiber keeps its identity, its config,
+and its place in the fiber tree. `pycordis.hmr` is a public module that `import pycordis` does
+not import. A production host can restart instead.
+
+The host watches its own files and calls `reconcile` with the changed paths. `reconcile` takes a
+function that returns the paths (absolute paths of files or directories), and it returns a
+`Deferred` of a `ReloadResult`.
+
+```python
+import sys
+import tempfile
+from pathlib import Path
+
+from pycordis import Context, ImmediateScheduler
+from pycordis.hmr import Hmr, HmrConfig
+
+plugins = Path(tempfile.mkdtemp())
+sys.path.insert(0, str(plugins))
+source_file = plugins / "greeter.py"
+template = "def apply(ctx, config=None):\n    ctx.on('greet', lambda: {!r})\n"
+source_file.write_text(template.format("hello"))
+
+import greeter
+
+root = Context(ImmediateScheduler())
+hmr_fiber = root.use(Hmr, HmrConfig(scope=(str(plugins),)))
+fiber = root.use(greeter.apply)
+print(root.bail("greet"))
+
+source_file.write_text(template.format("hi"))
+result = root.get("hmr").reconcile(lambda: [source_file]).result()
+print(root.bail("greet"), result.settled == [fiber])
+hmr_fiber.dispose()
+```
+
+A reload follows these rules:
+
+- **What reloads together**: a changed module is a loaded module whose file is a changed path or
+  is below a changed directory. Every module that imports a changed module reloads too, also
+  when no component uses it, so that a later import gets the new code.
+- **Which modules**: the service sees the modules below `HmrConfig.scope` (by default the
+  working directory) that are not part of the Python installation. Other modules never reload.
+- **Components**: a component of a module is a value in the module namespace, or the module
+  itself, that the registry knows. Its replacement is the value of the same attribute in the new
+  module. The registry moves the fibers with `RegistryService.replace`.
+- **Units**: components that share a changed module form one unit. A unit applies as a whole,
+  or not at all.
+- **One transaction at a time**: a second call waits for the running one. A call from inside the
+  running transaction rejects with `CordisError`.
+- **Blocking**: an import runs on the owner thread and blocks it until the import ends.
+
+The `ReloadResult` has three lists:
+
+| Field | Meaning |
+|---|---|
+| `settled` | The moved fibers that still exist after they settled. A fiber whose new component raised in `apply` is in the list, in the state `FAILED`. The next change of its file retries it. |
+| `aborted` | A unit whose new modules failed to import, or whose new value is not a component. Its old modules are in `sys.modules` again, and its fibers are as before. A later change of the files retries the unit. |
+| `skipped` | A change that needs a restart. The reason is a `SkipReason`: a host module (`HOST_MODULE`), a C extension (`EXTENSION_MODULE`), or components of one unit that now hold different values (`AMBIGUOUS_EXPORT`). The other changes apply. |
+
+A module that the `__main__` module imports, and the names in `HmrConfig.host_modules`, are host
+modules. The host holds their objects, so they never reload.
+
+These limits apply to every host:
+
+- An object that the host holds, and a name that a host module imported with
+  `from plugin import name`, keep the old code.
+- The module globals of a reloaded module start again from the module source. A C extension
+  does not reload.
+- `sys.modules` belongs to the process, so only one `Hmr` is active in a process. A reload also
+  affects other root contexts and other libraries that imported the module.
+- Python checks a bytecode cache file against the modification time of the source in whole
+  seconds and against its size. A change in the same second that keeps the size can load the old
+  bytecode.
+- The old imports of a module that was imported after the last transaction, and that changed
+  before the next one, come from its new source. Call `reconcile` with no paths after the host
+  loads modules to record them.
+- `reconcile` finds a nested call only through a view of the service that `ctx.get("hmr")`
+  returns. If a moved fiber waits for a call through another reference, the transaction does not
+  end.
+
 ## Where to Go Next
 
 - The [API Reference](api/index.md) has the full contract of every public name.
