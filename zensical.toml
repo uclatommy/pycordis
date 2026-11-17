@@ -35,12 +35,15 @@ nav = [
     { "Errors" = "api/errors.md" },
     { "Events" = "api/events.md" },
     { "Fiber" = "api/fiber.md" },
+    { "Hmr" = "api/hmr.md" },
     { "Keys" = "api/keys.md" },
+    { "Loader" = "api/loader.md" },
     { "Logger" = "api/logger.md" },
     { "Reflect" = "api/reflect.md" },
     { "Registry" = "api/registry.md" },
     { "Scheduler" = "api/scheduler.md" },
     { "Service" = "api/service.md" },
+    { "Timer" = "api/timer.md" },
     { "Traceable" = "api/traceable.md" },
   ]},
   # API_NAV_END
@@ -50,7 +53,10 @@ nav = [
     { "Completed" = [
       { "Conformance" = "build_specs/completed/conformance.md" },
       { "Core Port" = "build_specs/completed/core_port.md" },
+      { "Declarative Loader" = "build_specs/completed/declarative_loader.md" },
+      { "Module Reload" = "build_specs/completed/module_reload.md" },
       { "Pages And Ci" = "build_specs/completed/pages_and_ci.md" },
+      { "Timer Service" = "build_specs/completed/timer_service.md" },
     ]},
   ]},
   # BUILD_SPECS_NAV_END

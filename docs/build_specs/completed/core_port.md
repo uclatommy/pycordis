@@ -1076,14 +1076,182 @@ introduced it.
 
 ## Follow-ups
 
-Each item is a separate spec.
+Each item is a separate spec. Items 1, 2, 4, 5, and 6 port packages other than
+`packages/core`, and `scripts/upstream_inventory.py` reads only `packages/core`. The first of
+these specs to start extends the inventory and the ledger to the packages it ports.
+
+Items 2, 4, and 1 have specs, in that order: [Declarative Loader](declarative_loader.md),
+[Timer Service](timer_service.md), and [Module Reload](module_reload.md). Items 5 and 6
+are not planned: the library leaves the file system and the config file to the host.
+
+Each of items 1, 2, 4, 5, and 6 adds a service that a host can also write alone. Each item gives
+its benefit, its cost, what a host does without it, and a judgement. The cost has four parts:
+
+- **Build**: the work to write and test the port.
+- **Host limits**: what a host that uses the service must supply, do, or not do.
+- **Library complexity**: the state, public API, and coupling to the core that the library gets.
+- **Maintenance**: the work after the port, in upstream sync, Python releases, and public
+  contracts that third parties implement.
+
+The table compares the items. For scale: upstream `packages/core/src` has 2,055 lines, and
+`src/pycordis/` has 4,379 lines, docstrings included. An upstream version with `rc` is a release
+candidate, so its API can still change.
+
+| Item | Who needs it | Upstream source lines | Upstream test cases | Upstream version | Protocol the host supplies |
+|---|---|---|---|---|---|
+| 1. Reload helper | Hosts that change plugin code while they run | 1,946 (1,072 of them are Node module-loader internals) | 97 | `2.0.0-rc.0` | Host module list |
+| 2. Loader | Hosts whose plugin set comes from data | 1,416 | 145 | `1.0.0-rc.10` | An import function |
+| 4. Timer | Plugin authors who use delays | 148 | 22 | `1.1.5` | A clock |
+| 5. File system | Hosts with more than one storage location; items 1 and 6 | 500 (325 more for `fs-node`) | 26 (52 more) | `2.0.0-rc.0` (`fs-node` `0.1.0`) | A storage provider |
+| 6. Include | Hosts that keep plugin config in a file that people edit | 1,210 | 93 | `2.0.0-rc.0` | A codec |
+
+Order by benefit for each unit of cost: 2, 4, 1 (in the minimal form below), 6, 5.
 
 1. **Module reload helper**: a port of the module dependency classification of upstream
    `@cordisjs/hmr`, so that a host can reload a Python module and replace its components through
    `RegistryService.replace`.
+   - **Benefit**: a changed plugin module runs without a process restart. Its fibers keep their
+     identity, config, and place in the tree, and a failed reload keeps the old code running. The
+     helper decides which modules reload together (a module and every module that imports it)
+     and which never reload (the host's own modules).
+   - **Cost**: high in all four parts.
+     - **Build**: upstream reads the internal caches of the Node module loader, which have no
+       Python counterpart, so this is new code that must give the same results, not a
+       translation. Most of the 97 cases need a fixture of real modules under `tmp_path`.
+     - **Host limits**: the host must name its own modules, which never reload. A host object
+       that holds a plugin object, or a host module that uses `from plugin import name`, keeps
+       the old code after a reload. `sys.modules` is global to the process, so an eviction also
+       affects other libraries and other root contexts in the process. A reload imports on the
+       owner thread and blocks it for the duration of the import. Module globals and C
+       extensions do not reload.
+     - **Library complexity**: the core has no knowledge of modules; this item adds the import
+       system, a module graph, and units of components that commit or abort together.
+     - **Maintenance**: the behavior depends on the Python import system, which changes between
+       Python releases (for example, lazy imports in PEP 810), and the suite tests three Python
+       versions. Many of the 97 upstream cases test Node behavior, so each upstream sync reviews
+       a large number of `adapted` and `diverged` ledger entries.
+   - **Without it**: the host restarts the process. For a module that no other module imports,
+     `importlib.reload` and one `replace(old, new)` call are enough.
+   - **Judgement**: high value for development tools and interactive hosts, low value for a
+     production host. A minimal form ports only the classification, over a module graph that the
+     host supplies, plus the call to `replace`.
 2. **Declarative loader**: a port of the upstream loader's reconciliation of a configuration tree
-   (enable, disable, and per-component config).
+   (enable, disable, and per-component config), with the entry group (`Group` in
+   `loader/src/config/group.ts`; the `@cordisjs/group` package only re-exports it). The loader
+   takes a parsed tree. It does not read files.
+   - **Benefit**: data decides which plugins run, with which config. A change to the tree
+     becomes the smallest set of `use`, `dispose`, and `update` calls. Each fiber links to its
+     entry, so a host interface can show and edit the entries.
+   - **Cost**: medium to high.
+     - **Build**: the largest test surface (145 cases). The spec must decide the import
+       function, the `${{ }}` expressions in config (JavaScript-specific: an `omission` or a
+       Python replacement), and per-entry `isolate` and `intercept`. Most of the upstream code
+       handles edge cases: a fiber that disposes itself, an entry that moves between groups, a
+       dependency lost during an import, and a partial failure.
+     - **Host limits**: the loader owns the fibers that it creates. A host changes them through
+       the entry tree, not with `use` and `dispose`. The entry fields (`id`, `name`, `config`,
+       `disabled`, `group`, `inject`, `intercept`) become the config shape of the host. A plugin
+       must be importable by name, or the host supplies the import function.
+     - **Library complexity**: a second tree (entries) must stay consistent with the fiber tree.
+       The loader listens to five core events (`internal/config`, `internal/commit`,
+       `internal/update`, `internal/status`, `internal/plugin`), so a change to one of them is a
+       change to the loader.
+     - **Maintenance**: upstream is a release candidate, so the entry fields and the
+       reconciliation rules can still change. The entry fields become public API that hosts'
+       config files depend on, so a change to them breaks those files.
+   - **Without it**: a host with a fixed plugin set needs nothing. A host with a changing set
+     writes a reconciler. A simple one is short, but it must handle the same edge cases.
+   - **Judgement**: the highest value for adoption, because it makes pycordis usable as an
+     application framework. Item 6 requires it.
 3. **Upstream sync**: review each later upstream revision with the `port-upstream` skill.
+   - **Benefit**: the conformance claim stays current, and upstream fixes reach pycordis.
+   - **Cost**: one review for each revision, in proportion to the upstream change.
+   - **Without it**: the tracked revision gets older, and later upstream fixes are not applied.
+4. **Timer service**: a port of `@cordisjs/timer` (`TimerService.timeout`, `interval`,
+   `throttle`, and `debounce`). Each timer is an effect of the calling fiber, so the timers of a
+   fiber stop when it unloads, and a pending `timeout` wait fails with
+   `Context has been disposed`. The service needs a clock protocol in `src/` (`now`, and
+   `sleep(ms) -> Deferred[None]`) that the host injects, as it injects the scheduler. The
+   `FakeClock` fixture in `tests/conftest.py` is the reference for the contract of that protocol.
+   The wait form of `interval` is an async iterator whose steps are `Deferred` objects, so a
+   lifecycle task can iterate it. The deprecated `setTimeout` and `setInterval` are not ported
+   (`deprecated-aliases`).
+   - **Benefit**: a plugin author gets timers that stop when the plugin unloads, with no effect
+     code of their own. Host and plugin tests get a deterministic clock.
+   - **Cost**: low.
+     - **Build**: 148 lines and 22 cases.
+     - **Host limits**: a host that uses the service supplies a clock for each root context. A
+       real clock needs a decision: a `threading.Timer` that completes the `Deferred` from its
+       own thread (the host gets background threads), or a deadline check in
+       `FramePumpScheduler.pump` (timer precision equals the frame interval).
+     - **Library complexity**: a second injected collaborator next to the scheduler. Upstream
+       adds `timeout` and the other methods to the context; in pycordis, methods on `Context`
+       grow the core API, and access through `ctx[timer_key]` does not.
+     - **Maintenance**: low. Upstream is stable (`1.1.5`). The clock protocol is a public
+       contract that hosts implement, so a change to it breaks those hosts.
+   - **Without it**: each plugin wraps its own timer in `ctx.effect`, in about five lines, with
+     the timer that its host has.
+   - **Judgement**: low cost and medium value. Most of the value is the clock protocol, which a
+     polling watcher (item 5) and a debounce of file changes (items 1 and 6) also use.
+5. **File system service**: a port of `@cordisjs/fs`. `Fs.mount(prefix, provider)` sends each
+   operation to the provider with the longest matching prefix, and `Fs.watch` gives a `Watcher`
+   that moves to the new provider when the mounts change. A mount and a watch are effects of the
+   calling fiber. The spec ports the service and the provider protocol. A local-disk provider (a
+   port of `@cordisjs/fs-node`) is a separate decision: the standard library has no file change
+   notification, so a local watcher polls with the clock of item 4.
+   - **Benefit**: plugins use one file interface, which the host sends to disk, to memory, or to
+     a remote store. Mounts and watches end with their fiber. A watch lets item 6 reconcile and
+     item 1 reload when a file changes.
+   - **Cost**: low to build, high to keep.
+     - **Build**: low for the service (500 lines, 26 cases). A useful local provider costs more
+       (325 lines, 52 cases upstream).
+     - **Host limits**: a plugin that uses the service works only after the host mounts a
+       provider. Locations are URLs, so a host that uses `pathlib` converts them. Each operation
+       returns a `Deferred`, so plugin file code runs in lifecycle tasks, and disk input and
+       output either run on a worker thread or block the owner thread. A polling watcher uses
+       CPU in proportion to the number of files, and its delay equals the poll interval.
+     - **Library complexity**: a file system API (operations, file references, watches, and
+       error codes) in a library whose purpose is composition, not storage.
+     - **Maintenance**: high. The provider protocol is a public contract that third parties
+       implement, so it is difficult to change in `0.x`. Upstream is a release candidate. A local
+       provider must give the same results on each operating system (paths, links, letter case).
+   - **Without it**: plugins use `pathlib`. The host gives the changed paths to items 1 and 6
+     from its own watcher, such as a third-party watcher package or the file watcher of its GUI
+     toolkit. For most Python hosts this is the better choice.
+   - **Judgement**: the lowest value alone. Do it only when item 6 is in scope and a watcher in
+     the library is necessary. A smaller option is a watcher protocol only (a source of change
+     events that the host implements), without the routing service.
+6. **Config file include**: a port of `@cordisjs/include`, an entry tree that reads its entries
+   from a file and reconciles again when the file changes. It writes runtime changes (a disabled
+   entry, a committed config) back to the file through a journal, applies patch files (disable,
+   override, insert), and points a validation error at its line in the file. Upstream parses with
+   the `yaml` package. pycordis has no runtime dependencies, so the host supplies a codec (parse
+   with source positions, and serialize), and the library ships a JSON codec only. Write-back
+   keeps comments and formatting only as far as the codec does. Requires item 2, and file change
+   events from item 5 or from the watcher protocol in its judgement.
+   - **Benefit**: the file and the running system agree in both directions. An edit to the file
+     changes the plugins, and a change at runtime is saved to the file. Patch files let one
+     deployment change a base config. An error message gives the file line.
+   - **Cost**: high.
+     - **Build**: 1,210 lines and 93 cases. Write-back that keeps the format of the file is the
+       most difficult part: upstream edits the YAML document in place. With a JSON codec, a
+       write-back writes the full file again. The `json` module gives no source positions, so a
+       JSON codec that points an error at a line needs its own parser.
+     - **Host limits**: the service owns the file. A host or a person that writes the file while
+       the service runs makes a conflict that the service must detect. The file uses the entry
+       fields of item 2. The codec protocol requires source positions, so a host codec for
+       another format needs a parser that reports them.
+     - **Library complexity**: the most interacting state of the five services: a journal of
+       unsaved changes, patch files merged over the base file, and conflict detection between a
+       read and a write. It depends on item 2 and on a source of change events.
+     - **Maintenance**: high. A change to item 2 or to the change events is a change to this
+       item. Upstream is a release candidate. The codec protocol is a public contract that hosts
+       implement.
+   - **Without it**: the host reads the file with `json` or `tomllib`, gives the tree to item 2,
+     and saves its own changes. It does not get in-place write-back, patch files, or errors with
+     file lines.
+   - **Judgement**: the value depends on whether runtime changes must be saved. A host that only
+     reads its config needs item 2 and a short file read.
 
 ## Appendix A: Divergences
 

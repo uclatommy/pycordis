@@ -8,8 +8,10 @@ Run this script before each documentation build:
 The script does two tasks:
 
 1. It writes one `docs/api/<module>.md` page for each public module in `src/pycordis/`.
-   A module is public when no part of its path starts with `_`. The pages are generated
-   output: edit the source docstrings, not the pages.
+   A module is public when no part of its path starts with `_`. A public package is
+   one page, which documents its `__init__.py`: `loader/__init__.py` gives
+   `docs/api/loader.md`. The `__init__.py` of `src/pycordis/` itself has no page. The
+   pages are generated output: edit the source docstrings, not the pages.
 2. It rewrites the two generated sections of the `nav` list in `zensical.toml`: the API
    reference (between the `API_NAV` markers) and the build specs (between the
    `BUILD_SPECS_NAV` markers). Do not edit these sections by hand.
@@ -40,6 +42,20 @@ def _entry(indent: str, title: str, page: Path) -> str:
     return f'{indent}{{ "{title}" = "{page.relative_to(DOCS).as_posix()}" }},\n'
 
 
+def _public_module(rel: Path) -> Path | None:
+    """Return the module path of a source file, or `None` if it has no page.
+
+    `rel` is relative to `src/pycordis/`. The module path of a package's `__init__.py`
+    is the package path.
+    """
+    parts = rel.with_suffix("").parts
+    if parts[-1] == "__init__":
+        parts = parts[:-1]
+    if not parts or any(part.startswith("_") for part in parts):
+        return None
+    return Path(*parts)
+
+
 def write_api_pages() -> list[Path]:
     """Write one page per public module and remove pages of deleted modules.
 
@@ -55,13 +71,13 @@ def write_api_pages() -> list[Path]:
 
     pages: list[Path] = []
     for source in sorted(SRC.rglob("*.py")):
-        rel = source.relative_to(SRC)
-        if any(part.startswith("_") for part in rel.parts):
+        path = _public_module(source.relative_to(SRC))
+        if path is None:
             continue
-        module = ".".join(("pycordis", *rel.with_suffix("").parts))
-        page = API / rel.with_suffix(".md")
+        module = ".".join(("pycordis", *path.parts))
+        page = API / path.with_suffix(".md")
         page.parent.mkdir(parents=True, exist_ok=True)
-        page.write_text(f"# {rel.stem}\n\n::: {module}\n", encoding="utf-8")
+        page.write_text(f"# {path.name}\n\n::: {module}\n", encoding="utf-8")
         pages.append(page)
     return pages
 

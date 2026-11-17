@@ -4,7 +4,8 @@ Usage::
 
     uv run python scripts/upstream_inventory.py <clone> [--out PATH] [--ledger-stubs]
 
-The script reads ``<clone>/packages/core/{src,tests}/*.ts`` and the clone ``HEAD``. It
+The script reads ``<clone>/packages/core/{src,tests}/*.ts``, the packages that
+``[inventory] packages`` of the ledger lists, and the clone ``HEAD``. It
 lists the items that the conformance ledger must review (test cases, declarations,
 members, error messages, event names, fiber states) with a hash of each, and it never
 writes upstream code: only IDs, hashes, and the vocabulary strings.
@@ -24,6 +25,7 @@ import re
 import subprocess
 import sys
 import tomllib
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -285,6 +287,9 @@ _MEMBER_MODIFIERS = frozenset(
 _TEST_CALLEES = frozenset("it test describe suite".split())
 
 
+_Row = str | dict[str, str]
+
+
 @dataclass(frozen=True)
 class _Source:
     path: str
@@ -293,8 +298,8 @@ class _Source:
     match: dict[int, int]
 
 
-def _parse(path: str, text: str) -> _Source:
-    tokens = tokenize(text, path)
+def _bracket_pairs(path: str, tokens: list[Token]) -> dict[int, int]:
+    """Return the index of the partner of each bracket token."""
     match: dict[int, int] = {}
     stack: list[int] = []
     for index, token in enumerate(tokens):
@@ -309,7 +314,12 @@ def _parse(path: str, text: str) -> _Source:
             match[opener], match[index] = index, opener
     if stack:
         raise _fail(path, tokens[stack[-1]].start, "unclosed bracket")
-    return _Source(path, text, tokens, match)
+    return match
+
+
+def _parse(path: str, text: str) -> _Source:
+    tokens = tokenize(text, path)
+    return _Source(path, text, tokens, _bracket_pairs(path, tokens))
 
 
 def _is(token: Token, *texts: str) -> bool:
@@ -379,6 +389,15 @@ def _name_at(source: _Source, index: int, end: int) -> str:
     return token.text
 
 
+def _binding_name(source: _Source, index: int, end: int) -> str:
+    """Return the bound name, or the pattern text of a destructuring binding."""
+    token = source.tokens[index] if index < end else None
+    if token is not None and _is(token, "{", "["):
+        close = source.match[index]
+        return " ".join(t.text for t in source.tokens[index : close + 1])
+    return _name_at(source, index, end)
+
+
 def _classify(source: _Source, start: int, end: int) -> _Declaration | None:
     """Return the declaration that the statement makes, or ``None`` for other code."""
     tokens = source.tokens
@@ -419,8 +438,10 @@ def _classify(source: _Source, start: int, end: int) -> _Declaration | None:
         if _is(tokens[i + 2], "=", "<"):
             return _Declaration("symbol", tokens[i + 1].text)
     if word.text in ("const", "let", "var"):
-        return _Declaration("symbol", _name_at(source, i + 1, end))
+        return _Declaration("symbol", _binding_name(source, i + 1, end))
     if "default" in modifiers:
+        if word.kind == "ident" and (nxt is None or _is(nxt, ";")):
+            return _Declaration("symbol", "default")  # `export default Name`
         raise _fail(source.path, word.start, "unnamed default export")
     return None
 
@@ -495,8 +516,8 @@ def _title(source: _Source, index: int, end: int) -> str:
     raise _fail(source.path, offset, "test title is not a string literal")
 
 
-def _each_rows(source: _Source, open_index: int) -> list[str]:
-    """Return the formatted values of the literal table inside ``it.each( … )``."""
+def _each_rows(source: _Source, open_index: int) -> list[_Row]:
+    """Return the rows of the literal table inside ``it.each( … )``."""
     tokens = source.tokens
     close = source.match[open_index]
     if not _is(tokens[open_index + 1], "["):
@@ -509,40 +530,128 @@ def _each_rows(source: _Source, open_index: int) -> list[str]:
         raise _fail(
             source.path, tokens[table_close].start, "it.each table is not a literal"
         )
-    rows: list[str] = []
+    return [
+        _row_value(source, element)
+        for element in _split_elements(
+            source, open_index + 2, table_close, "it.each row is empty"
+        )
+    ]
+
+
+def _split_elements(source: _Source, lo: int, hi: int, empty: str) -> list[list[Token]]:
+    """Split the tokens ``lo`` to ``hi`` at the commas of depth 0.
+
+    A trailing comma is allowed. An empty element raises ``ValueError`` with the
+    message ``empty``.
+    """
+    tokens = source.tokens
+    elements: list[list[Token]] = []
     element: list[Token] = []
-    for token in [
-        *tokens[open_index + 2 : table_close],
-        Token("punct", ",", 0, 0, False),
-    ]:
-        if not _is(token, ","):
-            element.append(token)
-            continue
-        if not element:
-            continue
-        rows.append(_row_text(source, element))
-        element = []
-    return rows
+    i = lo
+    while i < hi:
+        token = tokens[i]
+        if _is(token, ","):
+            if not element:
+                raise _fail(source.path, token.start, empty)
+            elements.append(element)
+            element = []
+        else:
+            end = source.match[i] + 1 if _is(token, *_OPEN) else i + 1
+            element.extend(tokens[i:end])
+            i = end - 1
+        i += 1
+    if element:
+        elements.append(element)
+    return elements
 
 
-def _row_text(source: _Source, element: list[Token]) -> str:
+def _primitive(source: _Source, element: list[Token]) -> str:
+    """Return the text of a literal: a string, a number, ``true``, ``null``, …"""
     first = element[0]
     if len(element) == 1 and first.kind == "str" and first.value is not None:
         return first.value
-    if len(element) == 1 and (first.kind == "num" or _is(first, "true", "false")):
+    if len(element) == 1 and (
+        first.kind == "num" or _is(first, "true", "false", "null", "undefined")
+    ):
         return first.text
     if len(element) == 2 and _is(first, "-") and element[1].kind == "num":
         return f"-{element[1].text}"
     raise _fail(source.path, first.start, "it.each row is not a primitive literal")
 
 
-def _row_title(source: _Source, title: str, value: str, offset: int) -> str:
+def _is_primitive(element: list[Token]) -> bool:
+    try:
+        _primitive(_Source("", "", element, {}), element)
+    except ValueError:
+        return False
+    return True
+
+
+def _row_value(source: _Source, element: list[Token]) -> _Row:
+    """Return the value of one row.
+
+    A primitive gives its text. An array of primitives gives its text in the form of
+    ``util.format('%s', value)``: ``[ 'a', 1 ]``. An object of primitives gives a
+    ``dict`` for a ``$name`` title.
+    """
+    local = _Source(
+        source.path, source.text, element, _bracket_pairs(source.path, element)
+    )
+    if len(element) > 1 and local.match.get(0) == len(element) - 1:
+        if _is(element[0], "["):
+            return _array_text(local)  # may be a row that carries a function
+        if _is(element[0], "{"):
+            return _object_values(local)
+    return _primitive(source, element)
+
+
+def _array_text(local: _Source) -> str:
+    elements = _split_elements(
+        local, 1, len(local.tokens) - 1, "it.each array has an empty element"
+    )
+    if len(elements) > 1 and not all(_is_primitive(e) for e in elements[1:]):
+        # A row that carries a callback or an expression: the title uses the first
+        # element, which must be a primitive literal.
+        return _primitive(local, elements[0])
+    items = []
+    for item in elements:
+        text = _primitive(local, item)
+        quoted = item[0].kind == "str"
+        items.append(f"'{text}'" if quoted else text)
+    return f"[ {', '.join(items)} ]" if items else "[]"
+
+
+def _object_values(local: _Source) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for entry in _split_elements(
+        local, 1, len(local.tokens) - 1, "it.each object has an empty member"
+    ):
+        key = entry[0]
+        if len(entry) < 3 or key.kind not in ("ident", "str") or not _is(entry[1], ":"):
+            raise _fail(local.path, key.start, "it.each object member is not literal")
+        values[key.value if key.kind == "str" else key.text] = _primitive(
+            local, entry[2:]
+        )
+    return values
+
+
+def _row_title(source: _Source, title: str, row: _Row, offset: int) -> str:
+    if isinstance(row, dict):
+        names = re.findall(r"\$([A-Za-z_]\w*)", title)
+        unknown = [name for name in names if name not in row]
+        if not names or unknown or "%" in title:
+            raise _fail(
+                source.path,
+                offset,
+                f"it.each title needs $name placeholders of the row keys: {title!r}",
+            )
+        return re.sub(r"\$([A-Za-z_]\w*)", lambda m: row[m.group(1)], title)
     placeholders = re.findall(r"%[A-Za-z#%]", title)
     if placeholders != ["%s"]:
         raise _fail(
             source.path, offset, f"it.each title needs exactly one %s: {title!r}"
         )
-    return title.replace("%s", value, 1)
+    return title.replace("%s", row, 1)
 
 
 def _describe_body(source: _Source, call: int) -> tuple[int, int]:
@@ -570,12 +679,12 @@ def _describe_body(source: _Source, call: int) -> tuple[int, int]:
 class _Collector:
     """Gather the token indices of each item; no token is claimed twice."""
 
-    def __init__(self, source: _Source, spec: bool) -> None:
+    def __init__(self, source: _Source, spec: bool, prefix: str) -> None:
         self.source = source
         self.spec = spec
         self.items: dict[str, tuple[str, set[int]]] = {}
         self.claimed: set[int] = set()
-        self.base = source.path.rsplit("/", 1)[-1]
+        self.base = prefix + source.path.rsplit("/", 1)[-1]
 
     def add(self, id_: str, kind: str, indices: set[int]) -> None:
         if id_ in self.items:
@@ -621,13 +730,18 @@ class _Collector:
         callee, second = tokens[start], tokens[start + 1]
         path = self.source.path
         if _is(second, "."):
-            if not (callee.text == "it" and _is(tokens[start + 2], "each")):
+            if start + 3 >= end:
+                raise _fail(path, second.start, f"incomplete {callee.text} call")
+            if callee.text == "it" and _is(tokens[start + 2], "each"):
+                self.each_case(start, end, titles, start + 3)
+            elif callee.text == "it" and _is(tokens[start + 2], "runIf"):
+                self.run_if_case(start, end, titles)
+            else:
                 raise _fail(
                     path,
                     second.start,
                     f"unsupported {callee.text}.{tokens[start + 2].text}",
                 )
-            self.each_case(start, end, titles)
         elif not _is(second, "("):
             raise _fail(path, second.start, f"unsupported {callee.text} form")
         elif callee.text == "it":
@@ -638,6 +752,27 @@ class _Collector:
             lo, hi = _describe_body(self.source, start)
             self.tests(lo, hi, [*titles, title])
 
+    def run_if_case(self, start: int, end: int, titles: list[str]) -> None:
+        """Place ``it.runIf(condition)('title', …)``: a case that runs on some hosts."""
+        tokens = self.source.tokens
+        condition = start + 3
+        if not _is(tokens[condition], "("):
+            raise _fail(
+                self.source.path, tokens[start].start, "it.runIf has no condition"
+            )
+        call = self.source.match[condition] + 1
+        if call + 2 < end and _is(tokens[call], ".") and _is(tokens[call + 1], "each"):
+            self.each_case(start, end, titles, call + 2)  # `it.runIf(c).each(rows)(…)`
+            return
+        if call >= end or not _is(tokens[call], "("):
+            raise _fail(
+                self.source.path, tokens[start].start, "it.runIf has no test call"
+            )
+        title = _title(self.source, call + 1, end)
+        self.case(
+            self.case_id(titles, title), set(range(start, end)), tokens[call].start
+        )
+
     def case_id(self, titles: list[str], title: str) -> str:
         return "::".join([self.base, *titles, title])
 
@@ -646,9 +781,10 @@ class _Collector:
             raise _fail(self.source.path, offset, f"duplicate test ID {id_}")
         self.claim(id_, "case", indices)
 
-    def each_case(self, start: int, end: int, titles: list[str]) -> None:
+    def each_case(
+        self, start: int, end: int, titles: list[str], table_open: int
+    ) -> None:
         tokens = self.source.tokens
-        table_open = start + 3
         if not _is(tokens[table_open], "("):
             raise _fail(self.source.path, tokens[start].start, "it.each has no table")
         rows = _each_rows(self.source, table_open)
@@ -737,8 +873,8 @@ def _spans(tokens: list[Token], indices: set[int]) -> tuple[tuple[int, int], ...
     return tuple(spans)
 
 
-def _scan_file(path: str, text: str, spec: bool) -> list[Item]:
-    collector = _Collector(_parse(path, text), spec)
+def _scan_file(path: str, text: str, spec: bool, prefix: str) -> list[Item]:
+    collector = _Collector(_parse(path, text), spec, prefix)
     collector.top_level()
     return collector.result()
 
@@ -746,17 +882,20 @@ def _scan_file(path: str, text: str, spec: bool) -> list[Item]:
 def scan_source(path: str, text: str) -> list[Item]:
     """Return the ``symbol``, ``member`` and ``rest`` items of a source file.
 
-    ``path`` is relative to ``packages/core`` and is the prefix of every ID.
+    ``path`` is relative to ``packages`` or to ``packages/core`` and is the prefix of
+    every ID.
     """
-    return _scan_file(path, text, False)
+    return _scan_file(path, text, False, "")
 
 
-def scan_spec(path: str, text: str) -> list[Item]:
+def scan_spec(path: str, text: str, prefix: str = "") -> list[Item]:
     """Return the ``case``, ``symbol``, ``member`` and ``rest`` items of a test file.
 
     A case ID uses the file name, not the directory: ``fiber.spec.ts::Fiber::title``.
+    ``prefix`` goes before the file name of a case in a package other than core:
+    ``loader/group.spec.ts::Group::title``.
     """
-    return _scan_file(path, text, True)
+    return _scan_file(path, text, True, prefix)
 
 
 # --------------------------------------------------------------------------------------
@@ -853,7 +992,7 @@ def _code_table_messages(source: _Source) -> list[str]:
     return result
 
 
-def _vocabulary_file(path: str, text: str) -> list[Item]:
+def _vocabulary_file(path: str, text: str, prefix: str) -> list[Item]:
     source = _parse(path, text)
     entries: dict[str, str] = {}
     for template in [*_messages(source), *_code_table_messages(source)]:
@@ -871,19 +1010,23 @@ def _vocabulary_file(path: str, text: str) -> list[Item]:
         if declaration.name == "FiberState" and declaration.kind == "enum":
             for name in _enum_members(source, start, end):
                 entries[f"state:{name}"] = name
-    return [Item(id_, id_.split(":", 1)[0], (), text) for id_, text in entries.items()]
+    return [
+        Item(prefix + id_, id_.split(":", 1)[0], (), text)
+        for id_, text in entries.items()
+    ]
 
 
-def vocabulary(src: dict[str, str]) -> list[Item]:
+def vocabulary(src: dict[str, str], prefix: str = "") -> list[Item]:
     """Return the ``message``, ``event`` and ``state`` items of the source files.
 
-    ``src`` maps the path of each source file to its text. An item holds its string in
+    ``src`` maps the path of each source file to its text. ``prefix`` goes before each
+    ID (``loader/message:…``) for a package other than core. An item holds its string in
     ``text``: a message template (``service "{}" has been registered at <{}>``), an
     event name, or a state name.
     """
     entries: dict[str, Item] = {}
     for path, text in sorted(src.items()):
-        for item in _vocabulary_file(path, text):
+        for item in _vocabulary_file(path, text, prefix):
             entries[item.id] = item
     return list(entries.values())
 
@@ -904,10 +1047,17 @@ def item_hash(item: Item, text: str) -> str:
     return digest(normalize("\n".join(text[start:end] for start, end in item.spans)))
 
 
-def build_inventory(core: Path, revision: str) -> dict[str, object]:
-    """Return the inventory of ``packages/core`` at ``core`` for ``revision``."""
+def build_inventory(
+    clone: Path, revision: str, packages: Sequence[str] = ()
+) -> dict[str, object]:
+    """Return the inventory of ``packages/core`` and ``packages`` of ``clone``.
+
+    Core IDs have no prefix. Every other package ``name`` gives IDs that start with
+    ``name/``: ``loader/src/config/entry.ts:Entry.update`` for a source item and
+    ``loader/group.spec.ts::Group::title`` for a case. A package reads the ``.ts`` files
+    of ``src`` at any depth; core reads only the top level of ``src``.
+    """
     items: dict[str, dict[str, str]] = {}
-    sources: dict[str, str] = {}
 
     def record(item: Item, text: str) -> None:
         if item.id in items:
@@ -917,16 +1067,24 @@ def build_inventory(core: Path, revision: str) -> dict[str, object]:
             entry["text"] = item.text
         items[item.id] = entry
 
-    for folder, scan in (("src", scan_source), ("tests", scan_spec)):
-        for file in sorted((core / folder).glob("*.ts")):
-            path = f"{folder}/{file.name}"
-            text = file.read_text(encoding="utf-8")
-            if folder == "src":
-                sources[path] = text
-            for item in scan(path, text):
-                record(item, text)
-    for item in vocabulary(sources):
-        record(item, "")
+    for package in ["core", *packages]:
+        root = clone / "packages" / package
+        prefix = "" if package == "core" else f"{package}/"
+        sources: dict[str, str] = {}
+        for folder in ("src", "tests"):
+            pattern = "**/*.ts" if prefix and folder == "src" else "*.ts"
+            for file in sorted((root / folder).glob(pattern)):
+                path = f"{prefix}{folder}/{file.relative_to(root / folder).as_posix()}"
+                text = file.read_text(encoding="utf-8")
+                if folder == "src":
+                    sources[path] = text
+                    scanned = scan_source(path, text)
+                else:
+                    scanned = scan_spec(path, text, prefix)
+                for item in scanned:
+                    record(item, text)
+        for item in vocabulary(sources, prefix):
+            record(item, "")
     return {"revision": revision, "items": dict(sorted(items.items()))}
 
 
@@ -965,7 +1123,7 @@ def main(argv: list[str] | None = None) -> int:
         "--ledger",
         type=Path,
         default=Path(__file__).resolve().parent.parent / "conformance" / "ledger.toml",
-        help="the ledger file that --ledger-stubs reads",
+        help="the ledger file with the package list and the reviewed items",
     )
     args = parser.parse_args(argv)
     revision = subprocess.run(
@@ -974,7 +1132,9 @@ def main(argv: list[str] | None = None) -> int:
         capture_output=True,
         text=True,
     ).stdout.strip()
-    inventory = build_inventory(args.clone / "packages" / "core", revision)
+    ledger = tomllib.loads(args.ledger.read_text(encoding="utf-8"))
+    packages = ledger.get("inventory", {}).get("packages", [])
+    inventory = build_inventory(args.clone, revision, packages)
     args.out.write_text(
         json.dumps(inventory, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
         encoding="utf-8",
@@ -984,7 +1144,6 @@ def main(argv: list[str] | None = None) -> int:
         kinds[entry["kind"]] = kinds.get(entry["kind"], 0) + 1
     summary = f"{revision} {dict(sorted(kinds.items()))}"
     if args.ledger_stubs:
-        ledger = tomllib.loads(args.ledger.read_text(encoding="utf-8"))
         print(summary, file=sys.stderr)
         print(ledger_stubs(inventory["items"], set(ledger.get("items", {}))))  # type: ignore[arg-type]
     else:

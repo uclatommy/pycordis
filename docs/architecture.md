@@ -6,9 +6,9 @@
    the Cordis paper. The [semantic contract](#semantic-contract) states the paper's guarantees in
    Python terms, and each guarantee has tests. Code that breaks a contract property is wrong,
    also when upstream has the same code.
-2. **Upstream is the reference implementation**: the Cordis core package (`packages/core`) at
-   the tracked revision supplies the observable behavior, the state names, the event names, and
-   the error messages. The [conformance ledger](#conformance) records how each upstream test and
+2. **Upstream is the reference implementation**: the Cordis core package (`packages/core`) and
+   the other upstream packages that pycordis ports (`packages/loader`) at the tracked revision
+   supply the observable behavior, the state names, the event names, and the error messages. The [conformance ledger](#conformance) records how each upstream test and
    symbol maps to pycordis, and an automatic check finds every upstream change that has not been
    reviewed.
 3. **Python first at the surface**: where a Python feature gives a better API or a stronger
@@ -56,6 +56,32 @@ The Python-runtime modules (`keys`, `scheduler`, `deferred`, `disposables`, `err
 other pycordis module except `errors`. The core modules import each other only where the
 upstream modules do.
 
+The upstream package `loader` maps to the public package `pycordis.loader`. It is not part of
+the core, and no core module imports it.
+
+| Upstream (`packages/loader/src`) | pycordis (`src/pycordis/loader/`) |
+|---|---|
+| `index.ts` | `_service.py` |
+| `config/tree.ts` | `_tree.py` |
+| `config/group.ts` | `_group.py` |
+| `config/entry.ts`, `config/utils.ts` (`validateOptions`, `EntryValidationError`) | `_entry.py` |
+| `internal.ts`, `resolve.ts` (Node module resolution) | Not ported |
+
+The upstream package `timer` maps to the public module `pycordis.timer`. It is not part of
+the core, and no core module imports it.
+
+| Upstream (`packages/timer/src`) | pycordis (`src/pycordis/`) |
+|---|---|
+| `index.ts` | `timer.py` |
+
+The upstream package `hmr` maps to the public package `pycordis.hmr`. It is not part of the
+core, and no core module imports it.
+
+| Upstream (`packages/hmr/src`) | pycordis (`src/pycordis/hmr/`) |
+|---|---|
+| `index.ts` | `_service.py` (the service and the transaction), `_graph.py` (the module graph, the edge cache, the closure), `_modules.py` (the match of files, eviction, component discovery) |
+| `runtime/*.ts`, `error.ts` (Node module-loader internals) | Not ported |
+
 ## Semantic Contract
 
 Each row is a guarantee that pycordis keeps. The ID is stable: tests refer to it with
@@ -72,6 +98,7 @@ test.
 | `LIFE-PROGRESS` | With acyclic dependencies, every schedule reaches quiescence, and no fiber waits forever while a lifecycle step can run. | Theorem 73 |
 | `LIFE-CONFLUENT` | Two schedules that make the same `use` and `dispose` calls reach the same quiescent state: the same fiber tree, the same provider for each key, and the same effects per fiber. A failed fiber is outside this guarantee. | Theorem 80 |
 | `LIFE-FAILURE` | An `apply` that raises leaves its fiber with no installed effects and with the error recorded on the fiber. The error does not go to the parent or to siblings, and the fiber is not retried until its component or configuration changes. | Section 4.4, "Failure" |
+| `LOAD-OPTIONS` | The loader changes the options of an entry only for a host call (`create`, `update`, a move, `remove`) or when the entry's own component disposes its own fiber. The loss of a group, a tree, or a dependency, and a rebuild, never change the options of an entry that stays in the tree. | — (loader extension) |
 
 ## Conformance
 
@@ -87,7 +114,12 @@ The conformance data is in `conformance/`:
 
 - `upstream.json` is a generated inventory of the tracked upstream revision. It lists each
   upstream test case, each exported symbol, and the error messages, event names, and state
-  names, with a hash of each item's normalized source. It holds no upstream code.
+  names, with a hash of each item's normalized source. It holds no upstream code. The inventory
+  always covers core, and it covers each other package that the `[inventory] packages` list of
+  `ledger.toml` names. An ID of core has no prefix (`src/fiber.ts:Fiber._unload`,
+  `fiber.spec.ts::Fiber::title`). An ID of another package starts with the package directory:
+  `loader/src/config/entry.ts:Entry.update`, `loader/group.spec.ts::Group: basic
+  support::initialize`, `loader/message:…`.
 - `ledger.toml` has one entry for each inventory item. An entry gives the item's status
   (`pending` before review; `ported`, `adapted`, `diverged`, or `not-applicable` after it), the
   pycordis symbol that covers it (a `target`; a test case is linked by its `upstream` marker),
@@ -153,6 +185,20 @@ change removes the reason for a divergence, remove the divergence and its row.
 | `owner-thread` | improvement | A single-threaded runtime with no thread check | Every `Context`, `Fiber`, and core-service method raises `CordisError("WRONG_THREAD")` when another thread calls it; `Scheduler.submit` and `Deferred` completion are allowed from any thread | `REG-WELLFORMED` | A Python host has worker threads. A call from the wrong thread fails at once and does not corrupt the registry. Test: `divergence("owner-thread")` in `tests/test_threading.py` |
 | `host-introspection` | improvement | `state`, `uid`, `parent`, and `getEffects()` are public; the children of a fiber are in `runtime.fibers` | `fiber.error` and `fiber.children` are also public | `LIFE-FAILURE` | A host status view reads the failure cause and the fiber tree without the internals of the registry. Test: `divergence("host-introspection")` in `tests/test_fiber.py` |
 | `error-code` | omission | `CordisError(code, message?)`: `code` keys a message table that has one entry, and the instance keeps `code` | `CordisError(message)`: the instance has no `code` | — | The message states the rule, and a Python caller catches `CordisError` and reads the message. No upstream case reads `code` |
-| `deprecated-aliases` | omission | `ctx.plugin` / `registry.plugin`, `events.dispatch` | Not ported | — | No vestigial API |
+| `deprecated-aliases` | omission | `ctx.plugin` / `registry.plugin`, `events.dispatch`, `TimerService.setTimeout` and `setInterval` | Not ported | — | No vestigial API |
+| `timer-api` | adaptation | Delays in milliseconds, with a delay below 1 ms clamped to 1 ms; `timeout(delay)` and `interval(delay)` overloads; `noTrailing`; a wrapper function with a `dispose` property; `return(value)` on the iterator; the global timers of the runtime | Delays in seconds; a negative delay, and a zero `interval` or `ticks` delay, raise `ValueError`; `sleep(delay)` and `ticks(delay)`; `trailing=True`; a `Scheduled` object; `aclose()` with no value; a `Clock` that the host provides as the service `clock` | — | Python time units, no overload on argument type, Python iterator protocol, and host neutrality: the library has no global clock. The upstream cases pass with `ManualClock` |
+| `timer-callback-errors` | improvement | An error from a timer callback is uncaught and goes to the runtime | The timer service logs it with the logger of the calling fiber, and the other timers continue | `EFF-ISOLATE` | A failed callback of one plugin does not stop `ManualClock.advance` or the scheduler drain for other plugins. Test: `divergence("timer-callback-errors")` in `tests/test_timer.py` |
+| `loader-expressions` | omission | JavaScript expressions in `disabled`, `config`, `inject`, and `intercept`, evaluated against the entry context | `disabled` is a `bool`; every option value is plain data | — | No `eval` of config data in a library; a host that needs a condition computes the tree before it calls the loader |
+| `loader-isolate-rebuild` | omission | A change of `isolate`, or a move into a group with a different isolation, moves the live provider to the new realm and notifies both sides; a change that no service of the entry uses reloads nothing | A change of `isolate`, or a move that changes the isolation, intercepts, or `meta` of the entry context, rebuilds the entry | — | The in-place move needs a core API that only the loader uses; a rebuild keeps `LIFE-ORDER` with no new core state |
+| `loader-tree-owner` | adaptation | An entry fiber is a child of its group's fiber; a move swaps the parent of the entry context, and the disposal stays with the old group fiber | An entry fiber is a child of its tree's fiber; a group stops its members explicitly | — | A pycordis context cannot change its parent, and a fiber cannot change its owner; the move cases pass with no new core operation |
+| `loader-cross-tree-rebuild` | omission | A move to another tree keeps the fiber running | A move to another tree loads the component again in a new fiber under the target tree's fiber. A moved group loads its members again | — | The owner fiber changes, and a fiber cannot change its owner. Tests: `divergence("loader-cross-tree-rebuild")` in `tests/test_loader_commit.py` |
+| `loader-import` | adaptation | Import by module specifier, resolved through Node and a project helper | Import by `module` or `module:attribute` through an injected function; `importlib` by default. A missing entry module and a missing module of the component give different errors | — | Python import names; the upstream cases with a component table, and "leave a module imported by another one to Node", pass. Test: `divergence("loader-import")` in `tests/test_loader_import.py` |
+| `loader-entry-link` | adaptation | `fiber.entry` property on `Fiber` | `Loader.entry_of(fiber)` | — | No attributes added to a core class from outside it |
+| `loader-locations` | omission | Source locations of entry options, outer stack frames, `traceValidation` | Not ported | — | They serve the config file include, which pycordis does not port |
+| `loader-process` | omission | `envData`, `CORDIS_SHARED`, the `exit` event | Not ported | — | Process management of the upstream command line |
+| `loader-move-dispose` | improvement | After a move out of group A, the removal of A disposes the moved entry, and the loader reports that as a self-dispose: it writes `disabled: true` to the entry options and calls `commit` | The moved entry keeps running, and its options and `commit` reports do not change | `LOAD-OPTIONS` | Upstream breaks `LOAD-OPTIONS` here. The kind is `improvement` because no upstream issue exists. Test: `divergence("loader-move-dispose")` in `tests/test_loader_commit.py` |
+| `hmr-modules` | adaptation | Modules by URL in the Node caches; edges from the module loader; the default export as the component; `native-addon` skip reason; one instance in each thread; a nested call found through the async context | Modules by `sys.modules` name; edges from `ast` over the modules in `scope`, cached when first seen, or a host function; components by module attribute; `extension-module` skip reason; one instance in each process; a nested call found through the caller fiber | — | The Python import system and the pycordis scheduler. The upstream transaction, unit, abort, skip, and nested-call cases pass |
+| `hmr-resolution` | omission | Resolution of moved modules through package manifests and links; `ambiguous-import` skip reason; `require()` modules; `data:` URLs; the sweep of failed module jobs | An import by name finds a moved module; a failed import leaves no module | — | Python has no package manifests or module jobs, and an import by name has one result |
+| `hmr-watch` | omission | A file watcher through the `fs` service, with a debounce and a retry of failed batches | The host calls `reconcile` with the changed paths | — | The file system service is not ported; a host has its own watcher |
 
 A change that adds a divergence adds its row in the same change.

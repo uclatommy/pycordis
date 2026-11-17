@@ -357,6 +357,7 @@ def test_check_fails_on_bad_data(
     assert any(expected in failure for failure in failures), failures
 
 
+@pytest.mark.slow
 def test_checks_pass_on_committed_data() -> None:
     contract_ids = table_section_ids(ARCHITECTURE_MD, CONTRACT_TABLE_HEADER)
     divergence_ids = table_section_ids(ARCHITECTURE_MD, DIVERGENCE_TABLE_HEADER)

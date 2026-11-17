@@ -11,9 +11,12 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 import pytest
+from hmr_fixtures import plugins, stats  # noqa: F401
+from loader_fakes import RecordingLoader
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
+from pycordis.fiber import Fiber, FiberState
 from pycordis.scheduler import ImmediateScheduler, spawn
 from pycordis.traceable import Tracker
 
@@ -145,6 +148,25 @@ def hook_snapshot(ctx: Context) -> dict[str, int]:
     return {str(name): count for name, count in ctx.events.listener_counts().items()}
 
 
+def walk(fiber: Fiber) -> list[Fiber]:
+    """Return `fiber` and every fiber below it."""
+    return [fiber, *(node for child in fiber.children for node in walk(child))]
+
+
+def check_well_formed(root: Context, seed: int) -> None:
+    providers: dict[str, int] = {}
+    for fiber in walk(root.fiber):
+        parent = fiber.parent.fiber
+        assert parent is fiber or parent.state != FiberState.DISPOSED, (
+            f"seed {seed}: {fiber.name} has a disposed parent"
+        )
+        for impl in fiber.provisions:
+            providers[impl.name] = providers.get(impl.name, 0) + 1
+    assert all(count == 1 for count in providers.values()), (
+        f"seed {seed}: a key has more than one provider: {providers}"
+    )
+
+
 @pytest.fixture
 def scheduler() -> ImmediateScheduler:
     """A scheduler that drains when the outermost call returns."""
@@ -173,3 +195,10 @@ def run(
     timer leaves its `Deferred` incomplete until the test advances the clock.
     """
     return lambda coroutine: spawn(scheduler, coroutine)
+
+
+@pytest.fixture
+def loader(root: Context) -> RecordingLoader:
+    """A `RecordingLoader` that runs in `root`."""
+    root.use(RecordingLoader)
+    return root.get("loader")  # type: ignore[return-value]

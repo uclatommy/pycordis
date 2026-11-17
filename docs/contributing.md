@@ -35,8 +35,9 @@ These rules decide every other choice.
   service method runs on it. A different thread reaches the context only by submitting work to
   its scheduler or completing a `Deferred`, per
   [Design Principles](architecture.md#design-principles).
-- **Public API stability**: the public API is what `pycordis/__init__.py` exports. Under SemVer
-  `0.x`, a breaking change to it increments the minor version. Internal code changes freely and
+- **Public API stability**: the public API is what `pycordis/__init__.py` exports, plus the
+  public modules `pycordis.loader`, `pycordis.timer`, and `pycordis.hmr`. Under SemVer `0.x`, a
+  breaking change to it increments the minor version. Internal code changes freely and
   its callers move with it, without compatibility wrappers.
 - **Fail fast**: reject bad input with a specific exception, and keep the upstream message text
   where upstream supplies one. Read attributes directly on known types instead of probing with

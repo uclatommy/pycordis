@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from pycordis.context import Context
+from pycordis.context import Context, InterceptLink
 from pycordis.service import Service
 
 
@@ -162,3 +162,36 @@ def test_a_hook_called_on_a_view_reads_the_use_site(root: Context) -> None:
 
     assert view.ctx.shadow is None
     assert view.cordis_resolve_intercept() == {"a": 1}
+
+
+def test_an_intercept_layer_is_read_each_time_the_service_resolves(
+    root: Context,
+) -> None:
+    Foo(root)
+    layer: dict[str, object] = {"foo": {"a": 1}}
+
+    ctx = root.intercept_layer(layer)
+    assert ctx["foo"].config() == {"a": 1}
+
+    layer["foo"] = {"a": 2}
+    assert ctx["foo"].config() == {"a": 2}
+    layer.clear()
+    assert ctx["foo"].config() == {}
+    assert root["foo"].config() == {}
+
+
+def test_a_link_gives_the_layers_of_its_target_and_follows_a_new_target(
+    root: Context,
+) -> None:
+    Foo(root)
+    outer = root.intercept("foo", {"a": 1}).intercept("foo", {"b": 2})
+    other = root.intercept("foo", {"c": 3})
+    link = InterceptLink(outer)
+
+    ctx = root.intercept_through(link).intercept("foo", {"d": 4})
+    assert ctx.intercept_layers("foo") == [{"a": 1}, {"b": 2}, {"d": 4}]
+    assert ctx["foo"].config() == {"a": 1, "b": 2, "d": 4}
+
+    link.target = other
+    assert ctx.intercept_layers("foo") == [{"c": 3}, {"d": 4}]
+    assert ctx["foo"].config() == {"c": 3, "d": 4}

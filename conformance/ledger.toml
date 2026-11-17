@@ -5,9 +5,16 @@
 # pending ID that is not in the contract table, and a contract ID that is neither
 # covered by a running test nor pending.
 #
+# [inventory] lists the upstream packages other than core that the inventory covers. Core
+# is always covered. An ID of another package starts with the package directory:
+# `loader/src/config/entry.ts:Entry.update`, `loader/group.spec.ts::Group::title`.
+#
 # [items."<inventory ID>"] records the review of one upstream item. Add entries for new
 # items with `scripts/upstream_inventory.py <clone> --ledger-stubs`, and copy a hash only
 # after the review of the upstream item.
+
+[inventory]
+packages = ["loader", "timer", "hmr"]
 
 [contract]
 pending = []
@@ -2163,4 +2170,3353 @@ hash = "6765f67f83b4f1fe71e8504f38675af450aa9c34291beae67731091e3355f74e"
 [items."utils.spec.ts::DisposableList::iterates unshifted entries before pushed ones"]
 status = "ported"
 hash = "13566b9774f236be37e91bdbfc9177c8effae848ba2cc05ee16315d08c7a2c02"
+
+
+[items."loader/commit.spec.ts::EntryGroup.remove: file-driven moves::keeps an entry that another group adopted"]
+status = "ported"
+hash = "68f212fae63e0181f08c985990c67e668d43196d00415922df13baaf4a5f194a"
+
+[items."loader/commit.spec.ts::EntryTree disposal::does not persist child disposal while the tree loses its loader"]
+status = "ported"
+hash = "b0078593593c4ecb408a6f8ae0328a2d8bad16b7ec34066ab7e74c153ce723c5"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::create reports a created entry with its id assigned"]
+status = "ported"
+hash = "59aefd3a5019e8098757b2e38a1410f270f3cfc33d9ca6cfa2516e5b2c07584f"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::does not mistake a child fiber disposing itself for the entry (#19)"]
+status = "ported"
+hash = "9350ed71b80b2776fb8716049aa736723736298ffcb8966e14905584c9feda61"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::does not report anything for reads"]
+status = "ported"
+hash = "9096ac95a71971409e643c98c16ab5e20212ae251c23568a7d814014b2fd047a"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::fiber.update from inside the component reports a config change"]
+status = "ported"
+hash = "189741458d4d95d8f9508dc2254c089a6ee4cd24e24563adc1ed80f2d7f6f777"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::move reports the target group"]
+status = "ported"
+hash = "b1c75d39859472d1396dedf040781b1f432666af7865c0b50754f30fb0777062"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::remove reports the removed entry"]
+status = "ported"
+hash = "f0fc06d080604affc5848a58a2b00291fd05375e69a39b9428e87484204421ed"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::update in place does not report a move"]
+status = "ported"
+hash = "10f320b1e8fbda8c0ec08698f63f4f6bf69246016ad65f86280ee03955d2be0e"
+
+[items."loader/commit.spec.ts::EntryTree.commit: change reports::update reports the new options together with the previous ones"]
+status = "ported"
+hash = "342d12e3e95a209fc3181c609d79172d6f5356e1bf9dc692a7d11fa2c098e6c2"
+
+[items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::rejects a move onto an id that the target tree already uses"]
+status = "ported"
+hash = "f42bd030b2f9617d237027b227f2deccad86a54ce48dcb6c12d66a4e2b406a5a"
+
+[items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::reports a removal to the source tree and a creation to the target tree"]
+status = "ported"
+hash = "7f58e52c25d27ef7de8fd0f6c094c83763b7748d2e7aaf93f004dd8b83dcaf2e"
+
+[items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::transfers the entry to the store of the target tree"]
+status = "diverged"
+hash = "e8e2d1d12d2a3bb3ebe4ff49686591d342262661c2161a2d93c93e8608d23a07"
+divergence = "loader-cross-tree-rebuild"
+note = "The entry keeps its identity, but the component loads again under the target tree's fiber: the test asserts the second call."
+
+[items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::transfers the members of a moved group"]
+status = "diverged"
+hash = "bbaa7778280a79c5833942e5db59f78f11901acd4d7ab9499ac62db9b0203c75"
+divergence = "loader-cross-tree-rebuild"
+note = "A moved group loads its members again, so the members are new entries."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service outside every inject in config"]
+status = "diverged"
+hash = "6544e8cb81d68ab33278e1f2126f110564ae8cf8edb6828fbd06367423cee63e"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `config`."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service outside the parent context and the entry inject in disabled"]
+status = "diverged"
+hash = "a3e7ab81381f4c83127c2732bdd104e3a01c9d5ac950338b1dd40f18fc7d3cdc"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service provided by a sibling in an inject value"]
+status = "diverged"
+hash = "ae421d615b5989ddcc9e4e8c3f9fd6ed3d1cad61f97276f6787e2705d967aabe"
+divergence = "loader-expressions"
+note = "It evaluates expressions in `inject` values."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::disposes the component when intercept stops evaluating on an update"]
+status = "diverged"
+hash = "348daa8853784b457f7590eb459abd3a40bf28e2a0fd1786fd6762484bfbcc0d"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `intercept`."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::does not evaluate intercept while disabled"]
+status = "diverged"
+hash = "2c96efb4a8e663ad0d422243ca1fc0ea3b02d09f513241516d386ff0cff6979c"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `intercept`."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::does not start the component when intercept cannot be evaluated"]
+status = "diverged"
+hash = "df9358a6f498273d008cdea896c1a782a35ca5b810e30fcc806c0c98acb5d20e"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `intercept`."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::evaluates config with the component inject"]
+status = "diverged"
+hash = "a64a190198e552b84987724ecf462d83c8434680b86030a64b0b5d6cbd41b649"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `config`."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::stops a group whose intercept stops evaluating on an update"]
+status = "diverged"
+hash = "a3b5685d2beacb6dd203b49daf492f629ba0fe5b081e66806ab8441a465b691c"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `intercept`."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::caches the verdict independently of reads and service mutations (group=false)"]
+status = "diverged"
+hash = "e0734c798fe9741847fc441a489845b0b47634441cb6c1723e8abe706c9ee5e2"
+divergence = "loader-expressions"
+note = "It counts the evaluations of a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::caches the verdict independently of reads and service mutations (group=true)"]
+status = "diverged"
+hash = "e0734c798fe9741847fc441a489845b0b47634441cb6c1723e8abe706c9ee5e2"
+divergence = "loader-expressions"
+note = "It counts the evaluations of a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::cannot read the entry inject from an inject value"]
+status = "diverged"
+hash = "ff1b8dc9e6e8567b9c9caadcddbd887e9d10910dc65e9e59eb8313b3b027127b"
+divergence = "loader-expressions"
+note = "It evaluates expressions in `inject` values."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::creates no outer fiber for an entry without inject"]
+status = "ported"
+hash = "d9420b47a64b51cdfe4b6f26f8ae61846037d502a96ecd09f1c1a25b59036bc5"
+note = "`disabled: False` replaces the expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::decides disabled before the component dependencies"]
+status = "diverged"
+hash = "90af6f125ef7e9d59de8b297f2486cf7d4193ed0da423c3eb5780fa22702bee7"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::disposes both fibers when the entry is removed"]
+status = "ported"
+hash = "3d3788b49b751ac39c5266069d0c93c588101b3b4a9a2002acf49ae83606004b"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::disposes the outer fiber when the component disposes itself"]
+status = "ported"
+hash = "a80042d107e3d28a236ace218bf1036ffc8e7a780f492105d1c63941fe266fbb"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::does not repeat a failing disabled expression when its verdict is read"]
+status = "diverged"
+hash = "56b9d2fadfd0c184e7f391b948661d2086e0123e2b4c22d7487ab6f7b1ef9438"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops an activation whose dependency is lost during the import"]
+status = "ported"
+hash = "e05f32bb3c7c74175767f2684fb20c13fff876aadb4e9532d33f3959eab3555c"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops entries removed or disabled during import"]
+status = "ported"
+hash = "0446209e3df2b92e79b5f10e8113fd5b3de670d31131d8bd1b29af6c75c6ba27"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops entries removed or disabled during patch"]
+status = "diverged"
+hash = "0446209e3df2b92e79b5f10e8113fd5b3de670d31131d8bd1b29af6c75c6ba27"
+divergence = "loader-isolate-rebuild"
+note = "There is no context patch step: the isolation is bound when the fiber is created. The case for the import window holds the same rule."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates a changed disabled expression once in either direction"]
+status = "diverged"
+hash = "83f9e1bedaf082eee16a105ce1738b064f7b376f0f38a7f4a0e3ce931df8a18f"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates disabled with the entry inject"]
+status = "diverged"
+hash = "aaef0bb57b59949fcda1868ac173725876df9c74e707bc05c82381d43f36dad4"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates inject values in the parent context"]
+status = "diverged"
+hash = "6356ff23c0677c780bfa1e8bab83ce822e3452451202fbc53bd69c343a390e78"
+divergence = "loader-expressions"
+note = "It evaluates expressions in `inject` values."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates intercept with the entry inject, for the component only"]
+status = "ported"
+hash = "da64fc97b7c62977b67aebbccefc8bf8d55927e3c2379aed6f5add4193ce82fa"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::invalidates the verdict before an asynchronous dependency unload"]
+status = "ported"
+hash = "be3a2be0746ae3b4acb4c3a757f6f3b0d4a3fbce6f8925603ec82700b9e2a9c1"
+note = "`disabled` is a plain bool. The test reads `Entry.disabled` during the unload."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps a disabled group verdict undecided when its dependency disappears"]
+status = "diverged"
+hash = "8849841c8c31b661d96d745dbb002d4a9a2798094363b105cc67ed1112f63b74"
+divergence = "loader-expressions"
+note = "It needs a verdict that a changed service value flips."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps a group structural and passes its verdict to the children"]
+status = "ported"
+hash = "6bfb320b54df84e4ed183b5612e0b1258e59e11c0c2b8225ad1b1622974f8c0d"
+note = "`disabled` is a plain bool."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps an inject value on the outer fiber when the component declares the service itself"]
+status = "ported"
+hash = "d2e96d152eaa0a79e1a1ebdc26492bc6c6d1ace68c5dd3728e781f8fc22e79cc"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the entry isolate without an inject"]
+status = "diverged"
+hash = "adfe13f899fbe91e96bec418533edf34141d30378dabd569e2a5524d88760d88"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the options when a dependency is lost and recovered"]
+status = "ported"
+hash = "742ff79f304fae1fe8c02be3a34f03f688fb9ccc05168ee7fb1f3d62731a88ee"
+note = "`disabled` is a plain bool."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::nests the inner fiber under the outer fiber"]
+status = "ported"
+hash = "d3f6ec445287a1dd5d3902580ba1d3e0d92547bd5f84e3b3c3915270507c3ac2"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates a failing inject value on refresh"]
+status = "diverged"
+hash = "ee0d9ce810f6d9e8a940ae59706347bf59afe7c9b1b5a9d59d2dc2f827bc2094"
+divergence = "loader-expressions"
+note = "It evaluates an expression in `inject`."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates disabled in the new parent context after a move"]
+status = "diverged"
+hash = "608c3c3c9b86bc5a3371f917340586378c8aae25cb7ce847978026c40eff9ff9"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates inject in the new parent context after a move"]
+status = "diverged"
+hash = "608c3c3c9b86bc5a3371f917340586378c8aae25cb7ce847978026c40eff9ff9"
+divergence = "loader-expressions"
+note = "It evaluates expressions in `inject` values."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::re-evaluates the verdict after changing the entry isolation"]
+status = "diverged"
+hash = "0f5595803fdb5297250e5b6723933c28052c838512394d817340086110d75f11"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::rebuilds the entry when inject changes"]
+status = "ported"
+hash = "360021d4ae32ed7c8d6c396fa77b5cc52291f304784548dcc4142fa466325bb5"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::rebuilds without a write-back when inject is added"]
+status = "ported"
+hash = "faa14c0bde470044684a58563c881f1e921b658d638eca85edd0c9450fffb3be"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::reloads the outer fiber when the verdict changes"]
+status = "diverged"
+hash = "fa816a40122eefe1c49ec24d56743017703cc003a62e7f0335199b169b8cd0eb"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::treats a failing expression as disabled"]
+status = "diverged"
+hash = "cdf54b8d3b65c2330784cd38aca6022777af2f31ea93d7424e7f3378f2fafaea"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::updates intercept in place"]
+status = "ported"
+hash = "30ad0cdc5a1f1c988b2ca6e562a075dd825e8757e93c7ed6d542a53cade24933"
+
+[items."loader/evaluate.spec.ts::Loader: entry evaluation context::waits for the entry inject while it is missing"]
+status = "ported"
+hash = "45e93fe37e083f086421d3a8d7048d4ff643a9b5b1fa0309be9b18041435a1bb"
+note = "`disabled` is plain data, so the test checks the wait for the service."
+
+[items."loader/group.spec.ts::Group: awaited reconciliation::config update settles children"]
+status = "ported"
+hash = "3453b7afbbf30c1a1e9aef3252e30df26efd361c9ea93a52b9d6fd06adf93f91"
+
+[items."loader/group.spec.ts::Group: awaited reconciliation::initialize"]
+status = "ported"
+hash = "65e5a85befac4c5f964f26730e1e757e1ab0ab227bb25615651468176ba2f965"
+
+[items."loader/group.spec.ts::Group: basic support::disable inner"]
+status = "ported"
+hash = "526160fc14b30c57e567498d4955ddcae28a965afe15bcdb754face9e49ac4c5"
+
+[items."loader/group.spec.ts::Group: basic support::disable outer"]
+status = "ported"
+hash = "2ba04859cbafbe9aba474a1bcf923c93fa45d121f2cdd71d64ed83dc1d94def3"
+
+[items."loader/group.spec.ts::Group: basic support::enable inner"]
+status = "ported"
+hash = "eb8371c00996a2c0be70b93f97cab7dd47c05e864dd63eec64742b99088f9dc5"
+
+[items."loader/group.spec.ts::Group: basic support::enable outer"]
+status = "ported"
+hash = "dd2d9b971f75a3e87d55db0d32381c35137cb747ae3642f4983b5e0586b07ebd"
+
+[items."loader/group.spec.ts::Group: basic support::initialize"]
+status = "ported"
+hash = "d7941348fba206b56ac1bd1d525b28f13c3767ab83603f0a193877deff0d5bea"
+
+[items."loader/group.spec.ts::Group: intercept::initialize"]
+status = "ported"
+hash = "03e2a1585fa3c3ef8a84a008e82921f90ffec001bd430b77b299b5c9f3485534"
+
+[items."loader/group.spec.ts::Group: transfer::disabled -> disabled"]
+status = "ported"
+hash = "7b91e1ce470f62e7017d0db2c49d9491bfa7a47931c6b4f0fd721e59b1aa2d07"
+
+[items."loader/group.spec.ts::Group: transfer::disabled -> enabled"]
+status = "ported"
+hash = "c64b8c282e5da2bd54dd5f2d35e8e5ca72cc46d4106e5d890b1b6a80434f5784"
+
+[items."loader/group.spec.ts::Group: transfer::enabled -> disabled"]
+status = "ported"
+hash = "23875d827f561cd0ed361ea31ec8c6726de86192698e4f7d6d24247dfe56eded"
+
+[items."loader/group.spec.ts::Group: transfer::enabled -> enabled"]
+status = "ported"
+hash = "64858c2060b4bb2023ef4fe446da1f2615a810218d1ec771df8fba654146eb53"
+
+[items."loader/group.spec.ts::Group: transfer::initialize"]
+status = "ported"
+hash = "cd31b0cf813bd6d1a7b4116f2b87b68a37acc89b260152dc08683f98379075bf"
+
+[items."loader/import.spec.ts::Loader: component import::keep the hints of Node after the first line"]
+status = "diverged"
+hash = "c6a0326e592d60e6421d399dfbba735f0b27b5c37787960fdec56ca15b0b30b4"
+divergence = "loader-locations"
+note = "The case checks the message text of Node and outer stack frames."
+
+[items."loader/import.spec.ts::Loader: component import::leave a module imported by another one to Node"]
+status = "adapted"
+hash = "72836f4ee635e65d0260509c9f9de89bc4e117871665d12791989fcbe8e97f37"
+divergence = "loader-import"
+note = "A module that the component imports keeps its own import error."
+
+[items."loader/index.spec.ts::Loader: basic support::component self-dispose"]
+status = "ported"
+hash = "66931d4238d86f8109584e2e0daa3edb06fc8b31c4dfb1f8413d19f973aa73d0"
+
+[items."loader/index.spec.ts::Loader: basic support::component self-update"]
+status = "ported"
+hash = "4ecf20a4fd547da9cd59b01b3cfcb0563704e35cb9935ac3046d7576337e7339"
+
+[items."loader/index.spec.ts::Loader: basic support::loader initiate"]
+status = "ported"
+hash = "a752a86a3b558ab22c18d52eac9a15dfa040a46b997e604877c286887800c2a3"
+
+[items."loader/index.spec.ts::Loader: basic support::loader update"]
+status = "ported"
+hash = "4a35e59da966228b72591d1d95998f709e2c0335780ac8918ff704faa9b81a65"
+
+[items."loader/index.spec.ts::Loader: config interpolation::evaluate after dependencies are ready"]
+status = "diverged"
+hash = "1fbb89f865436eb5d9ec111c5a51f0b68c46871b8789d8d52f45e3f2d85064da"
+divergence = "loader-expressions"
+note = "It interpolates expressions in `config`."
+
+[items."loader/index.spec.ts::Loader: config interpolation::keep the source config unevaluated"]
+status = "diverged"
+hash = "50d9653bf1ed0fb5374df43b0d77886ec73e81a6bac20834493ce02c949fa759"
+divergence = "loader-expressions"
+note = "It interpolates expressions in `config`."
+
+[items."loader/index.spec.ts::Loader: config interpolation::re-evaluate when dependencies reload"]
+status = "diverged"
+hash = "ad0eb1be9d38745859869c92d9db63dbcea3ae13a9d2180424b781d760928350"
+divergence = "loader-expressions"
+note = "It interpolates expressions in `config`."
+
+[items."loader/index.spec.ts::Loader: config interpolation::wait for dependencies"]
+status = "diverged"
+hash = "6945ef440323e360f2ea744c389a0bcd4092b0a7bd1001fcbe64b134b507bc36"
+divergence = "loader-expressions"
+note = "It interpolates expressions in `config`."
+
+[items."loader/index.spec.ts::Loader: disabled js expression::evaluates the expression instead of treating the node as truthy"]
+status = "diverged"
+hash = "00a59c5b704d3b9325de67c8112cc56b4eb5e56e426ec1042fc0bd10a44ca8cb"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
+
+[items."loader/index.spec.ts::Loader: entry failure::on an id containing the separator"]
+status = "ported"
+hash = "5d8410cac0b56da62ca2b9f1aec817fcb8a57e27b321932452cbedd47b80dbf7"
+
+[items."loader/index.spec.ts::Loader: entry failure::on config update"]
+status = "ported"
+hash = "489c68ddfb3c720bdad3e2186f1fc37662374169fecf9460abc29a28dcbef46f"
+
+[items."loader/index.spec.ts::Loader: entry failure::on load"]
+status = "ported"
+hash = "48dce97b8817506dce09d8ee1f6b1eaaf32f6fb21c441c4e00741ff32bcc9955"
+
+[items."loader/index.spec.ts::Loader: failed entry recovery::fail with dependencies available"]
+status = "ported"
+hash = "0da2b220e7f5b6b0779b568d9d27c3d8d12bf402beb1dfd9b7d339052f1bd6d9"
+
+[items."loader/index.spec.ts::Loader: failed entry recovery::recover through update"]
+status = "ported"
+hash = "f52c23b591123ff3cd2e4f006f7234ac03b3e858ecee2410e7dec09e82c96e68"
+
+[items."loader/index.spec.ts::Loader: intercept config::pending"]
+status = "ported"
+hash = "1c0f7129d9ef22c35a011b0231d11c2b663149619b0d810b9486678c76560863"
+
+[items."loader/index.spec.ts::Loader: intercept config::resolved"]
+status = "ported"
+hash = "7809417e16db25a1918c9c4fbb83a941ca8d3d86814f4fc40588db8383eff31c"
+
+[items."loader/index.spec.ts::Loader: nested component config::skip nested components"]
+status = "ported"
+hash = "a175c6484bfc098f6344ae3e60ebb1facbc693be5fe22ffc35914b0fb03fa4ae"
+
+[items."loader/index.spec.ts::Loader: parent teardown::keep children enabled when the parent loses a dependency"]
+status = "ported"
+hash = "8589edd0f0dbcd4fd352836e5ed6693fbd491286ea2f1a8a2968791b0c28d602"
+
+[items."loader/index.spec.ts::Loader: pending entry update::persist an update to a pending fiber"]
+status = "ported"
+hash = "5c25bb672caba5631ca0321f6e48316a4528152ff1658c015bd0781339046a93"
+
+[items."loader/index.spec.ts::Loader: replaced component::keeps the entry of a component replaced in place"]
+status = "ported"
+hash = "48b4cfeffeb9ee67f15b02772f16060058d6dfc0b779f01db1bf0a83d3f72075"
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::does not delete another realm when one impl moves"]
+status = "diverged"
+hash = "8123c0748be2b1f237539ece8f16468a304ce755968dcbee64fdbd9576837669"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps a provider pinned by an isolated context when its entry moves"]
+status = "diverged"
+hash = "f9f1191a610f510aa2a8e5adbf21099bddde593658913d9422cb183fe031fd7c"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps an impl that reused the abandoned symbol"]
+status = "diverged"
+hash = "394efcebe2de5c4ee3a8e0eb89de6d4f7068402fedf9d592e7d5ef8dafd05233"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps impls on intermediate symbols across repeated moves"]
+status = "diverged"
+hash = "4719fcfd12d4434bc4229b0afeb8f3127c4b3167f29c8c5a5524bcf039519b33"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps self access while the provision context changes realms"]
+status = "diverged"
+hash = "4ff384cb5891ebe6498e3e0fe2a9c4f183eb4870356aa9baf5bf175ddd863763"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::notifies the retained realm on fiber disposal after a blocked move"]
+status = "diverged"
+hash = "750da8e08bb9fed6e4030e6c1cd996e274c1e814a78333c9deb1ac885f769457"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::notifies the retained realm on provide disposal after a blocked move"]
+status = "diverged"
+hash = "750da8e08bb9fed6e4030e6c1cd996e274c1e814a78333c9deb1ac885f769457"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::reloads a self-provider after an isolate-only move"]
+status = "diverged"
+hash = "d4d777b0c1c61aff53b4ec593919eaa1140e48444bb636c448f1edef5ac02512"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::reports the service of each realm when a provider moves"]
+status = "diverged"
+hash = "170ad3b48f8a14c502633abeee8a222a4d91bc7c883a3c6a9e9c06668142be7e"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::retains a moved provider until its consumers finish cleanup"]
+status = "diverged"
+hash = "6b5e0258678acc1e7fa4da9526cd2eaec6b3e226456efabc2f09539ec15da7eb"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on injector (irrelevant)"]
+status = "ported"
+hash = "432edb8172d3afe294827431e0e53d8bfa3f216d3c4ad6cc0f653204f1658428"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on injector (relevant)"]
+status = "ported"
+hash = "36802636c98b93445ec327fd899b74d9935ef2d67d2f862f4611f4c7d7929725"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on provider (irrelevant)"]
+status = "ported"
+hash = "df135171012216c37781d91446b59522e2ccd3f7902f472240e2955a2b143e2c"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on provider (relevant)"]
+status = "ported"
+hash = "4acf8f275c54b495d323c442a551f475b88292d5eb1166030a7a6dee20a8b7f6"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::initiate"]
+status = "ported"
+hash = "3b78d2b0371e88a39bf8ef6d6c0bb4584f3740e8f587c03d25bcc5df47688437"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on injector (irrelevant)"]
+status = "diverged"
+hash = "95b09e78155e88063aac7e4576fe929b19886bc877cab76dca9a5c9fd23421d9"
+divergence = "loader-isolate-rebuild"
+note = "The entry loads again although no service of it changes: the test asserts the reload."
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on injector (relevant)"]
+status = "ported"
+hash = "352320973838eef899a0ccdeb184263651b32aa8e7a1bdd55184c996c4dd0f98"
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on provider (irrelevant)"]
+status = "diverged"
+hash = "819dcf6e5ff6b7b3348ba692d84489c8dba16a4f35795528bc3218d8ae886c82"
+divergence = "loader-isolate-rebuild"
+note = "The entry loads again although no service of it changes: the test asserts the reload."
+
+[items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on provider (relevant)"]
+status = "ported"
+hash = "c46b3440b8e4b9e5ae6a689ada1e5c51564770f805d717b6a368bd04f548165e"
+
+[items."loader/isolate.spec.ts::Service Isolation: migration::keeps the committed views of a parent and a pinned child across a realm move"]
+status = "ported"
+hash = "6a65d0c33d9b2a31b10295bdb88d283527aa55936f8fbbea953f2f894d2edb6d"
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::add isolate group"]
+status = "ported"
+hash = "3aca8c6babbbb01c6599df3b3e68d955653cad64b6a1c9dfb006e489c8642660"
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::realm reference"]
+status = "ported"
+hash = "a4cff737e287fd729efad9b62fc6b7f0466da9a268df4917e4ef39af22e2e682"
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::special case: change injector"]
+status = "diverged"
+hash = "7d4ddf3ea91cb119bf5357121b97c28cc5e28693b38d981cca28416c052d4dab"
+divergence = "loader-isolate-rebuild"
+note = "A group whose isolate changes loads its members again, so the counts and the fiber objects differ: the test asserts the rebuild."
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::special case: change provider"]
+status = "diverged"
+hash = "7bb3588472bb6e26036410571ade046384f2b09cad2437075a962d0f50508198"
+divergence = "loader-isolate-rebuild"
+note = "A group whose isolate changes loads its members again, so the counts and the fiber objects differ: the test asserts the rebuild."
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::special case: nested realms"]
+status = "diverged"
+hash = "5856e2199205d1567893413edb43551bf6b51ca4b10da80c6cb875194b197a01"
+divergence = "loader-isolate-rebuild"
+note = "A group whose isolate changes loads its members again, so the counts and the fiber objects differ: the test asserts the rebuild."
+
+[items."loader/isolate.spec.ts::Service Isolation: realm::update isolate group (no change)"]
+status = "ported"
+hash = "73b957996d2f8ef4ce36e224a2e4e87e8e4b420ffa1343aa3827aad112ea4084"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::initiate"]
+status = "ported"
+hash = "0607136e41a0610ba739db7a3fbae16ff83b7c5b680e35a19f447da9a511da76"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::transfer injector into group"]
+status = "ported"
+hash = "25a1caf1a7150116e17b8326e8937888f9af963a3ae38fdf7adabd22289f27d6"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::transfer injector out of group"]
+status = "ported"
+hash = "b201a3d66e76757a39f3141c5cd38d311185a00938b08736af6b9ad2980f6b90"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::transfer provider into group"]
+status = "ported"
+hash = "23b8d6a5fd50c3cb50f00f42e896e68e20c9516f3d642fe5dbf490d13aa7b512"
+
+[items."loader/isolate.spec.ts::Service Isolation: transfer::transfer provider out of group"]
+status = "ported"
+hash = "2d4b5958526c19a4154b4a9c86bfe7b78ab134540ed418d69d0fe3813c24e359"
+
+[items."loader/message:cannot resolve entry {}"]
+status = "ported"
+hash = "09947aede842815efea3f4815c4bda89afa6fe9d067e3ce4cb9c07c51fc1f8d0"
+
+[items."loader/message:entry {} already exists in the target tree"]
+status = "ported"
+hash = "d107bf0c082014ae87cb536ecbaa3b99051e98a79a2e1bce84f1c321c7bd8815"
+
+[items."loader/message:entry {} is not a group"]
+status = "ported"
+hash = "1071c0c2903019b9ca35ef528eb2b491adc03421075d5acce455038d4a98e5ec"
+
+[items."loader/message:entry {} is waiting for its dependencies"]
+status = "diverged"
+hash = "c3160337004c194343165177061236e35852d3b4c3b7149e34da3edcca55b719"
+divergence = "loader-expressions"
+note = "The message belongs to the evaluation of an expression."
+
+[items."loader/message:expected service {} to be implemented"]
+status = "diverged"
+hash = "0843f13e185e194553ab26f61ef20ab470b6c6a6715ff037a327d639976ec397"
+divergence = "loader-isolate-rebuild"
+note = "The warning belongs to the move of a provider between realms, which pycordis does not do."
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::does not apply a fiber removed while rebuild is disposing"]
+status = "ported"
+hash = "4274b8f56a97c824430ca0883823544e80957af231c8c457ef1d11e514dab04e"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::joins a second inject update while the first rebuild is disposing"]
+status = "ported"
+hash = "400a4c76e041e73c4dc7d2810cadc65a426d6b6170918d1f0000ef362b0b3b93"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::keeps a rebuild started during apply until its disposer settles"]
+status = "ported"
+hash = "0829ec2eb789be11d9407ca169b635903783f517398d1ff65279d935aeaaab7b"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::keeps the new outer fiber pending and drops the old listener when inject is missing"]
+status = "ported"
+hash = "edb208ae96fab8b99036f156a826511228d576fc61cdd6fbdd7993e44ac85874"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::reapplies when inject gains a service that is already provided"]
+status = "ported"
+hash = "484d8bca9956e873c0ab915a2391efa08d6d5df1357eb559f61636267f5bae0a"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::starts a pending entry when inject is cleared"]
+status = "ported"
+hash = "ae492e99d47fc88ab7d28ba4d1b547dc04d4ccd97830248f7efc7a384a4e07ac"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending context patch"]
+status = "diverged"
+hash = "1303acce7046d9f55bb13bc4d6ecb7b4f3913ee74008a6d207c990e2caedc5d9"
+divergence = "loader-isolate-rebuild"
+note = "There is no context patch step: the isolation is bound when the fiber is created. The case for the import window holds the same rule."
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending failed import"]
+status = "ported"
+hash = "1303acce7046d9f55bb13bc4d6ecb7b4f3913ee74008a6d207c990e2caedc5d9"
+
+[items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending import"]
+status = "ported"
+hash = "1303acce7046d9f55bb13bc4d6ecb7b4f3913ee74008a6d207c990e2caedc5d9"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::applies nothing when the entry is removed during the disposal"]
+status = "ported"
+hash = "fd5c771e85065edf7567a221bd08472f80ff7c947f479d4855ed6180df60fb5e"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::joins a second rename while the first disposal is pending (inject=[ 'settings' ])"]
+status = "ported"
+hash = "71db9c77751f1efb094bf9eecfeed3db7133253c48373e4e5c590eb606671d17"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::joins a second rename while the first disposal is pending (inject=undefined)"]
+status = "ported"
+hash = "71db9c77751f1efb094bf9eecfeed3db7133253c48373e4e5c590eb606671d17"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds an active entry when its name changes (inject=[ 'settings' ])"]
+status = "ported"
+hash = "36fbe39313cafdc4168f7a468fab49a5eac8944e2da40c29341e8e9e54020a7f"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds an active entry when its name changes (inject=undefined)"]
+status = "ported"
+hash = "36fbe39313cafdc4168f7a468fab49a5eac8944e2da40c29341e8e9e54020a7f"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::rebuilds when the component renames its own entry"]
+status = "ported"
+hash = "3b5ed858c8f6fcff4b084d0ccc22b55822dd577c871f9c5176d8775d93709e7d"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::uses the new name when it changes during the import"]
+status = "ported"
+hash = "ace9bda900ad4dea461ef7098a4859ff1c238a3a2d5339338c10823be011731a"
+
+[items."loader/rebuild.spec.ts::Loader: entry rebuild::uses the new name when it changes during the patch"]
+status = "diverged"
+hash = "ace9bda900ad4dea461ef7098a4859ff1c238a3a2d5339338c10823be011731a"
+divergence = "loader-isolate-rebuild"
+note = "There is no context patch step: the isolation is bound when the fiber is created. The case for the import window holds the same rule."
+
+[items."loader/resolve.spec.ts::EntryTree.import without internals::accepts a drive-letter path"]
+status = "not-applicable"
+hash = "a7a362553eef795d3ff344a7938cd2cc6344eeed36f45a992b9ef9f7adb19477"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::EntryTree.import without internals::routes bare specifiers to the project helper"]
+status = "not-applicable"
+hash = "04cee3a556f4042dbf0fd176599f13ff1338a6c1fb7c9217ad8cab5e405dcd04"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::EntryTree.import without internals::still resolves relative specifiers against the base url"]
+status = "not-applicable"
+hash = "acd08dd16d2383df1f72090a4db5721d4fc494f6bb7c663717036ac571dcc845"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::bareImporter::anchors the helper at the package.json, not at the base url"]
+status = "not-applicable"
+hash = "b0ba4eb62e6916fd34ecf7624995b286b0373884edb667629cb10b08aee6868a"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::bareImporter::declines when there is no project to anchor to"]
+status = "not-applicable"
+hash = "557d31daa674aa9efb46a16359d52ae179e457c717321d371186ec9c0927dc87"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::bareImporter::keeps subpath imports and self references working"]
+status = "not-applicable"
+hash = "d004cdb7215b2051091c0536fda06ed7a7447c0957f6d1526b0ff9b438ee6823"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::bareImporter::makes the helper directory ignore itself"]
+status = "not-applicable"
+hash = "1a6f9cc9272d91637164e24e262839f547d55174cf6c6f2bd33436ec51b92166"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::bareImporter::resolves bare specifiers against the project, not the loader"]
+status = "not-applicable"
+hash = "638aec2ea48afc8e856ab4e673e3a41e307c75076ca0951e24307aafe481cfad"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::bareImporter::reuses one helper per scope"]
+status = "not-applicable"
+hash = "5fb7707665cb149066befe52803655d3fe1a37618c2a8deeeffe6ec5ac45e2e9"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::helper preparation::cleans up after EBUSY and recovers on a later call"]
+status = "not-applicable"
+hash = "9e27e60d322f7c8e2e6e7b5ea7ee198a05cf4e1c68f4033d4237cd9041a015e7"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::helper preparation::cleans up after ENOSPC and recovers on a later call"]
+status = "not-applicable"
+hash = "9e27e60d322f7c8e2e6e7b5ea7ee198a05cf4e1c68f4033d4237cd9041a015e7"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::helper preparation::retries a stale helper after EACCES"]
+status = "not-applicable"
+hash = "f702f225193ee83fbe7483dca3d69a2b0c90e7b4a399d7d0e6df0d7a7f80ef6e"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::helper preparation::retries a stale helper after EBUSY"]
+status = "not-applicable"
+hash = "f702f225193ee83fbe7483dca3d69a2b0c90e7b4a399d7d0e6df0d7a7f80ef6e"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::helper preparation::retries a stale helper after EPERM"]
+status = "not-applicable"
+hash = "f702f225193ee83fbe7483dca3d69a2b0c90e7b4a399d7d0e6df0d7a7f80ef6e"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/resolve.spec.ts::helper preparation::reuses an identical helper without attempting rename"]
+status = "not-applicable"
+hash = "157539e5f88805e292e134e0a88e91565aa346020024b7162de2b909a99101f7"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/src/config/entry.ts:<rest>"]
+status = "not-applicable"
+hash = "1aaec72ae06f8ecbec80ecf47bb955c42f85eb36431aa0b69b088ee4175137b3"
+note = "Imports and the `outer` component object. The Python names are in the entries of the other items of the file."
+
+[items."loader/src/config/entry.ts:Entry"]
+status = "ported"
+target = "pycordis.loader.Entry"
+hash = "89dc9b564f9b4e29330a2fc85f35aba2edebd9a8c4a52ad534fdf849589e1a83"
+
+[items."loader/src/config/entry.ts:Entry._applyIntercept"]
+status = "ported"
+target = "pycordis.loader.Entry._apply_intercept"
+hash = "659a58efc69f6494bf1c82aeb8cfb0b4706207e747c2cf19c80347a5cdb80847"
+
+[items."loader/src/config/entry.ts:Entry._blocked"]
+status = "ported"
+target = "pycordis.loader.Entry._blocked"
+hash = "60e7149f4ac3abe6c405a6f979bb0b27dfe74011e127dd8e0912274486c9febe"
+
+[items."loader/src/config/entry.ts:Entry._dispose"]
+status = "ported"
+target = "pycordis.loader.Entry._dispose"
+hash = "89aff48b1b14ca8bf25ff63b4f008b756d4069f7cc6061ffe06598e6bfefca52"
+
+[items."loader/src/config/entry.ts:Entry._evaluationContext"]
+status = "diverged"
+hash = "e3c261f67ca6e2bda3a401dcfddf825ba98fac0d0106f4f4a58635a2ad4a6514"
+divergence = "loader-expressions"
+note = "It gives the context that evaluates an expression."
+
+[items."loader/src/config/entry.ts:Entry._hasOuter"]
+status = "ported"
+target = "pycordis.loader.Entry._init"
+hash = "d089f7def214ab8606d5df2c18b9c0960b6322f7fad459c01aa4ba28353dc3aa"
+note = "Inlined as the test of `Entry.inject` in `_init`."
+
+[items."loader/src/config/entry.ts:Entry._import"]
+status = "ported"
+target = "pycordis.loader.Entry._import"
+hash = "406d066bf0558c1d1352cae857b3335a213d8cba04c59d69cb94aa7e1ff18a62"
+
+[items."loader/src/config/entry.ts:Entry._init"]
+status = "ported"
+target = "pycordis.loader.Entry._init"
+hash = "1184582f12022870eb19f1211a310eccc95f297d258d6a6b9385ba983b358f8f"
+
+[items."loader/src/config/entry.ts:Entry._parentDisabled"]
+status = "ported"
+target = "pycordis.loader.Entry._parent_disabled"
+hash = "80a26fecd8f18e072fd9be52d26e03bdf0247ff0de73c120749c82ea00bfe7ef"
+
+[items."loader/src/config/entry.ts:Entry._patchContext"]
+status = "diverged"
+hash = "8fc8c613d581071ba99ca88aa4a8878873888664d7a58c8411f0ceed1a35c225"
+divergence = "loader-isolate-rebuild"
+note = "The isolation is bound when the fiber is created, and a change rebuilds the entry."
+
+[items."loader/src/config/entry.ts:Entry._reconcile"]
+status = "ported"
+target = "pycordis.loader.Entry._reconcile"
+hash = "80086f5e1c7bf1910fbe2b1d99d659bebda5d25715dd95dba310a5afefbb4e7b"
+
+[items."loader/src/config/entry.ts:Entry._registered"]
+status = "ported"
+target = "pycordis.loader.Entry._registered"
+hash = "4ee4269ae94d145039ad9146b485c4b2ebb968cbdca7562774fcc078158009ad"
+
+[items."loader/src/config/entry.ts:Entry._reportImport"]
+status = "diverged"
+hash = "a4862d990537d8d7ccbe75db52ae1101681ac5dfdfaf337d6052f058d166c1f5"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
+
+[items."loader/src/config/entry.ts:Entry._resolveDisabled"]
+status = "ported"
+target = "pycordis.loader.Entry._resolve_disabled"
+hash = "db7f0d8ff9ac385e33bacc73ccfd240cefce5cc305e47ea8723cd099fad209df"
+
+[items."loader/src/config/entry.ts:Entry._resolveInject"]
+status = "diverged"
+target = "pycordis.loader.Entry._resolve_inject"
+hash = "766d238cbf7fec2961ab25d7c7ff71e9ffe6a7ce88e5f5c1cb0c346b503c2857"
+divergence = "loader-expressions"
+note = "It reads plain data and does not interpolate expressions."
+
+[items."loader/src/config/entry.ts:Entry._start"]
+status = "adapted"
+target = "pycordis.loader.Entry._start"
+hash = "af0b17ce7596d43759932ee95b0072775aa6707ab5a936ef031ef98b8c4b95a4"
+divergence = "loader-tree-owner"
+
+[items."loader/src/config/entry.ts:Entry.constructor"]
+status = "ported"
+target = "pycordis.loader.Entry.__init__"
+hash = "b95fd8b67ad49b7d6731b93cb6be85b23b005672cb016d16aa9b6b26c2c81fe4"
+
+[items."loader/src/config/entry.ts:Entry.context"]
+status = "not-applicable"
+hash = "f27cfd16c65658e751d9cee4122b2d0bd40cffe15169fdc7a9974baf9c0eacec"
+note = "An alias of `ctx` for typing. The entry context is not public."
+
+[items."loader/src/config/entry.ts:Entry.disabled"]
+status = "ported"
+target = "pycordis.loader.Entry.disabled"
+hash = "706fd7a11af84d5b201ae4203d38dba8be483dc8d06715ed8aa738b652bcce45"
+
+[items."loader/src/config/entry.ts:Entry.dispose"]
+status = "ported"
+target = "pycordis.loader.Entry.dispose"
+hash = "98373290081e998b6ecae2bafe0b0dd22a8dd40af91334984d0477340fddcd6c"
+
+[items."loader/src/config/entry.ts:Entry.evaluate"]
+status = "diverged"
+hash = "9d18bba068e4f6490e45cf7a50a8b1a4fe5f50ec38816110d2cbc8a6a15b5b66"
+divergence = "loader-expressions"
+note = "It evaluates an expression."
+
+[items."loader/src/config/entry.ts:Entry.getLocation"]
+status = "diverged"
+hash = "078a8c66bd8be41675dce03c780070bf0f6d928bd5e099525a8481882a0afbb8"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
+
+[items."loader/src/config/entry.ts:Entry.id"]
+status = "ported"
+target = "pycordis.loader.Entry.id"
+hash = "38d4d5dcf82c18f2b0480cf690fbe94441daecb229f531a01bd1d975d1003e5e"
+
+[items."loader/src/config/entry.ts:Entry.init"]
+status = "ported"
+target = "pycordis.loader.Entry.init"
+hash = "8a8df3ece52cd32403f59d98f9a30ef679d70fbaa5218de0ef25d97a481623dd"
+
+[items."loader/src/config/entry.ts:Entry.isOuter"]
+status = "ported"
+target = "pycordis.loader._entry.is_outer"
+hash = "4478b5ac3dcc6c8ed68fdbb062ec6a136ff03ad475424e4892e1bdeb3fa6a40b"
+
+[items."loader/src/config/entry.ts:Entry.locateExpr"]
+status = "diverged"
+hash = "3f432755da34e18060490177be726eab26d31831fcb2c2bb3b61ab0a5acd7c05"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
+
+[items."loader/src/config/entry.ts:Entry.merge"]
+status = "ported"
+target = "pycordis.loader._entry.merge_options"
+hash = "bc2f6acaea29d58dd228d14df615517b7a8abef87a9888eb5ac64efbc3a99aa4"
+
+[items."loader/src/config/entry.ts:Entry.refresh"]
+status = "diverged"
+hash = "550cd8d535538073291e2bca0d937bc11f19035f6be32c86e953fcd8448e23bd"
+divergence = "loader-expressions"
+note = "It evaluates `inject` again after a dependency change. `inject` is plain data, so `Entry.update` is the only entry point."
+
+[items."loader/src/config/entry.ts:Entry.traceValidation"]
+status = "diverged"
+hash = "8990a6c2897ea013c62b53c037ceab30b2e14484516a4e3f6017acc26353b63a"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
+
+[items."loader/src/config/entry.ts:Entry.update"]
+status = "ported"
+target = "pycordis.loader.Entry.update"
+hash = "fc15b9d9b8cfcee1376f3cf088e375866bc6977465bce7166518b0f51f483e0f"
+
+[items."loader/src/config/entry.ts:EntryOptions"]
+status = "ported"
+target = "pycordis.loader.EntryOptions"
+hash = "3dab699e4b67c3df2c8f8ab7243f7c8239a4b9902f1e543015c3bfce9397ee20"
+
+[items."loader/src/config/entry.ts:outer"]
+status = "ported"
+target = "pycordis.loader._entry._outer_apply"
+hash = "2e0c79b424dd042c6bb4676944c8cdd7b19c568611293a4b2c296fe25ed896b0"
+
+[items."loader/src/config/entry.ts:sortKeys"]
+status = "not-applicable"
+hash = "512115af3d74079e18cdc64f2856adb3c361f2a8b305db5785e7927820128650"
+note = "Key order serves the config file writer. The loader keeps the key order of the host."
+
+[items."loader/src/config/entry.ts:takeEntries"]
+status = "not-applicable"
+hash = "dc6b9831fe342a0041036135e1f6708a542402e0f3584bc0afb4653348a33c8f"
+note = "A helper of `sortKeys`."
+
+[items."loader/src/config/group.ts:<rest>"]
+status = "not-applicable"
+hash = "2bd4251be8aafce8964edba16d8717a7613eb4bad1592b8c357e43002c88df39"
+note = "Imports of the TypeScript module."
+
+[items."loader/src/config/group.ts:EntryGroup"]
+status = "ported"
+target = "pycordis.loader.EntryGroup"
+hash = "7b2f1e7f634b63c2d028798741ae016e1b91d29d0aa15149b910ab31ee76bee2"
+
+[items."loader/src/config/group.ts:EntryGroup._reject"]
+status = "ported"
+target = "pycordis.loader.EntryGroup._reject"
+hash = "800b084371672b5807e4c2d607440a5099229c8f685edf3827df9830c6ca69a8"
+
+[items."loader/src/config/group.ts:EntryGroup.constructor"]
+status = "ported"
+target = "pycordis.loader.EntryGroup.__init__"
+hash = "12608bb9fc445d9680f8a34aa1e032c97d8cc23c8f94e792acefacbd5df53510"
+
+[items."loader/src/config/group.ts:EntryGroup.context"]
+status = "not-applicable"
+hash = "f27cfd16c65658e751d9cee4122b2d0bd40cffe15169fdc7a9974baf9c0eacec"
+note = "An alias of `ctx` for typing."
+
+[items."loader/src/config/group.ts:EntryGroup.create"]
+status = "ported"
+target = "pycordis.loader.EntryGroup.create"
+hash = "b39e2f9b8659a69e015f3d5e0bdaf23fa16756561b09da80edd67c17b951277a"
+
+[items."loader/src/config/group.ts:EntryGroup.getOuterStack"]
+status = "diverged"
+hash = "0375bb6e6530a659460cc673c06ff4c740b7a3bb3d39136cbe6027e14bf46814"
+divergence = "loader-locations"
+note = "The method builds outer stack frames from source locations."
+
+[items."loader/src/config/group.ts:EntryGroup.remove"]
+status = "ported"
+target = "pycordis.loader.EntryGroup.remove"
+hash = "59cc8091c6cdf564fc88bd88227fdbcd4511a3fab21182cd7a21b6178026a9c3"
+
+[items."loader/src/config/group.ts:EntryGroup.stop"]
+status = "ported"
+target = "pycordis.loader.EntryGroup.stop"
+hash = "a5e7a4dcda3ea1dc86712d0042098a2d35b57c9d053d5a7fc9cff59f9304e3c0"
+
+[items."loader/src/config/group.ts:EntryGroup.unlink"]
+status = "ported"
+target = "pycordis.loader.EntryGroup.unlink"
+hash = "a786aa783faf760ba2a056b181e4294a13f15575e6e798e0bf07c691899488a2"
+
+[items."loader/src/config/group.ts:EntryGroup.update"]
+status = "ported"
+target = "pycordis.loader.EntryGroup.update"
+hash = "acd0f292b8791e974025dc0785ac9fcc43d092c727ba4a3db84d136bf5beff82"
+
+[items."loader/src/config/group.ts:Group"]
+status = "ported"
+target = "pycordis.loader.Group"
+hash = "e20b03c7e099738ec28a77d9d8c33d418a57cd1c7b29fdb8619ab5cc0af1ebed"
+
+[items."loader/src/config/group.ts:Group.[Service.init]"]
+status = "adapted"
+target = "pycordis.loader.Group.cordis_init"
+hash = "f862ddd2fec80f285ba3e32b88d7bdb5b29a73b523368d5f874c0916c32f7409"
+divergence = "hook-names"
+
+[items."loader/src/config/group.ts:Group.constructor"]
+status = "ported"
+target = "pycordis.loader.Group.__init__"
+hash = "905c1880cfd126ca450cda6ffa5618c2df7e3bb4a9a0c6cc23e900bdaaf30f49"
+
+[items."loader/src/config/isolate.ts:<rest>"]
+status = "not-applicable"
+hash = "828571beb32a484bf24c3a2135b747d169f91c80324b14e7578ca2b4d070b927"
+note = "It is a type augmentation of `EntryOptions`: `EntryOptions` has the `isolate` field."
+
+[items."loader/src/config/isolate.ts:LocalRealm"]
+status = "ported"
+target = "pycordis.loader.Entry._isolate"
+hash = "ba4ef4429dd4b12f11acaf01f5fcd1ec8f4b1e3067975492a4c0256ed0fef424"
+
+[items."loader/src/config/isolate.ts:LocalRealm.access"]
+status = "ported"
+target = "pycordis.loader.Entry._isolate"
+hash = "f7c43d660c4d7916abbdf6eb48cd430ae5e03e7de594167d11e260ff3bee2e98"
+
+[items."loader/src/config/isolate.ts:LocalRealm.constructor"]
+status = "ported"
+target = "pycordis.loader.Entry._isolate"
+hash = "02e37c2dae57ccf0c20f940daff8102ef79e8b1cb9a2fbf6e874a8ebe71bd99a"
+
+[items."loader/src/config/isolate.ts:accessGlobal"]
+status = "ported"
+target = "pycordis.loader.Entry._isolate"
+hash = "659e75f359bc598e327b3b8b985fc5cb922da59e44a05a2725ce48c945e29f20"
+
+[items."loader/src/config/isolate.ts:module ./entry.ts"]
+status = "not-applicable"
+hash = "3337fba5ba03f948171c360a9b298b7d9d430c056f733fda563072dbaaa3e27c"
+note = "It is a type augmentation of `Entry`."
+
+[items."loader/src/config/isolate.ts:patchIsolate"]
+status = "diverged"
+hash = "d5b69c152f82378234004a3ae85c8fdcfe4fe8d4bd181ef33bac8f3968f45afb"
+divergence = "loader-isolate-rebuild"
+note = "The isolation is bound when the fiber is created, and a change rebuilds the entry: no provider moves between realms."
+
+[items."loader/src/config/isolate.ts:quote"]
+status = "not-applicable"
+hash = "d655bac515e9c6ae3bc5640432583b1520c22e5231cfb45cb19b68177952e4dd"
+note = "It builds the symbol name of a realm: a label is the realm itself."
+
+[items."loader/src/config/isolate.ts:within"]
+status = "diverged"
+hash = "77b0dd8c1bc64cdf49670e1ff9ed08bf436b5a4bc7b2cd4a94c7889458dfe355"
+divergence = "loader-isolate-rebuild"
+note = "It decides which providers move with the entry: a rebuild moves none."
+
+[items."loader/src/config/tree.ts:<rest>"]
+status = "not-applicable"
+hash = "69d9893bdb0e70e5cd9cf1b80a17e3148f66fb3c3e5dedabd0c26a0fcb1a75cd"
+note = "Imports and the helpers of the Node resolution and of the source locations, which pycordis does not port (`loader-import`, `loader-locations`)."
+
+[items."loader/src/config/tree.ts:EntryChange"]
+status = "ported"
+target = "pycordis.loader.EntryChange"
+hash = "e547e3babc6fc2ce2cc2a73caac9de53c1cecf336767dd9e8a650f4bf19eb59e"
+
+[items."loader/src/config/tree.ts:EntryTree"]
+status = "ported"
+target = "pycordis.loader.EntryTree"
+hash = "17cafc606e55041df2f7d056370b66e61738d8cd8d1d86afe03237d62f0f047f"
+
+[items."loader/src/config/tree.ts:EntryTree.await"]
+status = "adapted"
+target = "pycordis.loader.Loader.wait"
+hash = "098c9e028d943ee49f860f24e9c4f6a12e80bd2abcbfbb9c0e5629c7fdbce748"
+divergence = "fiber-wait"
+
+[items."loader/src/config/tree.ts:EntryTree.commit"]
+status = "ported"
+target = "pycordis.loader.EntryTree.commit"
+hash = "9277045a24be1637162d14a53a9ef4f467a2ded5f32415c969f250dbb13e07fe"
+
+[items."loader/src/config/tree.ts:EntryTree.constructor"]
+status = "ported"
+target = "pycordis.loader.EntryTree.__init__"
+hash = "1da45b0bda63646c433a0de975ba48e0da4c9d91d7a27321e045acba7ff42368"
+
+[items."loader/src/config/tree.ts:EntryTree.context"]
+status = "not-applicable"
+hash = "f27cfd16c65658e751d9cee4122b2d0bd40cffe15169fdc7a9974baf9c0eacec"
+note = "An alias of `ctx` for typing."
+
+[items."loader/src/config/tree.ts:EntryTree.create"]
+status = "ported"
+target = "pycordis.loader.EntryTree.create"
+hash = "b2618afc5fc653de6684c8fc62e0f50b315d0178fde081d20d7aa05fb892ca82"
+
+[items."loader/src/config/tree.ts:EntryTree.ensureId"]
+status = "ported"
+target = "pycordis.loader.EntryTree.ensure_id"
+hash = "322e97222f0a695e9a964135f908a40d0bb9c02c2112cc4ba18d0048eefcf2df"
+
+[items."loader/src/config/tree.ts:EntryTree.entries"]
+status = "ported"
+target = "pycordis.loader.EntryTree.entries"
+hash = "3d4aeb5f5f66d90d1294d62d8fb3515a32254546cdfd6c92f0a6f39559cafd8b"
+
+[items."loader/src/config/tree.ts:EntryTree.getLocation"]
+status = "diverged"
+hash = "88b1275968754b14e4afc6fe327691d5ffdaf6bcd36a230ee431071a79fabe84"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
+
+[items."loader/src/config/tree.ts:EntryTree.getTasks"]
+status = "adapted"
+target = "pycordis.loader.Loader.wait"
+hash = "4b4fd56a42c106def437ff326a0d7607d64e0ecb3583527ef199aebb76313860"
+divergence = "fiber-wait"
+
+[items."loader/src/config/tree.ts:EntryTree.import"]
+status = "adapted"
+target = "pycordis.loader._tree.import_component"
+hash = "473be46ad94a2b91c63b50b0e8714a4f79ddeb8464f02ac35ce5ac179a6034f6"
+divergence = "loader-import"
+
+[items."loader/src/config/tree.ts:EntryTree.locateExpr"]
+status = "diverged"
+hash = "1e5d9b9efa14ea8e5803d1222d1e782e9dc05b8ba048ac64d13b8bd9c3f2bd6c"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
+
+[items."loader/src/config/tree.ts:EntryTree.remove"]
+status = "ported"
+target = "pycordis.loader.EntryTree.remove"
+hash = "9f4bd63577a3f9087750ec275d31e5452d20c8fdc7339a47581b1bb18ed84911"
+
+[items."loader/src/config/tree.ts:EntryTree.resolve"]
+status = "ported"
+target = "pycordis.loader.EntryTree.resolve"
+hash = "630f2a472522cff3dd5921827b3ece3ef1de1cbd0f8ca3158eed9299601a0ab5"
+
+[items."loader/src/config/tree.ts:EntryTree.resolveGroup"]
+status = "ported"
+target = "pycordis.loader.EntryTree.resolve_group"
+hash = "b8044241d79511941f5c8fb9ee7d927e45bc636c0b17260786642ceb90f4f101"
+
+[items."loader/src/config/tree.ts:EntryTree.update"]
+status = "ported"
+target = "pycordis.loader.EntryTree.update"
+hash = "80e41ccfb7204c8bd35e364852ed4130935c41615ca028dfb89119a7391898dd"
+
+[items."loader/src/config/tree.ts:ModuleNotFoundError"]
+status = "adapted"
+target = "builtins.ModuleNotFoundError"
+hash = "f50f5f8aa3231160cdde3a1e4373ae02b9929ba3ca6aa91b20f1f6ce06a1a8e4"
+divergence = "loader-import"
+
+[items."loader/src/config/tree.ts:ModuleNotFoundError.constructor"]
+status = "adapted"
+target = "builtins.ModuleNotFoundError"
+hash = "947e8d9c63285e21f40fa6a5ebf41cf0872d3a1a3f5b74ea3b1c7244e82c6912"
+divergence = "loader-import"
+
+[items."loader/src/config/tree.ts:driveLetter"]
+status = "not-applicable"
+hash = "800e1149b15a4b33ddbac21f03f35a914be93454259dca250c5ddbe720f564f1"
+note = "It converts a Node module path or message. A Python name needs neither."
+
+[items."loader/src/config/tree.ts:members"]
+status = "ported"
+target = "pycordis.loader._tree._members"
+hash = "ac5167b04f99dcdada0f1d3f8cb1ef04b658ebe4e621c7c55deb4cc85e3c253d"
+
+[items."loader/src/config/tree.ts:parseNotFound"]
+status = "not-applicable"
+hash = "57c996157cb73949617febe437043ba330de9dc224f8b821c81c4f4b87232679"
+note = "It converts a Node module path or message. A Python name needs neither."
+
+[items."loader/src/config/tree.ts:toPath"]
+status = "not-applicable"
+hash = "120b125329ed7616ec0e31c61a5a4c3e0d4b4d170ac51a2608d20e715ed186eb"
+note = "It converts a Node module path or message. A Python name needs neither."
+
+[items."loader/src/config/utils.ts:<rest>"]
+status = "not-applicable"
+hash = "9ea8675b8a67a1e7f2c20a1a404a88aed2e59f565d2be14e5fdfef68b885bf5a"
+note = "Imports and the TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
+
+[items."loader/src/config/utils.ts:EntryValidationError"]
+status = "ported"
+target = "pycordis.loader.EntryValidationError"
+hash = "8447a3c9aea6d14ae12209dff794858486980f34298634eb823802a899bf50e3"
+
+[items."loader/src/config/utils.ts:EntryValidationError.constructor"]
+status = "ported"
+target = "pycordis.loader.EntryValidationError.__init__"
+hash = "cd644803c9310254cbba2fe58dc582fb17933d3551117a054f3a13b0fcd6b6a0"
+
+[items."loader/src/config/utils.ts:ExprTrace"]
+status = "diverged"
+hash = "190b395ac95fb188a18ed40de48f9773f6aed4783d2f247932c6d4e5d6f0bbe8"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:Issue"]
+status = "ported"
+target = "pycordis.errors.Issue"
+hash = "15110bdfe1e595f4f434cbc8f6bc131291a7417fd20a54fce0b99e8a39ff5ef2"
+
+[items."loader/src/config/utils.ts:JsExpr"]
+status = "diverged"
+hash = "9e8eaf7cb0091248107f8cc86ca36e2bf45e007b46eca5f56faf3c8b57501adb"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:Locate"]
+status = "diverged"
+hash = "aabae7542354cff5ff04ad2b558fb8f7d9fefad4bd67a2981253857adec3f480"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
+
+[items."loader/src/config/utils.ts:SourceLocation"]
+status = "diverged"
+hash = "d3403700a2ea44d345ab16ecefc9ab86b2aa51d8fd382623ceace1688fe832a9"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
+
+[items."loader/src/config/utils.ts:WRAPPER"]
+status = "diverged"
+hash = "adec67cca1200fc366dff4cea47e4f0464d293098a6d706ea6e4eb48c5454d84"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:counter"]
+status = "diverged"
+hash = "97a3464990d24f4d743810f715b2bc255e26ab1011e5508a43f9ab70fca50c4b"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:evaluate"]
+status = "diverged"
+hash = "0c749e5cb967000fba7ef556c45bfdbcc34b18835a998785b2fffa8762e20248"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:formatIssue"]
+status = "diverged"
+hash = "0dd4c908696b48b12e702a708f8b5afbdf78ba23e22e6b9fe7edb14336f10a42"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
+
+[items."loader/src/config/utils.ts:formatIssues"]
+status = "diverged"
+hash = "e54c474b2db426ab09109bffa4d49fc3043f3bf60883be15206b1b407d2b5df2"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
+
+[items."loader/src/config/utils.ts:formatLocation"]
+status = "diverged"
+hash = "ec8f283b2f6e30e0de8738d5c19866f825a8a0caa16fb847a069b7e1c9e0480a"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
+
+[items."loader/src/config/utils.ts:framePattern"]
+status = "diverged"
+hash = "865f0dc546f2003a8670f87cb0756a954095243404eeba0d3ab06db9670dc77b"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:interpolate"]
+status = "diverged"
+hash = "19ca055eca20178f4b4deb06714a2fd454eabbe9bc28fb69462df6afce146762"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:isJsExpr"]
+status = "diverged"
+hash = "a145ea01a4122e6af22eb054c9e87a4d1fd7b2fcc0e498ae50c6a80d011fb7b5"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:isPlainObject"]
+status = "not-applicable"
+hash = "abc0111a6d8fa7a94567e982b4b00d94956e6ce26ac925825fa46d2a41ba50de"
+note = "It tells an object from an expression node. Python has `Mapping`."
+
+[items."loader/src/config/utils.ts:parseFrame"]
+status = "diverged"
+hash = "0b895b3886b1b5b197d89cd3eac55e20ea90be850a08aab6124d92252bf7a349"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:relocate"]
+status = "diverged"
+hash = "1d47929502600a977408ab09f24f90c350925aa7a9d15ba3a062cedd9188920c"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
+
+[items."loader/src/config/utils.ts:swap"]
+status = "not-applicable"
+hash = "e77c45ac97259afe6d95f29ccc5ae0d13e8223d03fcc6d103f1093a6e32458b1"
+note = "`dict.clear` and `dict.update` replace the content of the intercept layer in place."
+
+[items."loader/src/config/utils.ts:toOffset"]
+status = "diverged"
+hash = "49e0968c89756408970f774f81803d05d34dc43d2cfd39c3098bf84f71928fc1"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:traceEvaluation"]
+status = "diverged"
+hash = "d6fda576328144653232cce76c58be32ff049d0c7557e8176437cea4d2f0745a"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/config/utils.ts:validateOptions"]
+status = "ported"
+target = "pycordis.loader._entry.validate_options"
+hash = "f094b8ee8e9e1ec7ff1ee3d15866e0015675a302519a49a3333d5708813672fb"
+
+[items."loader/src/config/utils.ts:wrapper"]
+status = "diverged"
+hash = "aee7059c0a87a64efbe580de505f4bef8d25c091768c7aa52ecbc2234135cfe1"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
+
+[items."loader/src/index.ts:<rest>"]
+status = "diverged"
+hash = "378890017d6a433e8634cfa87aa3334aa755a2f5dd94f5d47719b2c0e8af2ab0"
+divergence = "loader-process"
+note = "The rest of the module holds `envData`, the `exit` event, and the process fields."
+
+[items."loader/src/index.ts:Loader"]
+status = "ported"
+target = "pycordis.loader.Loader"
+hash = "156fd041b463127ce407f96ef48e8ec4d60bc3bc10d7c2e756f17b5ec5494a5f"
+
+[items."loader/src/index.ts:Loader.[Service.check]"]
+status = "adapted"
+target = "pycordis.loader.Loader.cordis_check"
+hash = "b697088ab938c1e18de60b7e158a83e4db97b7c1aa62d3a3e4f0f39b5313e38a"
+divergence = "hook-names"
+
+[items."loader/src/index.ts:Loader.commit"]
+status = "ported"
+target = "pycordis.loader.Loader.commit"
+hash = "9279ca5c8c5089c797b2c0b6842ccacc79d2cd58c8f21e9c56bbedb55e14926c"
+
+[items."loader/src/index.ts:Loader.constructor"]
+status = "ported"
+target = "pycordis.loader.Loader.__init__"
+hash = "ddd1adb3775ff77ca6e6d158f39fd582b8de4568a2f271df0cbf676e06d3d7de"
+
+[items."loader/src/index.ts:Loader.locate"]
+status = "ported"
+target = "pycordis.loader.Loader.locate"
+hash = "c58a25a459f5cba3042186e340dd04e928afeedf04579a5b9281502c90697970"
+
+[items."loader/src/index.ts:Loader.showLog"]
+status = "ported"
+target = "pycordis.loader.Loader._show_log"
+hash = "4149dd24b5027ce5c62cb89c84061152202e7e04f748b8397c38780e78b78818"
+
+[items."loader/src/index.ts:Loader.unwrapExports"]
+status = "not-applicable"
+hash = "b755e28ff413fb36026781d866912e91b832cd1da905d2ce14e1015c3389dbae"
+note = "The import function returns the component."
+
+[items."loader/src/index.ts:default"]
+status = "not-applicable"
+hash = "50164f26e6f6ff846f1f7749a041b84dadc755f8c11cc742a14256ec928e8c5c"
+note = "`pycordis.loader` exports `Loader` by name."
+
+[items."loader/src/index.ts:module cordis"]
+status = "adapted"
+target = "pycordis.loader.Loader.entry_of"
+hash = "96dcd593aca89bcb6b1143b9b281f497cae89614f98b0810d0424ec234d43426"
+divergence = "loader-entry-link"
+
+[items."loader/src/internal.ts:<rest>"]
+status = "not-applicable"
+hash = "de46728aafc5a0080d42fe84d93cf644f02cb5ceebca447444e4d53ccbeb00c9"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/internal.ts:InternalLoader"]
+status = "not-applicable"
+hash = "137faa8f1c24535ee7730b7aa578c5593e73a7f36e854c555ba327247505702a"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/internal.ts:getInternalLoader"]
+status = "not-applicable"
+hash = "65a53fee1ede0669e58deaf09a429a299e1dac0853a9f3b4c3d6d5abd5cc10e2"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/internal.ts:unwrapExports"]
+status = "not-applicable"
+hash = "01db5feb5b2713d36026ec355e5ba0ae73cdc3a2dd24c6649c99c226d464cadc"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:<rest>"]
+status = "not-applicable"
+hash = "fb234c2ab471c7f06ee43c7f7253aa741998660687327855db4270ff4579498d"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:HELPER_FILES"]
+status = "not-applicable"
+hash = "9edb5511e0057b35518cd7c02c519430c8b288f6059abc47ae14c14f5bf8e430"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:RENAME_BACKOFF"]
+status = "not-applicable"
+hash = "aa9f1ebd945f7324ec2bb09a9fdb29ca86675c25db353fe65322bb9e56c24948"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:RENAME_RETRIES"]
+status = "not-applicable"
+hash = "915fd190738c890c9492cb5548793a19cab6285e3f68db3a81e0fae43995816a"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:Resolve"]
+status = "not-applicable"
+hash = "67aa91b905b0ca687bee8df2230e7394ef6b3f93d357b9ea0050df26d4dffcb1"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:_createResolve"]
+status = "not-applicable"
+hash = "c5857e636ceb0891d6ec51ae690710e9eb6c4b1fd7e6240b00d74b4782b2880b"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:cache"]
+status = "not-applicable"
+hash = "530a838ea72eec7eb460461a5377400796c258e39cb42171853820cd212bfda0"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:createResolve"]
+status = "not-applicable"
+hash = "82459b88ffda122c04a51b71f931b2f1d4b49b2943cc5138385b6cfe60626755"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:findScope"]
+status = "not-applicable"
+hash = "2446a55675dd0cf783f819ba507629044ae54c4e320a44966a6bde30bb9add89"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:isTransientRenameError"]
+status = "not-applicable"
+hash = "8c24659e688a38f4007a4029355fff3a5e75821edc2ee51c3602f621e1132303"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:resolveScope"]
+status = "not-applicable"
+hash = "274520efc4894cfd61f665b02e970cd479c8b29490fa6c96af1d839c9a431a20"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/src/resolve.ts:write"]
+status = "not-applicable"
+hash = "1df10c00f11763289f0ee00f3528705811de1c1a7e6c0de2f9589e7888724c75"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
+
+[items."loader/tests/commit.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "de8f86008397b32c438a39eb27d7a916041b48332ba5b9cf2bc1cc53b0dc4b94"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
+
+[items."loader/tests/evaluate.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "93a7bd6715e0c4352a0702c3c3a5aad8673b9e4f689a1817752c097405f7eaa3"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
+
+[items."loader/tests/group.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "6d0208f69a811ac1ec51bad2088a8b01f10fd10d3bb8664024e810978c5bd2fe"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
+
+[items."loader/tests/import.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "abf6999543e370fe4e05c8c33c5cd56ca09cc510599667b699e9eb42df555eed"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
+
+[items."loader/tests/index.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "b56e2f589a57d4acbc18b16cf78d969f7e174829d3f91aae03279fb7a3b233b3"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
+
+[items."loader/tests/isolate-provide.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "7e960bfa20971ab7de57a68fd828b22aa8b096086de95a39a5e03a79a28be35b"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
+
+[items."loader/tests/isolate-provide.spec.ts:Slot"]
+status = "not-applicable"
+hash = "ce72601aea57dca5015ac0fc5e790b54677870b43d69cb6b8c2e37f78bf737d4"
+note = "A helper of the cases of this file. Each case is `diverged` with `loader-isolate-rebuild`, and the replacement tests build their own components."
+
+[items."loader/tests/isolate-provide.spec.ts:boot"]
+status = "not-applicable"
+hash = "7a30c510f425b96037965f3fc928754ba1c77e7d3c6ac619d5fd4da73ddf02ff"
+note = "A helper of the cases of this file. Each case is `diverged` with `loader-isolate-rebuild`, and the replacement tests build their own components."
+
+[items."loader/tests/isolate-provide.spec.ts:module cordis"]
+status = "not-applicable"
+hash = "c7823f62086221bbc9eed1efedb63aee3acd4927c7d4022e07e27e968c848993"
+note = "A TypeScript module augmentation that types the services of the test."
+
+[items."loader/tests/isolate-provide.spec.ts:slots"]
+status = "not-applicable"
+hash = "929aeac75bc1ce075d43abe6c5925762057cc2f92f5f32c506912c44508c5c2d"
+note = "A helper of the cases of this file. Each case is `diverged` with `loader-isolate-rebuild`, and the replacement tests build their own components."
+
+[items."loader/tests/isolate-provide.spec.ts:started"]
+status = "not-applicable"
+hash = "3eea309de1e9a49da02c147d56c52373774df8b0ed03d06033fd5496e35809fa"
+note = "A helper of the cases of this file. Each case is `diverged` with `loader-isolate-rebuild`, and the replacement tests build their own components."
+
+[items."loader/tests/isolate.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "288fc38161b185c0bb78c378978aa8e47f93dc2e665902b2e5396043309838b3"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
+
+[items."loader/tests/rebuild.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "f423f6b6c4015e1478a5c002ae2932c005ff0bbc07847ef136c8e1a96ea0b318"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
+
+[items."loader/tests/rebuild.spec.ts:module cordis"]
+status = "not-applicable"
+hash = "b65711448db2469a86ab2ac07aa82532e8d8f85b446f9566727ccb93a0c26195"
+note = "A TypeScript module augmentation that types the services of the test."
+
+[items."loader/tests/resolve.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "a921b4fca0a623d145491ce3a3f53a54d38a7326375b31710c20afe8f64d2298"
+note = "It tests the Node module resolution helper, which pycordis does not port."
+
+[items."loader/tests/resolve.spec.ts:fixture"]
+status = "not-applicable"
+hash = "09c1e05b201e0473c3038b16490dd15bf57e602d8fe9bd86a6427e066b1fe255"
+note = "A helper of the Node module resolution tests, which pycordis does not port."
+
+[items."loader/tests/resolve.spec.ts:roots"]
+status = "not-applicable"
+hash = "b6b0819ad0d7c45b0d2d219e732848869a4e0a314847434d41cac34ac6f0598e"
+note = "A helper of the Node module resolution tests, which pycordis does not port."
+
+[items."loader/tests/utils.ts:<rest>"]
+status = "not-applicable"
+hash = "148f4146139738e79a4b8b6e4f08c812265ca9ad97293acda705d5f5ef61850d"
+note = "Imports of the test helper module."
+
+[items."loader/tests/utils.ts:MockLoader"]
+status = "not-applicable"
+hash = "150fc8800fd8a360e28e984c48c8502d9b3ae123d863a7aea741e36c056b25ad"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
+
+[items."loader/tests/utils.ts:MockLoader.commit"]
+status = "not-applicable"
+hash = "6680a14b9e868e8ab0213472e08d16f7a7c6d956f47ee8c6713a06b8b9417d46"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
+
+[items."loader/tests/utils.ts:MockLoader.constructor"]
+status = "not-applicable"
+hash = "41833881373ded118ac151d85ca490716e1a5ae3d70c4550bd4971094f53c328"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
+
+[items."loader/tests/utils.ts:MockLoader.expectDisable"]
+status = "not-applicable"
+hash = "e9df228291171a284eb3f7e71cc2c891062e1802a9782ba134c06c7aea3988c9"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
+
+[items."loader/tests/utils.ts:MockLoader.expectEnable"]
+status = "not-applicable"
+hash = "69ba7caa259666d0117b9353797e02b68f84e0dcca561b4ce9ecba8d25c166aa"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
+
+[items."loader/tests/utils.ts:MockLoader.expectFiber"]
+status = "not-applicable"
+hash = "647eb8bc7977b975b64b20b327fce1135a724baead19ea60dea25e5466bf2bcd"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
+
+[items."loader/tests/utils.ts:MockLoader.import"]
+status = "not-applicable"
+hash = "fd5f73940452b3ad2b3893d5bba8cc847362e650e5e752fefa3768ad3a0cdde0"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
+
+[items."loader/tests/utils.ts:MockLoader.mock"]
+status = "not-applicable"
+hash = "5e653ce22e81d84605de6c1f3bc3229ef2118a91dbf9d5bf20d335182e400141"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
+
+[items."loader/tests/utils.ts:MockLoader.read"]
+status = "not-applicable"
+hash = "914a13faf68a91da3ffba3bd58fa6abf2620b653a4b5363e95930bba502835ba"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
+
+[items."loader/tests/utils.ts:module ../src/index.ts"]
+status = "not-applicable"
+hash = "c333738e9d12e4ed0890a43d8033c5a6aedb6c38fe6a394dc78c41bc162f2316"
+note = "A TypeScript module augmentation that types the `mock` helper."
+
+[items."loader/tests/utils.ts:sleep"]
+status = "not-applicable"
+hash = "6d2eb332f7d7de94e32f9466e350c0372479f8cdc26875eca4d1898ad04a754b"
+note = "A timer helper. The tests drive the scheduler with `FramePumpScheduler.pump` or `ImmediateScheduler` and never wait for time."
+
+[items."loader/tests/validate.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "f068c5ca9c2981491e87ee72d83484e52a431671261bd1a6b55cbd7e328c5ff6"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
+
+[items."loader/validate.spec.ts::Loader: entry options validation::accept an expression only for disabled"]
+status = "diverged"
+hash = "1ab65f8feda0a223536e8807d5de491132cdb8621e10a01ab90e7974b16a5c6d"
+divergence = "loader-expressions"
+note = "A dict is not an expression: no field accepts it."
+
+[items."loader/validate.spec.ts::Loader: entry options validation::accept valid options"]
+status = "ported"
+hash = "942464a2860746fe8a0d865aad9994ea2f0a3e35f86d6937749f4b528e328dca"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::check the entries of a group passed at runtime as a whole"]
+status = "ported"
+hash = "2128e727c99091fa2ff14e9edecca40d50beaa072865cfa1e710383293ccfdf4"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::reject a missing or invalid field"]
+status = "ported"
+hash = "f25234daf03aa08a5f3b186fcbb2bd2c7a04064f118ce93de12ff786946e685c"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::reject invalid options at runtime before they are committed"]
+status = "ported"
+hash = "5c148867f9e5d65c3f84209a940ac9b5935764406c917d8c83160327f6c7fd8a"
+
+[items."loader/validate.spec.ts::Loader: entry options validation::unload an entry whose options turn invalid, and reload it once fixed"]
+status = "ported"
+hash = "6cf781558ffe95c9924a13b28f03793c336269789fd43fa069a34b46e3cb994d"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.debounce()::basic support"]
+status = "ported"
+hash = "2d78ffb242c98f89b07d7a2e97116f846e5b9a428628541cdc77acf9fa2fbca0"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.debounce()::context dispose"]
+status = "ported"
+hash = "7f27453aefbf7306508b474dd16006fd92aaf16c519660d0b0f13ac1543e3a04"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.debounce()::disposed"]
+status = "ported"
+hash = "c0cc9fdc8aaf6763d68f3fb98ea49972a10f2542f4ecc6724d748a0e9ebebe0f"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break return)"]
+status = "adapted"
+hash = "934ae374675620fb3a0363fe5cb4bda70ae6db6b62b9765e89951dda9bb39e1b"
+divergence = "timer-api"
+note = "The loop uses `contextlib.aclosing`, because an early exit of `async for` does not close an iterator in Python."
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break throw)"]
+status = "adapted"
+hash = "da69dc8954f18bbcf48047fd853d1860d8cd1bc69bdb0c673f300515526dec18"
+divergence = "timer-api"
+note = "The loop uses `contextlib.aclosing`, because an early exit of `async for` does not close an iterator in Python."
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (concurrent reads)"]
+status = "ported"
+hash = "b438573abcde1808cad99d27651da3e311876c977d2150c25b3381f4c3a9411e"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (context dispose with concurrent reads)"]
+status = "ported"
+hash = "0ed957c83623f5723ea741545f7f290ec544320180e6cc948c002f7aa45a52df"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (context dispose)"]
+status = "ported"
+hash = "2a7d5d9bdf55c4401f290f1a16f97afdcd0256324052fc547864f9e415f1964e"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual return)"]
+status = "ported"
+hash = "e99e5b7c5ad475fa3f9dab20df0a0a2bf483edd287b6a576b38265efa2b9b384"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual throw)"]
+status = "ported"
+hash = "c4a04299c9f271cfdb389f577413d073f7b73a95290254f7fd6dac325a17f619"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (return with concurrent reads)"]
+status = "adapted"
+hash = "86479f641e69632f2c17045f902f1da077d9a6ff8f0b906dc4dc4f64ea6a6af7"
+divergence = "timer-api"
+note = "`Ticks.aclose` takes no value, so the value of `return` is not ported; a pending read raises `StopAsyncIteration`."
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (throw with concurrent reads)"]
+status = "adapted"
+hash = "3d9900eb1fb687ca2cc86f5f2ac0b8dd9ea71abd38007ebaf25c47ebeb8437d7"
+divergence = "timer-api"
+note = "`Ticks.athrow` returns a `Deferred` that rejects with `StopAsyncIteration`."
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::basic support"]
+status = "ported"
+hash = "a21a4e0731e58ba3d731af77bb0241b64180e1146e74d75a7d9656a1b20bc847"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::basic support"]
+status = "ported"
+hash = "2851412e82c430ee5ea6740868fc2d0f8f5de4efc62165ff1d511c66f8d99535"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::context dispose"]
+status = "ported"
+hash = "fea1d4f269955acfaf6f646f8b8f1f90d657136d950a1e6d18ce00c61e899ca7"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::disposed"]
+status = "ported"
+hash = "30269bc9be63d27e43b3160a0aaade59499b0d13180c059a09a7e6f6f1455278"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::disposed with noTrailing"]
+status = "ported"
+hash = "4f337b1cacb90f64b0ad85f1d6089533ee5fa86ba2bfe06c161acdc04fa2e91f"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::no trailing mode"]
+status = "ported"
+hash = "c94cbc15a7dd2fda4721f121fa07fc42c6d35d4f3ce72eb2753b09bd5b072175"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::trailing mode"]
+status = "ported"
+hash = "51ed1bd0e135828db6ff3be7c93a89bc965e62d7531891f83f0c68688f8f196b"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.timeout()::basic support"]
+status = "ported"
+hash = "705a1a29b3c906516ff57b03dcf5973a7601aa753653b0147be4591cd4259a7d"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.timeout()::dispose"]
+status = "ported"
+hash = "b9aad8871db8f21c2434e41f80252a087cf9d575ae6c39d09e8a2ea383afe2f8"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.timeout()::promise"]
+status = "adapted"
+hash = "7f0f55dec8527f52384366f90a2bd8b85fb4a9ae525f9108394104bc53c37334"
+divergence = "timer-api"
+note = "The wait form is `sleep`, which returns a `Deferred`."
+
+[items."timer/message:Context has been disposed"]
+status = "ported"
+hash = "3c3c082f462c725ecadef9f38673dee8fdbf1f029d73fc78b28726a1e84f478c"
+
+[items."timer/src/index.ts:<rest>"]
+status = "not-applicable"
+hash = "15746436e2882752fcec186f0b0612b7a152f6aeeba03696812eb6bfb23903ec"
+note = "Imports of the TypeScript module."
+
+[items."timer/src/index.ts:Scheduled"]
+status = "adapted"
+target = "pycordis.timer.Scheduled"
+hash = "7850a23fcd866a4e0dec9d4ae35d129f58a2e146c2e9c546560406bf542cb88d"
+divergence = "timer-api"
+note = "`Scheduled` is a class with a `dispose` method, not a function with a property."
+
+[items."timer/src/index.ts:TimerService"]
+status = "ported"
+target = "pycordis.timer.TimerService"
+hash = "b95e62120c09bf5acd572f601379e506c236d72fd79b359b3bfad9c2ba40586e"
+
+[items."timer/src/index.ts:TimerService._schedule"]
+status = "adapted"
+target = "pycordis.timer.Scheduled"
+hash = "8d5445efb4b0cad5ac749406faf6d0e2cae2a2e72f3313ea54de2cc93cf2d70f"
+divergence = "timer-api"
+note = "`Scheduled` registers its own effect and keeps the pending call."
+
+[items."timer/src/index.ts:TimerService.constructor"]
+status = "ported"
+target = "pycordis.timer.TimerService.__init__"
+hash = "1aec62bdbb0ea619f830c3ede3e1251a0f9a2ebfdf0876a7b870783dd7e207b1"
+
+[items."timer/src/index.ts:TimerService.debounce"]
+status = "adapted"
+target = "pycordis.timer.TimerService.debounce"
+hash = "431634c9ac3edaf8240cc3d99dd886e955cf3037112ad37e65a36735657f543c"
+divergence = "timer-api"
+
+[items."timer/src/index.ts:TimerService.interval"]
+status = "adapted"
+hash = "c6119046c27a030cd8d1b14e551f7847e9c12a70c00c688bd75492c2c49e0d76"
+target = "pycordis.timer.TimerService.interval"
+divergence = "timer-api"
+note = "The wait form is `ticks`."
+
+[items."timer/src/index.ts:TimerService.setInterval"]
+status = "diverged"
+hash = "303217153bcc7e0d5a04dd20d4a8266cf41a32e8e5d869f46a3ee3526d7d2c28"
+divergence = "deprecated-aliases"
+
+[items."timer/src/index.ts:TimerService.setTimeout"]
+status = "diverged"
+hash = "da695e5a5af82ba133a1569a1588675c932ea5c6e01ad2852b73e197bf6aa41a"
+divergence = "deprecated-aliases"
+
+[items."timer/src/index.ts:TimerService.throttle"]
+status = "adapted"
+target = "pycordis.timer.TimerService.throttle"
+hash = "6bb005458b183d9c6151f76527bb6b00aaa4d67f81b8b6b965157b0bdc84d097"
+divergence = "timer-api"
+
+[items."timer/src/index.ts:TimerService.timeout"]
+status = "adapted"
+hash = "cce6be5a5863cfb478d75a76e0361f12920eaa34934a806859cce345fc906de9"
+target = "pycordis.timer.TimerService.timeout"
+divergence = "timer-api"
+note = "The wait form is `sleep`."
+
+[items."timer/src/index.ts:default"]
+status = "not-applicable"
+hash = "684bf8100cfc5ef6c188103fe5a8383164e006fa11f1b7cbb23bee4e765e4e65"
+note = "`pycordis.timer` exports `TimerService` by name."
+
+[items."timer/src/index.ts:module cordis"]
+status = "not-applicable"
+hash = "b8a20a36fa57e6a3dea1dbbfa40157b36a7564e844c26a957dc0f1c4a8c634d7"
+note = "The interface that types the context properties. `TimerService` registers them with `Context.mixin`, and a plugin reads `ctx[\"timeout\"]`."
+
+[items."timer/tests/index.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "567fde2ce927dbc81b043184c7534dd11000fe5f9b12911557b197ce85350a16"
+note = "Imports of the TypeScript test module."
+
+[items."timer/tests/index.spec.ts:withContext"]
+status = "not-applicable"
+hash = "4deba2d9f7f64a04e49285624e84cf9825f872be16fda6937b736fb72335616e"
+note = "The fixtures `manual` and `plugin` of `tests/test_timer.py` provide a `ManualClock`, the timer service, and a plugin fiber."
+
+[items."hmr/index.spec.ts::HMR::component with multiple entries::should rebuild every fiber, each keeping its own config"]
+status = "ported"
+hash = "9dd8c4b633349bcbbc83d3f16e572532157d70b49164f54450e2684343d16e4a"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::does not rebuild an entry disabled during unload"]
+status = "ported"
+hash = "26e2785209c818967f813bcdaa8f4ed206234a9988925369d97d92f4a4c9b203"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::does not rebuild an entry removed during unload"]
+status = "ported"
+hash = "bfd0a69e3434b271a98e8846b61daf786c392969f14e54a400f869755d2c7c62"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::rebuilds a child of an active host that reused the component"]
+status = "ported"
+hash = "2254ed79a67eb3122dd0c0b1ae79891731f0e642da79dfc54ce3ba472692d969"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::skips a child whose host is replaced during unload"]
+status = "ported"
+hash = "d4762462918db606eb80dda2943ff230f26da5a72705052ccf5fb9dbfbb483ca"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::waits for a second re-enable init before deciding whether to rebuild"]
+status = "ported"
+hash = "9f803f41b99e26288f9f86044787c5b0d5616ad5ab784f68c2a259d60598ac9f"
+note = "Upstream spies on a private method of the entry to hold two re-enable loads. The test disables and enables the entry during the unload, then again, and checks one apply for each enable and none from the reload."
+
+[items."hmr/index.spec.ts::HMR::nested entry tree::should keep a single nested entry across a batch queued behind a stalled host"]
+status = "ported"
+hash = "95fa823ecdcc0a5626808542c9879db94105699dccff3bd4d8c56ac4391019a6"
+
+[items."hmr/index.spec.ts::HMR::nested entry tree::should keep a single nested entry when its host reloads too"]
+status = "ported"
+hash = "3225e3bff3c84efae62cd8b7226aa3a883836c8cbdb11189af8dc41db6666036"
+
+[items."hmr/index.spec.ts::HMR::resource handoff on reload::should not delay an unrelated component behind a slow one"]
+status = "ported"
+hash = "5744dc5d420e12f8650390387dade41c0f7bb9ba44de31f46f48ebff4701f4f4"
+note = "One test covers both resource handoff cases: the new instance does not start before the old one released, and an unrelated component does not wait for it."
+
+[items."hmr/index.spec.ts::HMR::resource handoff on reload::should not start the new instance before the old one released"]
+status = "ported"
+hash = "791350910bf6132cb281d12fb71587679c837ab825e3a3c009a46b196b6f233c"
+note = "One test covers both resource handoff cases: the new instance does not start before the old one released, and an unrelated component does not wait for it."
+
+[items."hmr/internal.spec.ts::ModuleLoader.fromInternal::tags the running loader with the resolver signature it accepts"]
+status = "not-applicable"
+hash = "6214c7e7b72b6e06399f677ad638f0b51254a90c87b28e5b5c58a3735e654dd1"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/message:another HMR instance is active in this thread"]
+status = "adapted"
+hash = "ac4fbcb69de07c14026d41c14bc03e94360fc7f4370d30990499d5942bacd9e9"
+divergence = "hmr-modules"
+note = "The text says `process`, because `sys.modules` belongs to the process."
+
+[items."hmr/message:cannot start a transaction inside another transaction"]
+status = "ported"
+hash = "319e8e4f4ec559af372941f07c8711a76273972ad4099bfd37a1a54d5fc9290f"
+
+[items."hmr/message:invalid component at {}, expect function or object with an \"apply\" method, received {}"]
+status = "ported"
+hash = "d4148536d40ef7282cd894ca9a219b67477364f7f45da962ee2b70cda41bba56"
+
+[items."hmr/message:invalid root {}, expected an absolute path"]
+status = "ported"
+hash = "b6f347c759894b261fa2b4436682991155836493a2bce35bb0c46029c44c197d"
+
+[items."hmr/message:loader internals are unavailable, pass --expose-internals or install node-addon-require-builtin"]
+status = "diverged"
+hash = "86029174b2dbb13433a14c03c2d49aba3b599363c999f50d9c652bf3b632971d"
+divergence = "hmr-resolution"
+note = "The message belongs to the patches of the Node module loader, which Python does not have."
+
+[items."hmr/message:the methods replaced by an earlier HMR cannot be restored, restart the process to use this one"]
+status = "diverged"
+hash = "1753314b3f7200ca64d37d1d661e7a5c544d2787957882e93ee997777743a9de"
+divergence = "hmr-resolution"
+note = "The message belongs to the patches of the Node module loader, which Python does not have."
+
+[items."hmr/message:{}."]
+status = "not-applicable"
+hash = "b4ecea9969b835e7698be34143aeecded3ff084e6ef1d35b27f6fd631670910b"
+note = "A message of the Node module-loader patches or of a bundler error; Python has none."
+
+[items."hmr/modules.spec.ts::ModuleCaches::evaluates an evicted module again on its next import"]
+status = "not-applicable"
+hash = "48e5811f6c877e7039f6d1cc33d66b8e49fb5756f525bf97b47c4998267f21c9"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::keeps the jobs that have not failed through a sweep"]
+status = "not-applicable"
+hash = "b5ec99150284718939bcc281a7bc880efa13037c46e0d60b33f6ca0b2af47ade"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::lets a module that failed to evaluate be imported again after a sweep"]
+status = "not-applicable"
+hash = "5346b76b3e811a1a4541727a2e8e167d360f52d7ae441fa728358aee5ac01e70"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::lets a module that failed to link be imported again after a sweep"]
+status = "not-applicable"
+hash = "13fe2090c47f306a3b66a70f4a6e805437f83886a735b51a4246091ad25dec05"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::lets a module that failed to load be imported again after a sweep"]
+status = "not-applicable"
+hash = "b0b280a907b58264b545912ee537c29fcd2066e690135730c92c228bb0c75c91"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::lists the modules of both caches"]
+status = "not-applicable"
+hash = "c2b8f9d5e489dc3853c5de03bfbd85fda1f00ed1e33c22896c7048847ac3c2c1"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::reads the exports of a CommonJS module that has finished loading only"]
+status = "not-applicable"
+hash = "024918803823a0a84eaf040acd0011444afe6643f69e3c5b3c670390a25ea5d5"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::reads the namespace of an evaluated module only"]
+status = "not-applicable"
+hash = "7fc74a49dfe841725be71ee8c28f25a3068111419aba6ecbda77a622685f099c"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::removes a module on restore that was not loaded when evicted"]
+status = "not-applicable"
+hash = "026224958ac1b2bc672429b6dfc9367256337618f12e125c37e4f14ca4f88ada"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::reports static imports and CommonJS children as edges"]
+status = "not-applicable"
+hash = "849168cab4fc950a0dc19f921669ca4e1a3b7dfc33913191912268af1fe7a98d"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/modules.spec.ts::ModuleCaches::restores the evicted instances"]
+status = "not-applicable"
+hash = "4e8c87cf8ccf4018b1d7dc437ccaac0a024ff2b6979c3b39f5b3a29d86c15097"
+note = "It tests the Node module caches. `Backup` in `pycordis.hmr._modules` evicts and restores `sys.modules`, and `tests/test_hmr_reconcile.py` tests it through `Hmr.reconcile`."
+
+[items."hmr/patches.spec.ts::manifests::leaves Node unchanged when a replacement cannot be installed"]
+status = "not-applicable"
+hash = "32229a837f270952a5e1774b57420dbcc9d75775a5751ea35fa78ab636bef6a9"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::loads a hook-resolved file as the hook reports it, once replaced"]
+status = "not-applicable"
+hash = "8542b1ac571779ef9a44175b25f7a46f3d0d0fa65d96cf141181893690c98e22"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::loads a module that a load hook substitutes for `node:path` as a child, once"]
+status = "not-applicable"
+hash = "9bdf64a577ff6432df09e7b3f402448708e65ce5c16e0fac675848fcca4e946f"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::loads a module that a load hook substitutes for `node:test` as a child, once"]
+status = "not-applicable"
+hash = "9bdf64a577ff6432df09e7b3f402448708e65ce5c16e0fac675848fcca4e946f"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::reads an invalidated manifest as Node does"]
+status = "not-applicable"
+hash = "de8d8e475f7b1a95f459eeef14a47488620f90b78ee27f8e3fd0abbfc15f6601"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::reads the format of a file from the manifests added and removed around it"]
+status = "not-applicable"
+hash = "03885a3bb2ce4c7a4c6233a85d12fa406902d7c00c6de354ace89af53d09ebe1"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::refuses to take over replacements that another wrapper has covered"]
+status = "not-applicable"
+hash = "a07338a897780ea329d4d010035a8152636d4e92a0c3e688a69e6a6ffeed57d0"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::requires a `node:` builtin past a module cached under its name"]
+status = "not-applicable"
+hash = "e24905d775024b64471b0f06899add8e4e6b8764a23d4f35e0e8fa946122126a"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::requires a request that only a synchronous hook resolves"]
+status = "not-applicable"
+hash = "de9711730b6e554a6b042998b3ac603fa7d46f1c2200313792741eb61d7a27cb"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::resolves a CommonJS require through a retargeted link whose manifest differs"]
+status = "not-applicable"
+hash = "c4322dacccee5a4a44e35b96f31de1eb1219862b56edd42ccb23bbc8d8842c6c"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::resolves a later CommonJS require after a change confined to the manifest"]
+status = "not-applicable"
+hash = "779642aa6c0d973596824c7c2f240575f71e2299c1124a5be5ddf491943af427"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::resolves a later CommonJS require to a package added below the importer"]
+status = "not-applicable"
+hash = "768a3d1ff9b7bc001c6346b063ba5aef315a96bf9dc9c34e970d3c9aef388221"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::resolves a later require of a file to itself once the redirecting hook is deregistered"]
+status = "not-applicable"
+hash = "f62769a5f1535b5f2a0231b86bdd8dc44b91cb2db004d9b66a874160ffd876a4"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::resolves a later require to the builtin that a hook newly reports"]
+status = "not-applicable"
+hash = "3d1ffef74578a2ea4b0fa054f692736b8874bd463964f393a890f33b083acf0c"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::resolves an ESM import through a retargeted link whose manifest differs"]
+status = "not-applicable"
+hash = "4f388441af22e4d927dba8f005dded4ae5d8143e5aa7a0dd83c604f7ebc22fb5"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::takes over the manifests that a disposed HMR has invalidated, in another copy of the runtime"]
+status = "not-applicable"
+hash = "81d80a3c3d7c75b57cb1bf0dfb507d92f5185e70b9dec1664a818ad177850974"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/patches.spec.ts::manifests::throws from a later CommonJS require after `exports` is updated to exclude the request"]
+status = "not-applicable"
+hash = "c5fa5021e1ddc2050e717748903dbcde4213f86268a9d09f57172a5b481ccd54"
+note = "It tests the patches of the Node module loader, which Python does not have."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::aborts it with a component that imports a module that its new entry newly imports"]
+status = "diverged"
+hash = "7f3eccd56701e2fafe9ad72deb3bc8bdfdb97a7d8c42d2440c1359311033613f"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::keeps it when its imports now resolve to different versions"]
+status = "diverged"
+hash = "080610ea3afc076313b9c1ea20036c0cc0f8ddcd16714fc87f95b4f05f0b161d"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it given only its manifest and the module that it newly exports"]
+status = "diverged"
+hash = "0d20e2ef422a9bb1f2433f1421f34179dcda865989fa7a465f9c0637addec976"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports after a transaction that only changes its manifest"]
+status = "diverged"
+hash = "341a45836fa1c1f9436bffd27d9ecbbe560b16033d66857074ecd19855d5a7d6"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports in place of a removed one"]
+status = "diverged"
+hash = "a45151a7e22a29b5d0fd4004aa520184b3423c4d9f629c6488741d496fbddc4e"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports once that module is fixed, also after HMR restarts"]
+status = "diverged"
+hash = "607fd5060a979f1407ab49a87254a0ad0929ac26ebd21fa179c37eb5a36e9f9c"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that its `exports` newly points to"]
+status = "diverged"
+hash = "fc70e4e59fb83d770b45bd183f2c0d7c8d0206dfdcc5f58e4141230eaa89d05f"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that its `main` newly points to"]
+status = "diverged"
+hash = "fc70e4e59fb83d770b45bd183f2c0d7c8d0206dfdcc5f58e4141230eaa89d05f"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the version that a retargeted link selects"]
+status = "diverged"
+hash = "f6eb16311b967be8f400897b3d290373daeb6be8fa679ff0ef75f2062b3e7e2c"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that imports it"]
+status = "diverged"
+hash = "b55167e2c097612258cf5bd1e20fcb6d0a0bef9b90cb33fe4fa9cf03b12531a2"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that requires it, given its location"]
+status = "diverged"
+hash = "b1a87a3a736e741f2dc024590d8a87f5e69c5d393a5ccfedfe3ece7bed65f8af"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that requires it, given its manifest"]
+status = "diverged"
+hash = "b1a87a3a736e741f2dc024590d8a87f5e69c5d393a5ccfedfe3ece7bed65f8af"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::aborts a component that newly imports a changed module of a failed unit"]
+status = "ported"
+hash = "85c17e000f161d973ec46953de980f07b2ee7f30f3f09c055d066b5a76f6fa74"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::aborts components that share a changed module together"]
+status = "ported"
+hash = "0d585b27e95ddecabccd5818690831d4f6857598c7ebb01f3798d72a80b21c06"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::applies a unit when another unit fails to import"]
+status = "ported"
+hash = "74b6c9fb8f7f6e17dd9be59069358eb5f52c370e7b85415ed0de093dc197f847"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::collects the host modules of a main entry started through a link"]
+status = "adapted"
+hash = "d8c1391af1b399e903ef7975b1936375127652aaffa63d693c0d53de073f4b7f"
+divergence = "hmr-modules"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::does not apply a unit whose module does not export a component"]
+status = "ported"
+hash = "50ac4844453d7e2606ce2aa9058a37f14fef4f06aa6df87b878af43446984e73"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::does not apply a unit whose module fails to import"]
+status = "ported"
+hash = "52f4da493f47708266d979a5954b525b2c9bb7e43741968cbbaba15938024172"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::fails to start without loader internals"]
+status = "not-applicable"
+hash = "acf9519b87ddb7c14a91e6c56701426bade08418738cbfbdd1de8e9b80541f4b"
+note = "Python needs no loader internals."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::follows the dependencies of a module job when its job of another type fails to link"]
+status = "diverged"
+hash = "8f59b65e068403b12fc7ab678eb52c3112b636e182f095ef248a7bccf21156c1"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::imports a module again after it failed in an aborted attempt"]
+status = "ported"
+hash = "e015f2387b8333765e08b32bd3222dc96ae854bb937d139a12038e2397f996fe"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::imports a module again after its evaluation failed for a reason outside its file"]
+status = "diverged"
+hash = "f1a56e2820b019870182936edebd759165e951aeefe95d216ad4488114b683f1"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::keeps the job of a module when its job of another type fails"]
+status = "diverged"
+hash = "f2be7148ac130c3a3afbedf4c872a59c27b98b2fe65bffd7e9e67207baedc30e"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::keeps the metadata of an entry that re-exports the changed component"]
+status = "ported"
+hash = "2cc116345781101e482e45ffc9f5a3a62850b76ce3fbccac4c132ace7eb65820"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::leaves a fiber failed when the new component fails to apply"]
+status = "ported"
+hash = "111047e3b8b634edc0567882bd023f238589d61157f9a2f8283f5468f4398c10"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a disabled component for when it is enabled again"]
+status = "ported"
+hash = "26946117385ba3ec3b352e3890c254a0d176561882dbc711d9b7d665feafdd17"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a module that no component depends on for its next import"]
+status = "ported"
+hash = "dd1a5bbdba44718a2a0ffee141b74b14549388761ca8cfcef31b50b727c75714"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a file URL as a root"]
+status = "ported"
+hash = "68b3f79341dbd47a0e6fe3a6bc4d7ab079c2d7705f368ee02ec7c75bd5bed775"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a relative path as a root"]
+status = "ported"
+hash = "68b3f79341dbd47a0e6fe3a6bc4d7ab079c2d7705f368ee02ec7c75bd5bed775"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a transaction started inside another one"]
+status = "adapted"
+hash = "3f2f7d5997f41d3d7d78b892d1ab2b0331f1c4364dd79580752ca9d2129f3bbe"
+divergence = "hmr-modules"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects with the error of the callback"]
+status = "ported"
+hash = "9685e170cb7971f6d51a09b021740ae55f6384e4b24561629efbea62a4b3433e"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component exported from a data: URL"]
+status = "diverged"
+hash = "c6f1a1eaada4e6ce22b40f0181938a68541a9f2194e9d58611954cdbde899257"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component that no entry manages"]
+status = "ported"
+hash = "172369797ddff0c40cac222197fdc9f48aa44317ae4e3a2abea79fa8323a8171"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component that only require() has loaded when its dependency changes"]
+status = "diverged"
+hash = "ffb048759dcfee8e99972e7b892bbc957369c76cf70bff1d0def7ce4bab21957"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component when a module inside a package changes"]
+status = "ported"
+hash = "4d17b54dbca92e34c03a821641b2f11548b634b2ef1803dd48ad65f56c936869"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component when one of its dependencies changes"]
+status = "ported"
+hash = "cce7a69e2ce314c77c72ac787b3b6ff655bc0863784dcb8305ff1842721a1da1"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component whose nested dependency is removed in favor of a hoisted copy"]
+status = "diverged"
+hash = "66402e5a1ea435d24e3822dc06b1c7cf4a0a369116f32cf2335751ecf186c086"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a service"]
+status = "ported"
+hash = "065ee53d0dc7511166f7fa1f8ec40bb98112f29cc00d090c59227c4ce33ba54a"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces an entry component in place"]
+status = "ported"
+hash = "643570b729499f184b6b00dbc50a81243cbd37c06ea6bb08b7cc7373254e9b15"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces the components below a directory root"]
+status = "ported"
+hash = "be1f4c7582809726ea369bf642a2f9f94095d852339a02b3f20c968fd57b474a"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces the inner fiber of an entry with an injection scope in place"]
+status = "ported"
+hash = "e5f470ce09a2a3a19d285241afb92cf2a02edc79034604c527f3dab0829c4383"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::restores a changed module outside every component with the failed unit it imports"]
+status = "ported"
+hash = "121b149e25a488ec351240637ea5e5b23380ded8abcdc26da96bcf88b37b98f1"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::runs the callback inside the transaction"]
+status = "ported"
+hash = "81dfd8bab91b1228a998871a73694630f5bff0e2a9cde1445ff6953669482b70"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::runs transactions one at a time"]
+status = "ported"
+hash = "7fd49e5a9c061924d7a6d18bed77f18cd1996945505986fdd6abe0a4b1863560"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::shares a module first loaded by a failed unit with a unit that imports it dynamically"]
+status = "ported"
+hash = "cb5fba1aa7bdbe9b366f71561df74f96c7b7904a6bb75724f62c4e188e2c6a94"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed host module below a root and applies the other changes"]
+status = "ported"
+hash = "962290f045599d110c09b8b49a74d81d853163ed193bb733600c0baf8a5f786f"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed native addon"]
+status = "adapted"
+hash = "f562ee2320866fe6a1fac6967807eb2af733cc47a696bb48c6ae09e7ca5b5d28"
+divergence = "hmr-modules"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::skips a component whose exporting modules now export different components"]
+status = "ported"
+hash = "f21393445cb4e2a2de6f0dbaa09809406d3fb885b785006538e5fb883bb05148"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::starts one instance at a time in a thread"]
+status = "adapted"
+hash = "ba09ab08a9a1e487cfc44e8f41e6ead98858188e50992ed51116d65c89c378fe"
+divergence = "hmr-modules"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::keeps resolving the version that another importer links"]
+status = "diverged"
+hash = "b0663d199e4b9e15b0f18c090c995d985267b2455991c9a12403d5a7adcb9fdb"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::reports realpath support under a synchronous hook that short-circuits file URLs"]
+status = "not-applicable"
+hash = "7023888de280e4d2a7f2e949dcfddf085074924d32b088cbdcaa9204cfedad6b"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::reports realpath support where Node passes the ESM realpath cache to fs.realpathSync"]
+status = "not-applicable"
+hash = "2d12ec54143178840fee074127fdf8db03c0a0d71a547398faf28d8279600b42"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a CommonJS require through a retargeted link when the ESM probe fails"]
+status = "not-applicable"
+hash = "1f211ba7bc100afbfb45cfa2d2c1bcfc01c02583eeb83c454f8acbb57f2551a9"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a CommonJS require to the hoisted copy after the nested one is removed"]
+status = "not-applicable"
+hash = "dc697d18ac54153d80fa58bc02ba35efc8ca5c4912075ce4105fafca8f117e1d"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import after only the manifest changes, keeping the static bindings"]
+status = "diverged"
+hash = "e0becae4460dd7af02a65a2ed77bcbad3bd335b14fe0c5e4722e443da2f9ba7e"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import of a package import after only the manifest changes"]
+status = "diverged"
+hash = "66d40cc595b2f72c6d00f0437ed9780fdb50f897bba9a6739591b0b61899fd39"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import to a package added below the importer"]
+status = "diverged"
+hash = "6b8d5b7fcd128b692e8e92a142edb095dd04be2a60391a8c6bc615e81e42cb0c"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import through a retargeted link after the runtime itself is removed"]
+status = "diverged"
+hash = "4520ffc9b86e2770dbd34207ebafc46a86dbbb269568d28a289b026e6f821bf2"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import to the hoisted copy after the nested one is removed"]
+status = "diverged"
+hash = "d9d7d09a4cc32fb1edffd749bdd7c7fb1e2c9d5e36f42078454eb262427d5c4d"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import to the hoisted copy under a synchronous hook that short-circuits file URLs"]
+status = "diverged"
+hash = "715076e7c420d402beddc981fc3739f4b6e6640d9152b612162cbbe09e26a5e2"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
+
+[items."hmr/resolution.spec.ts::invalidateResolution::retries a probe that failed"]
+status = "not-applicable"
+hash = "a1b296c159cefccc92ff42d9bfdd9437d095681c2cdd7e369b93ad233ae83ea0"
+note = "It tests a Node resolution probe, a `require()` call, or the realpath cache of the Node loader."
+
+[items."hmr/src/error.ts:<rest>"]
+status = "not-applicable"
+hash = "3cbba59375626acbd89e1e0124b2f4cb5e6ebb7635282019384f86b007ed4e9a"
+note = "It formats the error of a bundler. Python has no bundler step."
+
+[items."hmr/src/error.ts:handleError"]
+status = "not-applicable"
+hash = "5229b1a95d6cf85240f0473ec37e26d5cb7249f2432353bd0339efd30dbad4c8"
+note = "It formats the error of a bundler. Python has no bundler step."
+
+[items."hmr/src/error.ts:isBuildFailure"]
+status = "not-applicable"
+hash = "8672ae48214c9d4a1df01b90b634895dc7c8eb7ae249cc19c668fba8f0a060fb"
+note = "It formats the error of a bundler. Python has no bundler step."
+
+[items."hmr/src/index.ts:<rest>"]
+status = "not-applicable"
+hash = "82a25bd0942a09346dee4436f2334de7a94b138ad210b0a7254bd3f38e0dc47d"
+note = "Imports of the TypeScript module."
+
+[items."hmr/src/index.ts:Awaitable"]
+status = "not-applicable"
+hash = "a5ba06d5440bd4f6124fa8c8f6378ae4bd66a166601a25238d5d6a733cff3103"
+note = "A TypeScript type. `Hmr.reconcile` takes a function that returns paths or a `Deferred` of them."
+
+[items."hmr/src/index.ts:Hmr"]
+status = "adapted"
+target = "pycordis.hmr.Hmr"
+hash = "79e843a936623d7e9b31b3eae8b24fe4937ef09a25bb2d649be42913a72752cc"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:Hmr.[Service.init]"]
+status = "adapted"
+target = "pycordis.hmr.Hmr.cordis_init"
+hash = "683da650ef3d8779677c0e9ff4edfbf0dacd7a753bf30d5eb48eeacc77354a24"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:Hmr._analyze"]
+status = "adapted"
+target = "pycordis.hmr._graph.accepted_modules"
+hash = "843d9eb554dc9970cff59c364c9e2dbcdb371d252ca5eb78277263e39d756c05"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:Hmr._discover"]
+status = "adapted"
+target = "pycordis.hmr._modules.find_components"
+hash = "a71cc8c289982e0a47d7b07dea317c429c7067bda6a8940557cadde0949ac333"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:Hmr._locate"]
+status = "diverged"
+hash = "abfa02cbb3e79a560c25442b3c6f7f47c81289bef69faf43764e1a2edd39ad09"
+divergence = "hmr-resolution"
+note = "An import by name finds a moved module."
+
+[items."hmr/src/index.ts:Hmr._match"]
+status = "adapted"
+target = "pycordis.hmr._modules.match_roots"
+hash = "9c4e623a035afb9d8946797412e1430643f88af10aecd383607b433e10a24c63"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:Hmr._moved"]
+status = "diverged"
+hash = "2df33cb45815fa87b16a61d74876f47dc9fcd96e318b2769907727f0a4e19bd3"
+divergence = "hmr-resolution"
+note = "An import by name finds a moved module."
+
+[items."hmr/src/index.ts:Hmr._partition"]
+status = "ported"
+target = "pycordis.hmr._graph.partition"
+hash = "408f0c8c18d214984ab75a2ff7eb32bf31bc78cdf9654a95ea853fd0b26aebe7"
+
+[items."hmr/src/index.ts:Hmr._reconcile"]
+status = "adapted"
+target = "pycordis.hmr._service.Hmr._apply"
+hash = "c1a73784ce99086ca6ea7bb6e080eade4dbf2c92a4eaff98c35085cc2b4bfa6d"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:Hmr._relative"]
+status = "not-applicable"
+hash = "7f54370e5d8701127bcc1cfb438e3059ef04caae77e35f800581f07ee2643f93"
+note = "A module is its name, so no path is shown relative to a base directory."
+
+[items."hmr/src/index.ts:Hmr._watch"]
+status = "diverged"
+hash = "f046a24fe1ae784dcfa2636771f8e3bfd5657f0d9151f5f40602e786202d72e2"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/src/index.ts:Hmr.constructor"]
+status = "adapted"
+target = "pycordis.hmr.Hmr"
+hash = "a0b6b8919c425a50c277c962e9a5dfb70cb798d5b9bc80d533f578eefdc0d38d"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:Hmr.reconcile"]
+status = "adapted"
+target = "pycordis.hmr.Hmr.reconcile"
+hash = "4edf3712ff040eb0d1a37acaeb34c3c1f5da662f6e4c49e91b4f6b5b518d86f0"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:ImportAttempt"]
+status = "adapted"
+target = "pycordis.hmr._service._Stale"
+hash = "f5e76e1fc5bf4be696687a3828e57b766c78afb7dba391b8bf8ed2b2c7ca330e"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:ReconcileUnit"]
+status = "ported"
+target = "pycordis.hmr._graph.Unit"
+hash = "27ff24b7612b67a3c4a51a23b23a9a90918bdec68409802e193125bd86aa2643"
+
+[items."hmr/src/index.ts:SkipError"]
+status = "not-applicable"
+hash = "a75a424381ba9324cc0a3307d7b09f4c51fb526a49c01adfc2ee07b5e744638a"
+note = "A skip is the `skip` field of the import attempt, not an exception."
+
+[items."hmr/src/index.ts:SkipError.constructor"]
+status = "not-applicable"
+hash = "6c42cb8c57d07a9525e68abc12d2a5d4b926ea60a5a1d280adea4bd1ed21618c"
+note = "A skip is the `skip` field of the import attempt, not an exception."
+
+[items."hmr/src/index.ts:StaleComponent"]
+status = "adapted"
+target = "pycordis.hmr._service._Stale"
+hash = "abb9fd4993bde073723a5d65f69c8706c7aaccd30f3c2bfe37d37e03e544a426"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:closure"]
+status = "adapted"
+target = "pycordis.hmr._graph.closure"
+hash = "ce657fb0cedeb92dcea0a97f485071b0e8f234d9bf85ac0132f8c750cdd69283"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:contains"]
+status = "not-applicable"
+hash = "9620c542f17f72bd23ab3107fffb7f5bdedd70ac355bb07d4c19eb0a0b593eb2"
+note = "`match_roots` looks up the ancestors of a file path."
+
+[items."hmr/src/index.ts:covers"]
+status = "diverged"
+hash = "afdcd60233b09aba3eea6e67a11ead3c9bd289a6e52960335a16d29271f820ea"
+divergence = "hmr-resolution"
+note = "It resolves a package manifest and a package location."
+
+[items."hmr/src/index.ts:default"]
+status = "adapted"
+hash = "f8ff6ad0a73a692f5f7cebefc35b6d32f3eef923f4c8aa28d6c5082b9e6036c0"
+divergence = "hmr-modules"
+note = "The default export is the `Hmr` service class (`pycordis.hmr.Hmr`)."
+
+[items."hmr/src/index.ts:driveLetter"]
+status = "not-applicable"
+hash = "800e1149b15a4b33ddbac21f03f35a914be93454259dca250c5ddbe720f564f1"
+note = "`os.path.isabs` decides whether a path is absolute."
+
+[items."hmr/src/index.ts:isBuiltin"]
+status = "not-applicable"
+hash = "48fe6b5d785141599be8367f304daf83a51f1d9359c8f6d00e0649d8d01ed066"
+note = "A built-in module is outside the graph."
+
+[items."hmr/src/index.ts:isNativeAddon"]
+status = "adapted"
+target = "pycordis.hmr._service._is_extension"
+hash = "a8cbc254aa42176dadf26045cfa218fb3d3eefb5983b10c78a085d824cf25036"
+divergence = "hmr-modules"
+
+[items."hmr/src/index.ts:isRequest"]
+status = "diverged"
+hash = "20404d5e534427efe19007f0536bfe6da8c540f35267b020544b10d0cdb15410"
+divergence = "hmr-resolution"
+note = "Python records no request of an import."
+
+[items."hmr/src/index.ts:module cordis"]
+status = "not-applicable"
+hash = "089ad5d37ab36aab13be3353533875dd28f8c8132c9cf4c4fa7c3015a020a127"
+note = "A TypeScript type augmentation. A context reads the service with `ctx.get(\"hmr\")`."
+
+[items."hmr/src/index.ts:scheme"]
+status = "not-applicable"
+hash = "d80149b206f06961be7a261a65996f215212bc7c9beca233e2323405a133d6e5"
+note = "A URL is not an absolute path, so a root rejects it."
+
+[items."hmr/src/index.ts:toPath"]
+status = "not-applicable"
+hash = "129180770f7f7e624cbba90e83403d73ba5757f17867ebd4e786b980a4d51cd4"
+note = "A module is its name and has a file path."
+
+[items."hmr/src/index.ts:unwrapExports"]
+status = "adapted"
+target = "pycordis.hmr._modules.Exporter"
+hash = "faf5fa25257d22934b6050e902ab1383bd76388eb995e29452c84d7faadd9b31"
+divergence = "hmr-modules"
+
+[items."hmr/src/runtime/index.ts:<rest>"]
+status = "not-applicable"
+hash = "a42913745ee8283f44ddadef2ae2ff232967c9ebe039372371560740a82eff34"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:<rest>"]
+status = "not-applicable"
+hash = "659952f4bce827b2bbd340548960dbfadae042f438db27ddfce6799cb5688516"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:LoadCache"]
+status = "not-applicable"
+hash = "2efb24d52ea9b4dfd22409eb00431dd91575270fd1810faa2ae6a91c5035ca53"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:LoadCacheData"]
+status = "not-applicable"
+hash = "0adfc2b2861f1634040be2ce018384a1677e4d1a22762e24078fafbe36940424"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:LoadResult"]
+status = "not-applicable"
+hash = "260d2c89e2408ebd893407ef3a2c4793056d03605e85b426486f45071f7c05c1"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleFormat"]
+status = "not-applicable"
+hash = "5522fc5e6f407497a560508c8ba8ebcca05f43ab8a055bf259734e2cb21a2b89"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleJob"]
+status = "not-applicable"
+hash = "7f60486f310fe71304ecbe64ffe6f38df46f2a57989c9cea52badaffc3218250"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleLoader"]
+status = "not-applicable"
+hash = "28a2d460db0748e8e95d6e450a6cff0d1744169ce870f5000ba43d6a8a06df48"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleLoaderV1"]
+status = "not-applicable"
+hash = "07317f986f0bd00b3e947352095268557dbc514b862d59d96db5b1e5ff3c1322"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleLoaderV2"]
+status = "not-applicable"
+hash = "287b492d1056e487b5e2a113f7bf9d465af82d7a2ce2fffefca0551eca7f23f6"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModulePhase"]
+status = "not-applicable"
+hash = "ab4a6e1ec7177026c67b4ecf6eb1ac63f74e6f9d11e4cb914f5796d9d6d4acdb"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleRequest"]
+status = "not-applicable"
+hash = "b213f0bf41a91550159bf62bca4d8b4eb197d73fc9cbe27104375fc8814e098f"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleRequestType"]
+status = "not-applicable"
+hash = "e3bb98958988dff532951d10fecf06820e107f07df3850a9e19add46f8ee35f0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleSource"]
+status = "not-applicable"
+hash = "0a3dcb05e6099034ea81e739da19208a3e98ff7e7ee0da19c587df852bdbfba0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleStatus"]
+status = "not-applicable"
+hash = "7a284f7fcf0509d3595614637eb3ac11c3979ca2f54004cc4e17d1758bdf5095"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ModuleWrap"]
+status = "not-applicable"
+hash = "c9a73013582dabbc3b06c3181587a62a7995217343b86da608ff18c9c36d8af8"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:ResolveResult"]
+status = "not-applicable"
+hash = "69aed5a37663705acf4606f139d94bebfdb2f79a0cbef994431b082ffe4144ed"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:getModuleJobs"]
+status = "not-applicable"
+hash = "a093805b3d19e31139de83fffdea08e5a4c8b2ae46013fe3262da49227ee3db2"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:internalBinding"]
+status = "not-applicable"
+hash = "2500d909c4606f47ec0d3fd47da960faedb65dcbf1100e676fe4e64215214de6"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/internal.ts:requireInternal"]
+status = "not-applicable"
+hash = "edd6d2404158b3a3a9f1a0157076a503e625246bf56d8c9196ab1fd137552419"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:<rest>"]
+status = "not-applicable"
+hash = "6778cda14679cfae9325385f1aa26014117e9579d02d02ada086a20f595b9e0e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleBackup"]
+status = "not-applicable"
+hash = "6899819b1c6765a0c182c8c9862faae27d5de80d9375083eec6f643da535972b"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches"]
+status = "not-applicable"
+hash = "bdb6600c7c8768f975bfc34717f0e22a0fd5dd951f858b383339e4c6f169615a"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches._delete"]
+status = "not-applicable"
+hash = "54857f4a50438770442f6bbceb58e660e29869b45523e83fd09fe44afa50c169"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.children"]
+status = "not-applicable"
+hash = "7b88c1e20613b2002c249bd4517caa2a47c4a845e71303610119a80059b3ff68"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.constructor"]
+status = "not-applicable"
+hash = "909a8cb2e850765a2ad2451bd098d37367f69ad3243ca95f5af566507efd7e3a"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.edges"]
+status = "not-applicable"
+hash = "4f36d2fa0186177261ce9ef0ec668a2537a14e72d10917179973970c60436102"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.evict"]
+status = "not-applicable"
+hash = "091bb7a2b3e66abe6b042b97694a93e163c9f27d2ddd18ac16a06503023a26d4"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.exports"]
+status = "not-applicable"
+hash = "ef7c975038cb84ddbbe422df8c1bfc818faf6300c837950da038cfe3dc811dce"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.has"]
+status = "not-applicable"
+hash = "1c5c04f7c663d54e191004df137515a11e1ba5554cc29999d0e3a8a9f1ee8539"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.namespace"]
+status = "not-applicable"
+hash = "1f8905ad086722886ec07f8e2acde1b48b02c2c65fbf5f758c278edb95155187"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.sweep"]
+status = "not-applicable"
+hash = "6ae0ff54ed09b88837d26be8146a95d752402c80663b0a079688d45091f691ee"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.urls"]
+status = "not-applicable"
+hash = "c745afdc46e6df2073557a6fb005d6bc31f3e828feb647d63188d6cac5885d2c"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:isBuiltin"]
+status = "not-applicable"
+hash = "48fe6b5d785141599be8367f304daf83a51f1d9359c8f6d00e0649d8d01ed066"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/modules.ts:toPath"]
+status = "not-applicable"
+hash = "129180770f7f7e624cbba90e83403d73ba5757f17867ebd4e786b980a4d51cd4"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:<rest>"]
+status = "not-applicable"
+hash = "264c08ac8a6eac8c463074a815f3709696c6eb5597511481e59328a22a24eda1"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:Binding"]
+status = "not-applicable"
+hash = "75e6c4d26dc40b56682b7f6141c9642af34a72366b4ae39cf0965b6222a8716e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:ErrorContext"]
+status = "not-applicable"
+hash = "a1540f5d555fd03bdaff5e91cc8ec1a2d510d57eb91b40d1bcbf5ca051deaa22"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:Load"]
+status = "not-applicable"
+hash = "21773fb8842781095b80bc6c417c3ed9260dcc2f320336d771172839e2bdd9d8"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:Manifest"]
+status = "not-applicable"
+hash = "7b37b9d45dc21d96a96f13c3828041a2927d9511fe5da06ac71c85b2b224c360"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:ManifestState"]
+status = "not-applicable"
+hash = "14629e5ca49f335b4e00144009c73d6d6f72484a7c8988fbc008269308755024"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:PackageJSON"]
+status = "not-applicable"
+hash = "660c99167f18e5ae7f58d283d7e0894bb0a09283dc3bb8cb3bf9028e9b1d2fc8"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:Patches"]
+status = "not-applicable"
+hash = "7fb3ea3b160ca129303b8dd0079a834671d80f263efe36ee7a799268c40c73be"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:Reader"]
+status = "not-applicable"
+hash = "b358ba27667073af65a41bf5f065833c2e5863a485ea45139694bd6400afb926"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:Resolution"]
+status = "not-applicable"
+hash = "d948bf49145a9aa27dadbfd9a31e517bf25dc8d6d2ce4b5fd307893e6689f60e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:ResolveForCJSWithHooks"]
+status = "not-applicable"
+hash = "29eed47f978f5c36ad6241f63284bb18ead3d75c04e64174352ed5d4ed8b98a2"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:ResolveHook"]
+status = "not-applicable"
+hash = "2ab2619378d27adca59a821a213278ccfac3bd204cf3c9a2c4932525067f3d36"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:activate"]
+status = "not-applicable"
+hash = "3bc7503e883b2cd65ec0a9b97396118f89e3171613c9d9eb4f03346d24ed1e21"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:current"]
+status = "not-applicable"
+hash = "40daa97389a49c3bad9ba045c90ba0be0db12339829a0999789b784fd49eb02a"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:deserialize"]
+status = "not-applicable"
+hash = "782543f3f2e2b42bd2c4e35096f85ea123cb9d12bf4d292fa37ba97b5ecc2978"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:install"]
+status = "not-applicable"
+hash = "4f0b78e053e6fa01c766ad6a852804154ea18ce041a70fc4d56a369535a992a8"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:invalidateManifests"]
+status = "not-applicable"
+hash = "16cbdd819235954d10fba6ec8e6b44c22b939156791aecb19f59694d5b2fadcb"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:isInvalidated"]
+status = "not-applicable"
+hash = "23244208d827fa8a123b6870140e517476bb5ad18b6a4000b276f2f7ad445458"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:kDefer"]
+status = "not-applicable"
+hash = "7bae41a0c55c475d03c6c099d4d7a8b0b1fcbb3e3fc051cd66e2aee73ffec584"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:key"]
+status = "not-applicable"
+hash = "c360f501d58af1476279df1a9cb314d8180f24d4914de2f99c821a6931cbc16b"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:nearest"]
+status = "not-applicable"
+hash = "38998451ec4af0fb779446e046a44554bac76e0b0d40eba7a4bd99b3259bfb39"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:parseManifest"]
+status = "not-applicable"
+hash = "328972cfabe8a75b40f59fc87d95fab96e2efd50c1fcd0aacd7a64b0f3ca78b0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:read"]
+status = "not-applicable"
+hash = "0e2129308b86c617330802f5fcffe74a51164f4d81d737983e4082edce28bed1"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:scope"]
+status = "not-applicable"
+hash = "c64506514d4e59582ad04437171d104e85a484947f8e1817c112db1a9fdf8337"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:setup"]
+status = "not-applicable"
+hash = "ef9855fb3a8a2d0f4b875c5f73f92156b04b44a8d3d76e5d932e522cc3172b62"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/patches.ts:within"]
+status = "not-applicable"
+hash = "cc6529bdeab803ecb81ba752680f37e7481f0df4e44a5b0973ca26fa56020f6a"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:<rest>"]
+status = "not-applicable"
+hash = "629e1f4122a36551193e6a2281e229f4d8c6250f662829d8c3a67e0ab8e55a12"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:Captured"]
+status = "not-applicable"
+hash = "29726f363b8a45581a017399ee81696806ff8f09103492f4033658e6f444cc2e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:Resolution"]
+status = "not-applicable"
+hash = "8eb1a7a1219ff0be6487325c39419ac39d0190284f888f091e1ebdf7fc4be0f0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:ResolutionSupport"]
+status = "not-applicable"
+hash = "959d7e54ddb3012e9de382179186c60cb9fb021ad2dbecfba514297ba22d1843"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:capture"]
+status = "not-applicable"
+hash = "4228c63d80e9510f9a32c18ceccece93c39c7696e9a445a96bae27b3548e3c2e"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:captureCJS"]
+status = "not-applicable"
+hash = "85ffadd2e09893657d7c25259ad0491691f3f2795c6b194979259ba60fb07a01"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:captureESM"]
+status = "not-applicable"
+hash = "0fe00bacae17c14da46e7ce164fe9d84a5e821edd1e61f97e0d53e9dccfe90c4"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:captured"]
+status = "not-applicable"
+hash = "54cb527bde9a9902cb7db6083609b1784a9861d667b7c8183dc9f06f81d24b31"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:getCaptured"]
+status = "not-applicable"
+hash = "efe2bebbe81b9172fcc48097e8f53157b7780c352ef6faeaa9c974a07771c632"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:getResolutionSupport"]
+status = "not-applicable"
+hash = "260ac29d5af5f1f0386b1b90153112e53d0df988a1a2772abe2de15cc46b0a76"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:invalidateResolution"]
+status = "not-applicable"
+hash = "bf87f32c3ac7aa40b08fabdcb01b6ea57ae1e9670c6a4ae518abe52179e82b1c"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:locatePackage"]
+status = "not-applicable"
+hash = "39ca32b3e823b06c4dfb4e068a179c9f0c1f984c24d149e8e690d41755430114"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:packageName"]
+status = "not-applicable"
+hash = "3946e60e18802cdcf691cd6d38e59482bfea890394ef8208cbe33ec8ca8d00c3"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:parseKey"]
+status = "not-applicable"
+hash = "c1b2bf30d1021199821f1ba4051c7a4358bbd4a556997621ee944ad95994bada"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:removeResolutions"]
+status = "not-applicable"
+hash = "1ff2c8a4209414e427666306c421e5e8a645b5efe9f0a1376905c0a62505d4e4"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:resolveRequest"]
+status = "not-applicable"
+hash = "5da6e07f877ebbfa3f15f57520f4b4433312407b8d7e3cc0c1a5eb49c2d5e841"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:restoreResolutions"]
+status = "not-applicable"
+hash = "a483999ddd470a3f502c079d3f9517f84e15ad5af004e1451796011d6aefcd52"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:toPath"]
+status = "not-applicable"
+hash = "3ff9a28b9bf53a940c48efe7b3f74b71c58cb0c4a52dc6d33b2437d43c7ea893"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/src/runtime/resolution.ts:within"]
+status = "not-applicable"
+hash = "dc9f923b96872c18c310a7b4c0f2cdac4c42ef45f3ae65a0e96bb2cbf6b4c8a0"
+note = "Node module-loader internals. `pycordis.hmr._modules` works on `sys.modules`."
+
+[items."hmr/tests/index.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "aef6d9f70a8b10bfb7bc3f19a4a36e9abc87e094c70ce2134cae5fb373b85f57"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:Gate"]
+status = "not-applicable"
+hash = "184c6f6d2418064d0d4a22c0a49db27304a7b6235c82987d0769dd0f454369ce"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:arm"]
+status = "not-applicable"
+hash = "198317987abb4fbf399fcc852d581084623e8be8b43238c078dd93957763406e"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:configTree"]
+status = "not-applicable"
+hash = "1cc58a246ce2462c6bf17a5b5962a17421dde6948e47f35dbedb58bdbe217ef4"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:copyFixtures"]
+status = "not-applicable"
+hash = "fb41b2ca5739443379c9baf60d9fdae6ea06f425804c1a46547566b757fdb91e"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:createContext"]
+status = "not-applicable"
+hash = "2c5d5f30f9fca1d4204c9a73bb27f71753a214b19d0f067522143e085d120038"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:disarm"]
+status = "not-applicable"
+hash = "01ddae5da8cc5ef4d33069817ac06fa94fcae9b7a28765253bfe31aaa7625e53"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:dropCached"]
+status = "not-applicable"
+hash = "3257597b4064c9edf2ca318aa5be7b319385ccb842e94b8a1d0641328cd47e10"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:findEntry"]
+status = "not-applicable"
+hash = "ef6d2cd4916c2e1cb8a607458192f5b62ed52f38d14f131a9a871065edde16d3"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:fixture"]
+status = "not-applicable"
+hash = "325eed7a0965cb6d1ef6d1f9801d3f65752dc4d397d48252513207ecc4c3b178"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:fixtureDir"]
+status = "not-applicable"
+hash = "ea2588540a1eab8a05d54019059ea097fceb971b87b4ea81102c02d1e876f815"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:installGate"]
+status = "not-applicable"
+hash = "96673eda90d3582f74b97cf7fd305ae7767192f16e09efbe763b1d0ca98ef7ad"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:liveNested"]
+status = "not-applicable"
+hash = "939bd614a20c0acf68e82b790fb948a0b317ec173b206b3b7b1f48fbfe088d19"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:liveUids"]
+status = "not-applicable"
+hash = "41c1e36e022876fc466aebb970090a0925f6faf5dfc4854ef9d432f0294982b8"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:templateDir"]
+status = "not-applicable"
+hash = "e9f9e1d8e26577ee62207f87dde9a97408a6b82220279d4210171c471974bc5d"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:testDir"]
+status = "not-applicable"
+hash = "05c0a5e69137a6b19b176dbb8f0ad2581c46f3d7e518a47d4e6a93edd3b68ef1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/index.spec.ts:waitFor"]
+status = "not-applicable"
+hash = "63c48aefc3f16d094c7edf95fc55178f147e427dcb60e1323ea337c76a709b63"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/internal.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "89589c2dd01add5bc0ba74c00342f55de93bfeb48bcad4727ddf01ed2cd94c52"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/modules.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "72245aef688196b26eb5b3370ccc5ee7bf821bf3d9cd1bb4b0df88d56558b295"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/modules.spec.ts:counted"]
+status = "not-applicable"
+hash = "5eaa8dab39bcbff51660f562d6b8a8483799f80bde28a46a22854509bbabd27e"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/modules.spec.ts:counts"]
+status = "not-applicable"
+hash = "c955f0f89faa69f852fecb89d5f66f470990d73439d259b80368571c8d23e559"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/modules.spec.ts:dir"]
+status = "not-applicable"
+hash = "170244d4ebc272c1611aeaea0bcba780200a31a2959d457c38307d01930a2f1e"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/modules.spec.ts:fixture"]
+status = "not-applicable"
+hash = "7e911968733ffb16f25c93ba4042c0f7662292efddacab3149695a227314ba24"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/modules.spec.ts:importModule"]
+status = "not-applicable"
+hash = "fdc2cf860892e9e691a0da03b4d9f4bf23c1b2f3c8fa077e19792b2e7b4f39e1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/modules.spec.ts:loader"]
+status = "not-applicable"
+hash = "21b74fd8071a153768beb613d92b2fb7aef3470b111fb03874ba706952365719"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/patches.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "e8bd687daab0703868f95a1942ab538f544f2ad7cc85c0fde8a2946da86dc903"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/patches.spec.ts:baz"]
+status = "not-applicable"
+hash = "d2a9c69fa00d0e3b7bc2f89c79850a6f8830c35a051b50d59844333a08ab3432"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/patches.spec.ts:fixtures"]
+status = "not-applicable"
+hash = "11edb1d96c35df40ecebe90d0c9a6b9fe95f9aa398fa6bcd250dadf81ca535d3"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/patches.spec.ts:importModule"]
+status = "not-applicable"
+hash = "fdc2cf860892e9e691a0da03b4d9f4bf23c1b2f3c8fa077e19792b2e7b4f39e1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/patches.spec.ts:loader"]
+status = "not-applicable"
+hash = "21b74fd8071a153768beb613d92b2fb7aef3470b111fb03874ba706952365719"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/patches.spec.ts:require"]
+status = "not-applicable"
+hash = "74af4cf6e0a3b7d1c6995502b5691a3cffe44062ee50e79c21cb66953d3780b0"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/patches.spec.ts:url"]
+status = "not-applicable"
+hash = "c308b57215ce409f67512224a22c32c270ee82b645f2f1ca96dd0e1646d805f5"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/patches.spec.ts:{ fixture , runESM }"]
+status = "not-applicable"
+hash = "7352c80cc164390d961a78fff6768b043d07df862be6e22e1cbe4327061aff12"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/reconcile.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "1ddfbca63736a6c0089ff0c20e83fafb18121f2606d033992fd630c08a95871c"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/reconcile.spec.ts:component"]
+status = "not-applicable"
+hash = "1dbdf3d375da091513836abfe8708aeb4de051522748a0fc43aaa5570e39b789"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/reconcile.spec.ts:fixture"]
+status = "not-applicable"
+hash = "66a20fdcc1e4efb53343520e4961404b1ad7f38d1d75094432b53f70877d1147"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/reconcile.spec.ts:fixtureDir"]
+status = "not-applicable"
+hash = "7b0fadffe2f42f865180c0add7035b1011f87cd17b0d01abd27c37388950ad27"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/reconcile.spec.ts:loader"]
+status = "not-applicable"
+hash = "005fc25d472c9ef01735248d2bdc2f02bc0c8b1bd412e15c158a2b6b52a5303c"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/reconcile.spec.ts:stats"]
+status = "not-applicable"
+hash = "476ba58e156cdb33a4d684539f4065fe6c128419b45f08e86f0a21fe1b917ef9"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/reconcile.spec.ts:testDir"]
+status = "not-applicable"
+hash = "05c0a5e69137a6b19b176dbb8f0ad2581c46f3d7e518a47d4e6a93edd3b68ef1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/resolution.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "0d081a63d07fbc6ab6e5b2f5c7c56a0001a37c4f6144f9fb097dfad860a12010"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/resolution.spec.ts:fixtures"]
+status = "not-applicable"
+hash = "dfe3f1c200f279d670f55a0fcf96ce0947c18e43eeb1a4e5e056f4744da44132"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/resolution.spec.ts:importModule"]
+status = "not-applicable"
+hash = "fdc2cf860892e9e691a0da03b4d9f4bf23c1b2f3c8fa077e19792b2e7b4f39e1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/resolution.spec.ts:install"]
+status = "not-applicable"
+hash = "82c0d223c0b5d97e26e3f1d56894ded7b65da5e92fcdb900e3e854c05cfc7210"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/resolution.spec.ts:link"]
+status = "not-applicable"
+hash = "5bfe211ef2e39bfb08900cf1ab6f9ac9710eb8444121a8f4b7a264182b680c20"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/resolution.spec.ts:loader"]
+status = "not-applicable"
+hash = "5fb8baf97dfdb63d7782ffbcc6afc1be2269ef1548163e237463c2b02ff2a745"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/resolution.spec.ts:modules"]
+status = "not-applicable"
+hash = "67c6cff0ddaea210bb9ce672955e76178e19a9ec32dcea7736ba3bd4be540da0"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/resolution.spec.ts:{ fixture , runESM }"]
+status = "not-applicable"
+hash = "7352c80cc164390d961a78fff6768b043d07df862be6e22e1cbe4327061aff12"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/utils.ts:<rest>"]
+status = "not-applicable"
+hash = "6c8e4bbcd642899c723a6b816280cb3859a93bbb204734ea195b20dc68b7a6b9"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/utils.ts:RunOptions"]
+status = "not-applicable"
+hash = "0c499fe08cc30e11eba41a1aa7da4ef8fd5f090650e8b5ac80131ff947e639a5"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/utils.ts:realpathESM"]
+status = "not-applicable"
+hash = "fbfaccba45b3e37e7a1bfc9e848fb5200d18370a6a75e98bcc8afc55776f51f2"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/utils.ts:useFixtures"]
+status = "not-applicable"
+hash = "cf3e51b1947e9bcb572f21f29343542dba579d9fe00e46fe3869e722aa3f4cd2"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/watch.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "211fe08eb2e34e464edc46814d28f4f05c51a892662756d327e78889249ada95"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/watch.spec.ts:FakeFs"]
+status = "not-applicable"
+hash = "0e466bf74c009f3c919af588175a388c10ffbc06df73713de09d76fca6008aa4"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/watch.spec.ts:FakeFs.constructor"]
+status = "not-applicable"
+hash = "6c0f9fdcc26a2f445a2897833b9ea6558ec5f5592943b3d1fbc1d915593e5e8c"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/watch.spec.ts:FakeFs.watch"]
+status = "not-applicable"
+hash = "dfb1ec8d5c65fb02d59daf761beceb034cc198a4a8ccd8892f51660c7dd25334"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/watch.spec.ts:Watch"]
+status = "not-applicable"
+hash = "86880a1c6b3fa6fb2b49e7e74f0bfe45c2351e5731488c45b406fb5ba034d433"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/watch.spec.ts:change"]
+status = "not-applicable"
+hash = "b2f3b40a7f5abfabd8e0f309a12389f3dd1a437619bdc55e582c5371484aa60c"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/watch.spec.ts:component"]
+status = "not-applicable"
+hash = "8daae61a2c6f48db37cfc3195b6a09244e3973cef1a185e1655ee0af82526d90"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/watch.spec.ts:fixtureDir"]
+status = "not-applicable"
+hash = "3caa4ec0f4bd2d2e32bc004db5d2ddd9fca9bf216781102cbd56c842e63df3eb"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/tests/watch.spec.ts:testDir"]
+status = "not-applicable"
+hash = "05c0a5e69137a6b19b176dbb8f0ad2581c46f3d7e518a47d4e6a93edd3b68ef1"
+note = "A helper of the Node test suite. The tests use the fixtures of `tests/hmr_fixtures.py`."
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::accepts a absolute path without a context directory"]
+status = "diverged"
+hash = "1e0eec99f54f1f66a05772487ba081fba29e74c73e90aa09abf42a40560b467a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::accepts a drive-letter base"]
+status = "diverged"
+hash = "ae9733eb1922ea4112d9031acf5e63e1922fcbdaddabe37377a2a7d52e847ad6"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::accepts a file URL without a context directory"]
+status = "diverged"
+hash = "1e0eec99f54f1f66a05772487ba081fba29e74c73e90aa09abf42a40560b467a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::accepts a relative path without a context directory"]
+status = "diverged"
+hash = "1e0eec99f54f1f66a05772487ba081fba29e74c73e90aa09abf42a40560b467a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::defaults to the context directory"]
+status = "diverged"
+hash = "3b6a13eebd5fa9afed417dd3fba2731982f62fb11ab9da43292be211d96a8873"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::defaults to the working directory without a context directory"]
+status = "diverged"
+hash = "4b76ecf2a461025ae24978b196409cbcc476c4d33591b2c0962bb6cbadc4a00a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::resolves a relative base against the context"]
+status = "diverged"
+hash = "03f441078d66db43e3bf55b203e81597d2f7055d6ed210f5e5ed8be19f5afef5"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::does not watch with empty `files`"]
+status = "diverged"
+hash = "5c8f5f3db6dc1a9738cebb76d65cc028377212afabb0ded283c3c12307c009ec"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::only reports a change to a host module"]
+status = "diverged"
+hash = "022339281d3162212387c5717b467601b3bc8cd088450fe64632ae472cb01c4a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::reconciles the changes of one debounce window as a batch"]
+status = "diverged"
+hash = "31b7270647c131fe69e087dc038900db0e3ad5024dc1eba5f080a752ecb695cc"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::reloads a component when its file changes on disk"]
+status = "diverged"
+hash = "b1ddd3a57b735e0dec284675fbd0dafe57482f3340c50d0171c82540980358c7"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::retries an entry that a manifest has moved with the next batch"]
+status = "diverged"
+hash = "6768da7c718c1f2ad11ae15531b26e0506e3bd35d6e8df87f648119cf9743699"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::retries an importer of a package that a nearer package shadows with the next batch"]
+status = "diverged"
+hash = "006ed574e9e28b27917a2d5b504b7459d2ae7cc5a4f770730efdb67844c2da62"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::retries the changes of a failed batch with a batch queued behind it"]
+status = "diverged"
+hash = "5a3746475444f4cd6c8dcc05f2dae2e1ec1c4d6b978e3914e5904790745a33a6"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::retries the changes of a failed batch with the next one"]
+status = "diverged"
+hash = "1be7b74975bdd187016c74a67a40fa5a78d81bdbc91041fbf40ea1ba955c0506"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
+
+[items."hmr/watch.spec.ts::Hmr with fs::watches `files` in `base`"]
+status = "diverged"
+hash = "b9118ee060aec5258b7cd24e94e3f7701f32880f458c55b82abbb90715d2d48e"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 

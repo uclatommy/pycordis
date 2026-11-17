@@ -6,7 +6,7 @@ and meta tables. Start with `Context(scheduler)` to create a root context.
 """
 
 from collections import ChainMap
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -37,6 +37,33 @@ def _run_update_hooks(fiber: Fiber, config: object, next_: Callable[[], Any]) ->
         return hooks.pop(0)(fiber, config, advance)
 
     return advance()
+
+
+class InterceptLink(Mapping[str, object]):
+    """A layer that reads the intercept configurations of another context.
+
+    `Context.intercept_through` makes a context whose intercept layers are those of
+    `target`. The link reads `target` on each lookup, so assigning a new `target`
+    changes what that context and every context that derives from it see. A host that
+    moves a component from one parent context to another, and keeps the component
+    running, assigns the new parent.
+
+    Attributes:
+        target: The context whose intercept layers the link gives. Assign it on the
+            owner thread.
+    """
+
+    def __init__(self, target: "Context") -> None:
+        self.target = target
+
+    def __getitem__(self, name: str) -> object:
+        return self.target.intercepts[name]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.target.intercepts)
+
+    def __len__(self) -> int:
+        return len(self.target.intercepts)
 
 
 class Context:
@@ -190,11 +217,16 @@ class Context:
     def intercept_layers(self, name: str) -> list[object]:
         """Return the intercept configurations of `name`, from the outermost context in.
 
-        Each context that called `intercept` for `name` adds one entry.
+        Each context that called `intercept` for `name` adds one entry. A link layer
+        (see `intercept_through`) adds the entries of its target.
         """
-        return [
-            layer[name] for layer in reversed(self._intercepts.maps) if name in layer
-        ]
+        values: list[object] = []
+        for layer in reversed(self._intercepts.maps):
+            if isinstance(layer, InterceptLink):
+                values.extend(layer.target.intercept_layers(name))
+            elif name in layer:
+                values.append(layer[name])
+        return values
 
     def bind_fiber(self, fiber: Fiber) -> Self:
         """Return a child context whose fiber is `fiber`.
@@ -245,6 +277,59 @@ class Context:
         return self._derive(
             self._isolates, self._intercepts.new_child({name: config}), self._meta
         )
+
+    @owner_thread("scheduler")
+    def intercept_layer(self, layer: Mapping[str, object]) -> Self:
+        """Return a child context that passes the configurations in `layer` to services.
+
+        `layer` is a mapping from a service name to its configuration, and it is not
+        copied. The child context reads it each time a service resolves its intercept
+        configuration, so a change to `layer` is visible to every component that runs
+        in this context or in a context that derives from it. Use `intercept` when the
+        configuration of one service does not change.
+
+        Args:
+            layer: The configurations by service name. The caller owns the mapping and
+                changes it on the owner thread.
+
+        Examples:
+            ```python
+            >>> layer = {"http": {"proxy": "a"}}
+            >>> inner = ctx.intercept_layer(layer)
+            >>> layer["http"] = {"proxy": "b"}
+            >>> inner.intercept_layers("http")
+            [{'proxy': 'b'}]
+            ```
+        """
+        return self._derive(
+            self._isolates,
+            self._intercepts.new_child(layer),
+            self._meta,  # type: ignore[arg-type]
+        )
+
+    @owner_thread("scheduler")
+    def intercept_through(self, link: InterceptLink) -> Self:
+        """Return a child context whose intercept layers are those of `link.target`.
+
+        The child has the isolation and `meta` of this context, but not its intercept
+        layers: it reads the layers of `link.target` on each lookup. Assign
+        `link.target` to give the child, and every context that derives from it, the
+        layers of another context.
+
+        Args:
+            link: The source of the intercept layers. The caller owns it.
+
+        Examples:
+            ```python
+            >>> a, b = ctx.intercept("http", "a"), ctx.intercept("http", "b")
+            >>> link = InterceptLink(a)
+            >>> inner = ctx.intercept_through(link)
+            >>> link.target = b
+            >>> inner.intercept_layers("http")
+            ['b']
+            ```
+        """
+        return self._derive(self._isolates, ChainMap(link), self._meta)  # type: ignore[arg-type]
 
     @owner_thread("scheduler")
     def effect(
