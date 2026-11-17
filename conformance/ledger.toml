@@ -2173,46 +2173,64 @@ hash = "13566b9774f236be37e91bdbfc9177c8effae848ba2cc05ee16315d08c7a2c02"
 
 
 [items."loader/commit.spec.ts::EntryGroup.remove: file-driven moves::keeps an entry that another group adopted"]
-status = "pending"
+status = "ported"
+hash = "68f212fae63e0181f08c985990c67e668d43196d00415922df13baaf4a5f194a"
 
 [items."loader/commit.spec.ts::EntryTree disposal::does not persist child disposal while the tree loses its loader"]
-status = "pending"
+status = "ported"
+hash = "b0078593593c4ecb408a6f8ae0328a2d8bad16b7ec34066ab7e74c153ce723c5"
 
 [items."loader/commit.spec.ts::EntryTree.commit: change reports::create reports a created entry with its id assigned"]
-status = "pending"
+status = "ported"
+hash = "59aefd3a5019e8098757b2e38a1410f270f3cfc33d9ca6cfa2516e5b2c07584f"
 
 [items."loader/commit.spec.ts::EntryTree.commit: change reports::does not mistake a child fiber disposing itself for the entry (#19)"]
-status = "pending"
+status = "ported"
+hash = "9350ed71b80b2776fb8716049aa736723736298ffcb8966e14905584c9feda61"
 
 [items."loader/commit.spec.ts::EntryTree.commit: change reports::does not report anything for reads"]
-status = "pending"
+status = "ported"
+hash = "9096ac95a71971409e643c98c16ab5e20212ae251c23568a7d814014b2fd047a"
 
 [items."loader/commit.spec.ts::EntryTree.commit: change reports::fiber.update from inside the component reports a config change"]
-status = "pending"
+status = "ported"
+hash = "189741458d4d95d8f9508dc2254c089a6ee4cd24e24563adc1ed80f2d7f6f777"
 
 [items."loader/commit.spec.ts::EntryTree.commit: change reports::move reports the target group"]
-status = "pending"
+status = "ported"
+hash = "b1c75d39859472d1396dedf040781b1f432666af7865c0b50754f30fb0777062"
 
 [items."loader/commit.spec.ts::EntryTree.commit: change reports::remove reports the removed entry"]
-status = "pending"
+status = "ported"
+hash = "f0fc06d080604affc5848a58a2b00291fd05375e69a39b9428e87484204421ed"
 
 [items."loader/commit.spec.ts::EntryTree.commit: change reports::update in place does not report a move"]
-status = "pending"
+status = "ported"
+hash = "10f320b1e8fbda8c0ec08698f63f4f6bf69246016ad65f86280ee03955d2be0e"
 
 [items."loader/commit.spec.ts::EntryTree.commit: change reports::update reports the new options together with the previous ones"]
-status = "pending"
+status = "ported"
+hash = "342d12e3e95a209fc3181c609d79172d6f5356e1bf9dc692a7d11fa2c098e6c2"
 
 [items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::rejects a move onto an id that the target tree already uses"]
-status = "pending"
+status = "ported"
+hash = "f42bd030b2f9617d237027b227f2deccad86a54ce48dcb6c12d66a4e2b406a5a"
 
 [items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::reports a removal to the source tree and a creation to the target tree"]
-status = "pending"
+status = "ported"
+hash = "7f58e52c25d27ef7de8fd0f6c094c83763b7748d2e7aaf93f004dd8b83dcaf2e"
 
 [items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::transfers the entry to the store of the target tree"]
-status = "pending"
+status = "diverged"
+hash = "e8e2d1d12d2a3bb3ebe4ff49686591d342262661c2161a2d93c93e8608d23a07"
+divergence = "loader-cross-tree-rebuild"
+note = "The entry keeps its identity, but the component loads again under the target tree's fiber: the test asserts the second call."
 
 [items."loader/commit.spec.ts::EntryTree.update: cross-tree moves::transfers the members of a moved group"]
-status = "pending"
+status = "diverged"
+hash = "bbaa7778280a79c5833942e5db59f78f11901acd4d7ab9499ac62db9b0203c75"
+divergence = "loader-cross-tree-rebuild"
+note = "A moved group loads its members again, so the members are new entries."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation boundaries::cannot read a service outside every inject in config"]
 status = "pending"
@@ -2335,61 +2353,83 @@ status = "pending"
 status = "pending"
 
 [items."loader/group.spec.ts::Group: awaited reconciliation::config update settles children"]
-status = "pending"
+status = "ported"
+hash = "3453b7afbbf30c1a1e9aef3252e30df26efd361c9ea93a52b9d6fd06adf93f91"
 
 [items."loader/group.spec.ts::Group: awaited reconciliation::initialize"]
-status = "pending"
+status = "ported"
+hash = "65e5a85befac4c5f964f26730e1e757e1ab0ab227bb25615651468176ba2f965"
 
 [items."loader/group.spec.ts::Group: basic support::disable inner"]
-status = "pending"
+status = "ported"
+hash = "526160fc14b30c57e567498d4955ddcae28a965afe15bcdb754face9e49ac4c5"
 
 [items."loader/group.spec.ts::Group: basic support::disable outer"]
-status = "pending"
+status = "ported"
+hash = "2ba04859cbafbe9aba474a1bcf923c93fa45d121f2cdd71d64ed83dc1d94def3"
 
 [items."loader/group.spec.ts::Group: basic support::enable inner"]
-status = "pending"
+status = "ported"
+hash = "eb8371c00996a2c0be70b93f97cab7dd47c05e864dd63eec64742b99088f9dc5"
 
 [items."loader/group.spec.ts::Group: basic support::enable outer"]
-status = "pending"
+status = "ported"
+hash = "dd2d9b971f75a3e87d55db0d32381c35137cb747ae3642f4983b5e0586b07ebd"
 
 [items."loader/group.spec.ts::Group: basic support::initialize"]
-status = "pending"
+status = "ported"
+hash = "d7941348fba206b56ac1bd1d525b28f13c3767ab83603f0a193877deff0d5bea"
 
 [items."loader/group.spec.ts::Group: intercept::initialize"]
 status = "pending"
 
 [items."loader/group.spec.ts::Group: transfer::disabled -> disabled"]
-status = "pending"
+status = "ported"
+hash = "7b91e1ce470f62e7017d0db2c49d9491bfa7a47931c6b4f0fd721e59b1aa2d07"
 
 [items."loader/group.spec.ts::Group: transfer::disabled -> enabled"]
-status = "pending"
+status = "ported"
+hash = "c64b8c282e5da2bd54dd5f2d35e8e5ca72cc46d4106e5d890b1b6a80434f5784"
 
 [items."loader/group.spec.ts::Group: transfer::enabled -> disabled"]
-status = "pending"
+status = "ported"
+hash = "23875d827f561cd0ed361ea31ec8c6726de86192698e4f7d6d24247dfe56eded"
 
 [items."loader/group.spec.ts::Group: transfer::enabled -> enabled"]
-status = "pending"
+status = "ported"
+hash = "64858c2060b4bb2023ef4fe446da1f2615a810218d1ec771df8fba654146eb53"
 
 [items."loader/group.spec.ts::Group: transfer::initialize"]
-status = "pending"
+status = "ported"
+hash = "cd31b0cf813bd6d1a7b4116f2b87b68a37acc89b260152dc08683f98379075bf"
 
 [items."loader/import.spec.ts::Loader: component import::keep the hints of Node after the first line"]
-status = "pending"
+status = "diverged"
+hash = "c6a0326e592d60e6421d399dfbba735f0b27b5c37787960fdec56ca15b0b30b4"
+divergence = "loader-locations"
+note = "The case checks the message text of Node and outer stack frames."
 
 [items."loader/import.spec.ts::Loader: component import::leave a module imported by another one to Node"]
-status = "pending"
+status = "adapted"
+hash = "72836f4ee635e65d0260509c9f9de89bc4e117871665d12791989fcbe8e97f37"
+divergence = "loader-import"
+note = "A module that the component imports keeps its own import error."
 
 [items."loader/index.spec.ts::Loader: basic support::component self-dispose"]
-status = "pending"
+status = "ported"
+hash = "66931d4238d86f8109584e2e0daa3edb06fc8b31c4dfb1f8413d19f973aa73d0"
 
 [items."loader/index.spec.ts::Loader: basic support::component self-update"]
-status = "pending"
+status = "ported"
+hash = "4ecf20a4fd547da9cd59b01b3cfcb0563704e35cb9935ac3046d7576337e7339"
 
 [items."loader/index.spec.ts::Loader: basic support::loader initiate"]
-status = "pending"
+status = "ported"
+hash = "a752a86a3b558ab22c18d52eac9a15dfa040a46b997e604877c286887800c2a3"
 
 [items."loader/index.spec.ts::Loader: basic support::loader update"]
-status = "pending"
+status = "ported"
+hash = "4a35e59da966228b72591d1d95998f709e2c0335780ac8918ff704faa9b81a65"
 
 [items."loader/index.spec.ts::Loader: config interpolation::evaluate after dependencies are ready"]
 status = "pending"
@@ -2407,19 +2447,24 @@ status = "pending"
 status = "pending"
 
 [items."loader/index.spec.ts::Loader: entry failure::on an id containing the separator"]
-status = "pending"
+status = "ported"
+hash = "5d8410cac0b56da62ca2b9f1aec817fcb8a57e27b321932452cbedd47b80dbf7"
 
 [items."loader/index.spec.ts::Loader: entry failure::on config update"]
-status = "pending"
+status = "ported"
+hash = "489c68ddfb3c720bdad3e2186f1fc37662374169fecf9460abc29a28dcbef46f"
 
 [items."loader/index.spec.ts::Loader: entry failure::on load"]
-status = "pending"
+status = "ported"
+hash = "48dce97b8817506dce09d8ee1f6b1eaaf32f6fb21c441c4e00741ff32bcc9955"
 
 [items."loader/index.spec.ts::Loader: failed entry recovery::fail with dependencies available"]
-status = "pending"
+status = "ported"
+hash = "0da2b220e7f5b6b0779b568d9d27c3d8d12bf402beb1dfd9b7d339052f1bd6d9"
 
 [items."loader/index.spec.ts::Loader: failed entry recovery::recover through update"]
-status = "pending"
+status = "ported"
+hash = "f52c23b591123ff3cd2e4f006f7234ac03b3e858ecee2410e7dec09e82c96e68"
 
 [items."loader/index.spec.ts::Loader: intercept config::pending"]
 status = "pending"
@@ -2428,7 +2473,8 @@ status = "pending"
 status = "pending"
 
 [items."loader/index.spec.ts::Loader: nested component config::skip nested components"]
-status = "pending"
+status = "ported"
+hash = "a175c6484bfc098f6344ae3e60ebb1facbc693be5fe22ffc35914b0fb03fa4ae"
 
 [items."loader/index.spec.ts::Loader: parent teardown::keep children enabled when the parent loses a dependency"]
 status = "pending"
@@ -2599,64 +2645,100 @@ status = "pending"
 status = "pending"
 
 [items."loader/resolve.spec.ts::EntryTree.import without internals::accepts a drive-letter path"]
-status = "pending"
+status = "not-applicable"
+hash = "a7a362553eef795d3ff344a7938cd2cc6344eeed36f45a992b9ef9f7adb19477"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::EntryTree.import without internals::routes bare specifiers to the project helper"]
-status = "pending"
+status = "not-applicable"
+hash = "04cee3a556f4042dbf0fd176599f13ff1338a6c1fb7c9217ad8cab5e405dcd04"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::EntryTree.import without internals::still resolves relative specifiers against the base url"]
-status = "pending"
+status = "not-applicable"
+hash = "acd08dd16d2383df1f72090a4db5721d4fc494f6bb7c663717036ac571dcc845"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::bareImporter::anchors the helper at the package.json, not at the base url"]
-status = "pending"
+status = "not-applicable"
+hash = "b0ba4eb62e6916fd34ecf7624995b286b0373884edb667629cb10b08aee6868a"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::bareImporter::declines when there is no project to anchor to"]
-status = "pending"
+status = "not-applicable"
+hash = "557d31daa674aa9efb46a16359d52ae179e457c717321d371186ec9c0927dc87"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::bareImporter::keeps subpath imports and self references working"]
-status = "pending"
+status = "not-applicable"
+hash = "d004cdb7215b2051091c0536fda06ed7a7447c0957f6d1526b0ff9b438ee6823"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::bareImporter::makes the helper directory ignore itself"]
-status = "pending"
+status = "not-applicable"
+hash = "1a6f9cc9272d91637164e24e262839f547d55174cf6c6f2bd33436ec51b92166"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::bareImporter::resolves bare specifiers against the project, not the loader"]
-status = "pending"
+status = "not-applicable"
+hash = "638aec2ea48afc8e856ab4e673e3a41e307c75076ca0951e24307aafe481cfad"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::bareImporter::reuses one helper per scope"]
-status = "pending"
+status = "not-applicable"
+hash = "5fb7707665cb149066befe52803655d3fe1a37618c2a8deeeffe6ec5ac45e2e9"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::helper preparation::cleans up after EBUSY and recovers on a later call"]
-status = "pending"
+status = "not-applicable"
+hash = "9e27e60d322f7c8e2e6e7b5ea7ee198a05cf4e1c68f4033d4237cd9041a015e7"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::helper preparation::cleans up after ENOSPC and recovers on a later call"]
-status = "pending"
+status = "not-applicable"
+hash = "9e27e60d322f7c8e2e6e7b5ea7ee198a05cf4e1c68f4033d4237cd9041a015e7"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::helper preparation::retries a stale helper after EACCES"]
-status = "pending"
+status = "not-applicable"
+hash = "f702f225193ee83fbe7483dca3d69a2b0c90e7b4a399d7d0e6df0d7a7f80ef6e"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::helper preparation::retries a stale helper after EBUSY"]
-status = "pending"
+status = "not-applicable"
+hash = "f702f225193ee83fbe7483dca3d69a2b0c90e7b4a399d7d0e6df0d7a7f80ef6e"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::helper preparation::retries a stale helper after EPERM"]
-status = "pending"
+status = "not-applicable"
+hash = "f702f225193ee83fbe7483dca3d69a2b0c90e7b4a399d7d0e6df0d7a7f80ef6e"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/resolve.spec.ts::helper preparation::reuses an identical helper without attempting rename"]
-status = "pending"
+status = "not-applicable"
+hash = "157539e5f88805e292e134e0a88e91565aa346020024b7162de2b909a99101f7"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/src/config/entry.ts:<rest>"]
 status = "pending"
 
 [items."loader/src/config/entry.ts:Entry"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry"
+hash = "89dc9b564f9b4e29330a2fc85f35aba2edebd9a8c4a52ad534fdf849589e1a83"
 
 [items."loader/src/config/entry.ts:Entry._applyIntercept"]
 status = "pending"
 
 [items."loader/src/config/entry.ts:Entry._blocked"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._blocked"
+hash = "60e7149f4ac3abe6c405a6f979bb0b27dfe74011e127dd8e0912274486c9febe"
 
 [items."loader/src/config/entry.ts:Entry._dispose"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._dispose"
+hash = "89aff48b1b14ca8bf25ff63b4f008b756d4069f7cc6061ffe06598e6bfefca52"
 
 [items."loader/src/config/entry.ts:Entry._evaluationContext"]
 status = "pending"
@@ -2665,130 +2747,207 @@ status = "pending"
 status = "pending"
 
 [items."loader/src/config/entry.ts:Entry._import"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._import"
+hash = "406d066bf0558c1d1352cae857b3335a213d8cba04c59d69cb94aa7e1ff18a62"
 
 [items."loader/src/config/entry.ts:Entry._init"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._init"
+hash = "1184582f12022870eb19f1211a310eccc95f297d258d6a6b9385ba983b358f8f"
 
 [items."loader/src/config/entry.ts:Entry._parentDisabled"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._parent_disabled"
+hash = "80a26fecd8f18e072fd9be52d26e03bdf0247ff0de73c120749c82ea00bfe7ef"
 
 [items."loader/src/config/entry.ts:Entry._patchContext"]
 status = "pending"
 
 [items."loader/src/config/entry.ts:Entry._reconcile"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._reconcile"
+hash = "80086f5e1c7bf1910fbe2b1d99d659bebda5d25715dd95dba310a5afefbb4e7b"
 
 [items."loader/src/config/entry.ts:Entry._registered"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._registered"
+hash = "4ee4269ae94d145039ad9146b485c4b2ebb968cbdca7562774fcc078158009ad"
 
 [items."loader/src/config/entry.ts:Entry._reportImport"]
-status = "pending"
+status = "diverged"
+hash = "a4862d990537d8d7ccbe75db52ae1101681ac5dfdfaf337d6052f058d166c1f5"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
 
 [items."loader/src/config/entry.ts:Entry._resolveDisabled"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._resolve_disabled"
+hash = "db7f0d8ff9ac385e33bacc73ccfd240cefce5cc305e47ea8723cd099fad209df"
 
 [items."loader/src/config/entry.ts:Entry._resolveInject"]
 status = "pending"
 
 [items."loader/src/config/entry.ts:Entry._start"]
-status = "pending"
+status = "adapted"
+target = "pycordis.loader.Entry._start"
+hash = "af0b17ce7596d43759932ee95b0072775aa6707ab5a936ef031ef98b8c4b95a4"
+divergence = "loader-tree-owner"
 
 [items."loader/src/config/entry.ts:Entry.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry.__init__"
+hash = "b95fd8b67ad49b7d6731b93cb6be85b23b005672cb016d16aa9b6b26c2c81fe4"
 
 [items."loader/src/config/entry.ts:Entry.context"]
-status = "pending"
+status = "not-applicable"
+hash = "f27cfd16c65658e751d9cee4122b2d0bd40cffe15169fdc7a9974baf9c0eacec"
+note = "An alias of `ctx` for typing. The entry context is not public."
 
 [items."loader/src/config/entry.ts:Entry.disabled"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry.disabled"
+hash = "706fd7a11af84d5b201ae4203d38dba8be483dc8d06715ed8aa738b652bcce45"
 
 [items."loader/src/config/entry.ts:Entry.dispose"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry.dispose"
+hash = "98373290081e998b6ecae2bafe0b0dd22a8dd40af91334984d0477340fddcd6c"
 
 [items."loader/src/config/entry.ts:Entry.evaluate"]
 status = "pending"
 
 [items."loader/src/config/entry.ts:Entry.getLocation"]
-status = "pending"
+status = "diverged"
+hash = "078a8c66bd8be41675dce03c780070bf0f6d928bd5e099525a8481882a0afbb8"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
 
 [items."loader/src/config/entry.ts:Entry.id"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry.id"
+hash = "38d4d5dcf82c18f2b0480cf690fbe94441daecb229f531a01bd1d975d1003e5e"
 
 [items."loader/src/config/entry.ts:Entry.init"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry.init"
+hash = "8a8df3ece52cd32403f59d98f9a30ef679d70fbaa5218de0ef25d97a481623dd"
 
 [items."loader/src/config/entry.ts:Entry.isOuter"]
 status = "pending"
 
 [items."loader/src/config/entry.ts:Entry.locateExpr"]
-status = "pending"
+status = "diverged"
+hash = "3f432755da34e18060490177be726eab26d31831fcb2c2bb3b61ab0a5acd7c05"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
 
 [items."loader/src/config/entry.ts:Entry.merge"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader._entry.merge_options"
+hash = "bc2f6acaea29d58dd228d14df615517b7a8abef87a9888eb5ac64efbc3a99aa4"
 
 [items."loader/src/config/entry.ts:Entry.refresh"]
 status = "pending"
 
 [items."loader/src/config/entry.ts:Entry.traceValidation"]
-status = "pending"
+status = "diverged"
+hash = "8990a6c2897ea013c62b53c037ceab30b2e14484516a4e3f6017acc26353b63a"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
 
 [items."loader/src/config/entry.ts:Entry.update"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry.update"
+hash = "fc15b9d9b8cfcee1376f3cf088e375866bc6977465bce7166518b0f51f483e0f"
 
 [items."loader/src/config/entry.ts:EntryOptions"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryOptions"
+hash = "3dab699e4b67c3df2c8f8ab7243f7c8239a4b9902f1e543015c3bfce9397ee20"
 
 [items."loader/src/config/entry.ts:outer"]
 status = "pending"
 
 [items."loader/src/config/entry.ts:sortKeys"]
-status = "pending"
+status = "not-applicable"
+hash = "512115af3d74079e18cdc64f2856adb3c361f2a8b305db5785e7927820128650"
+note = "Key order serves the config file writer. The loader keeps the key order of the host."
 
 [items."loader/src/config/entry.ts:takeEntries"]
-status = "pending"
+status = "not-applicable"
+hash = "dc6b9831fe342a0041036135e1f6708a542402e0f3584bc0afb4653348a33c8f"
+note = "A helper of `sortKeys`."
 
 [items."loader/src/config/group.ts:<rest>"]
 status = "pending"
 
 [items."loader/src/config/group.ts:EntryGroup"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryGroup"
+hash = "7b2f1e7f634b63c2d028798741ae016e1b91d29d0aa15149b910ab31ee76bee2"
 
 [items."loader/src/config/group.ts:EntryGroup._reject"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryGroup._reject"
+hash = "800b084371672b5807e4c2d607440a5099229c8f685edf3827df9830c6ca69a8"
 
 [items."loader/src/config/group.ts:EntryGroup.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryGroup.__init__"
+hash = "12608bb9fc445d9680f8a34aa1e032c97d8cc23c8f94e792acefacbd5df53510"
 
 [items."loader/src/config/group.ts:EntryGroup.context"]
-status = "pending"
+status = "not-applicable"
+hash = "f27cfd16c65658e751d9cee4122b2d0bd40cffe15169fdc7a9974baf9c0eacec"
+note = "An alias of `ctx` for typing."
 
 [items."loader/src/config/group.ts:EntryGroup.create"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryGroup.create"
+hash = "b39e2f9b8659a69e015f3d5e0bdaf23fa16756561b09da80edd67c17b951277a"
 
 [items."loader/src/config/group.ts:EntryGroup.getOuterStack"]
-status = "pending"
+status = "diverged"
+hash = "0375bb6e6530a659460cc673c06ff4c740b7a3bb3d39136cbe6027e14bf46814"
+divergence = "loader-locations"
+note = "The method builds outer stack frames from source locations."
 
 [items."loader/src/config/group.ts:EntryGroup.remove"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryGroup.remove"
+hash = "59cc8091c6cdf564fc88bd88227fdbcd4511a3fab21182cd7a21b6178026a9c3"
 
 [items."loader/src/config/group.ts:EntryGroup.stop"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryGroup.stop"
+hash = "a5e7a4dcda3ea1dc86712d0042098a2d35b57c9d053d5a7fc9cff59f9304e3c0"
 
 [items."loader/src/config/group.ts:EntryGroup.unlink"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryGroup.unlink"
+hash = "a786aa783faf760ba2a056b181e4294a13f15575e6e798e0bf07c691899488a2"
 
 [items."loader/src/config/group.ts:EntryGroup.update"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryGroup.update"
+hash = "acd0f292b8791e974025dc0785ac9fcc43d092c727ba4a3db84d136bf5beff82"
 
 [items."loader/src/config/group.ts:Group"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Group"
+hash = "e20b03c7e099738ec28a77d9d8c33d418a57cd1c7b29fdb8619ab5cc0af1ebed"
 
 [items."loader/src/config/group.ts:Group.[Service.init]"]
-status = "pending"
+status = "adapted"
+target = "pycordis.loader.Group.cordis_init"
+hash = "f862ddd2fec80f285ba3e32b88d7bdb5b29a73b523368d5f874c0916c32f7409"
+divergence = "hook-names"
 
 [items."loader/src/config/group.ts:Group.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Group.__init__"
+hash = "905c1880cfd126ca450cda6ffa5618c2df7e3bb4a9a0c6cc23e900bdaaf30f49"
 
 [items."loader/src/config/isolate.ts:<rest>"]
 status = "pending"
@@ -2821,226 +2980,395 @@ status = "pending"
 status = "pending"
 
 [items."loader/src/config/tree.ts:EntryChange"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryChange"
+hash = "e547e3babc6fc2ce2cc2a73caac9de53c1cecf336767dd9e8a650f4bf19eb59e"
 
 [items."loader/src/config/tree.ts:EntryTree"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree"
+hash = "17cafc606e55041df2f7d056370b66e61738d8cd8d1d86afe03237d62f0f047f"
 
 [items."loader/src/config/tree.ts:EntryTree.await"]
-status = "pending"
+status = "adapted"
+target = "pycordis.loader.Loader.wait"
+hash = "098c9e028d943ee49f860f24e9c4f6a12e80bd2abcbfbb9c0e5629c7fdbce748"
+divergence = "fiber-wait"
 
 [items."loader/src/config/tree.ts:EntryTree.commit"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree.commit"
+hash = "9277045a24be1637162d14a53a9ef4f467a2ded5f32415c969f250dbb13e07fe"
 
 [items."loader/src/config/tree.ts:EntryTree.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree.__init__"
+hash = "1da45b0bda63646c433a0de975ba48e0da4c9d91d7a27321e045acba7ff42368"
 
 [items."loader/src/config/tree.ts:EntryTree.context"]
-status = "pending"
+status = "not-applicable"
+hash = "f27cfd16c65658e751d9cee4122b2d0bd40cffe15169fdc7a9974baf9c0eacec"
+note = "An alias of `ctx` for typing."
 
 [items."loader/src/config/tree.ts:EntryTree.create"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree.create"
+hash = "b2618afc5fc653de6684c8fc62e0f50b315d0178fde081d20d7aa05fb892ca82"
 
 [items."loader/src/config/tree.ts:EntryTree.ensureId"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree.ensure_id"
+hash = "322e97222f0a695e9a964135f908a40d0bb9c02c2112cc4ba18d0048eefcf2df"
 
 [items."loader/src/config/tree.ts:EntryTree.entries"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree.entries"
+hash = "3d4aeb5f5f66d90d1294d62d8fb3515a32254546cdfd6c92f0a6f39559cafd8b"
 
 [items."loader/src/config/tree.ts:EntryTree.getLocation"]
-status = "pending"
+status = "diverged"
+hash = "88b1275968754b14e4afc6fe327691d5ffdaf6bcd36a230ee431071a79fabe84"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
 
 [items."loader/src/config/tree.ts:EntryTree.getTasks"]
-status = "pending"
+status = "adapted"
+target = "pycordis.loader.Loader.wait"
+hash = "4b4fd56a42c106def437ff326a0d7607d64e0ecb3583527ef199aebb76313860"
+divergence = "fiber-wait"
 
 [items."loader/src/config/tree.ts:EntryTree.import"]
-status = "pending"
+status = "adapted"
+target = "pycordis.loader._tree.import_component"
+hash = "473be46ad94a2b91c63b50b0e8714a4f79ddeb8464f02ac35ce5ac179a6034f6"
+divergence = "loader-import"
 
 [items."loader/src/config/tree.ts:EntryTree.locateExpr"]
-status = "pending"
+status = "diverged"
+hash = "1e5d9b9efa14ea8e5803d1222d1e782e9dc05b8ba048ac64d13b8bd9c3f2bd6c"
+divergence = "loader-locations"
+note = "The method reports source locations of the config file."
 
 [items."loader/src/config/tree.ts:EntryTree.remove"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree.remove"
+hash = "9f4bd63577a3f9087750ec275d31e5452d20c8fdc7339a47581b1bb18ed84911"
 
 [items."loader/src/config/tree.ts:EntryTree.resolve"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree.resolve"
+hash = "630f2a472522cff3dd5921827b3ece3ef1de1cbd0f8ca3158eed9299601a0ab5"
 
 [items."loader/src/config/tree.ts:EntryTree.resolveGroup"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree.resolve_group"
+hash = "b8044241d79511941f5c8fb9ee7d927e45bc636c0b17260786642ceb90f4f101"
 
 [items."loader/src/config/tree.ts:EntryTree.update"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryTree.update"
+hash = "80e41ccfb7204c8bd35e364852ed4130935c41615ca028dfb89119a7391898dd"
 
 [items."loader/src/config/tree.ts:ModuleNotFoundError"]
-status = "pending"
+status = "adapted"
+target = "builtins.ModuleNotFoundError"
+hash = "f50f5f8aa3231160cdde3a1e4373ae02b9929ba3ca6aa91b20f1f6ce06a1a8e4"
+divergence = "loader-import"
 
 [items."loader/src/config/tree.ts:ModuleNotFoundError.constructor"]
-status = "pending"
+status = "adapted"
+target = "builtins.ModuleNotFoundError"
+hash = "947e8d9c63285e21f40fa6a5ebf41cf0872d3a1a3f5b74ea3b1c7244e82c6912"
+divergence = "loader-import"
 
 [items."loader/src/config/tree.ts:driveLetter"]
-status = "pending"
+status = "not-applicable"
+hash = "800e1149b15a4b33ddbac21f03f35a914be93454259dca250c5ddbe720f564f1"
+note = "It converts a Node module path or message. A Python name needs neither."
 
 [items."loader/src/config/tree.ts:members"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader._tree._members"
+hash = "ac5167b04f99dcdada0f1d3f8cb1ef04b658ebe4e621c7c55deb4cc85e3c253d"
 
 [items."loader/src/config/tree.ts:parseNotFound"]
-status = "pending"
+status = "not-applicable"
+hash = "57c996157cb73949617febe437043ba330de9dc224f8b821c81c4f4b87232679"
+note = "It converts a Node module path or message. A Python name needs neither."
 
 [items."loader/src/config/tree.ts:toPath"]
-status = "pending"
+status = "not-applicable"
+hash = "120b125329ed7616ec0e31c61a5a4c3e0d4b4d170ac51a2608d20e715ed186eb"
+note = "It converts a Node module path or message. A Python name needs neither."
 
 [items."loader/src/config/utils.ts:<rest>"]
 status = "pending"
 
 [items."loader/src/config/utils.ts:EntryValidationError"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryValidationError"
+hash = "8447a3c9aea6d14ae12209dff794858486980f34298634eb823802a899bf50e3"
 
 [items."loader/src/config/utils.ts:EntryValidationError.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.EntryValidationError.__init__"
+hash = "cd644803c9310254cbba2fe58dc582fb17933d3551117a054f3a13b0fcd6b6a0"
 
 [items."loader/src/config/utils.ts:ExprTrace"]
-status = "pending"
+status = "diverged"
+hash = "190b395ac95fb188a18ed40de48f9773f6aed4783d2f247932c6d4e5d6f0bbe8"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:Issue"]
-status = "pending"
+status = "ported"
+target = "pycordis.errors.Issue"
+hash = "15110bdfe1e595f4f434cbc8f6bc131291a7417fd20a54fce0b99e8a39ff5ef2"
 
 [items."loader/src/config/utils.ts:JsExpr"]
-status = "pending"
+status = "diverged"
+hash = "9e8eaf7cb0091248107f8cc86ca36e2bf45e007b46eca5f56faf3c8b57501adb"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:Locate"]
-status = "pending"
+status = "diverged"
+hash = "aabae7542354cff5ff04ad2b558fb8f7d9fefad4bd67a2981253857adec3f480"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
 
 [items."loader/src/config/utils.ts:SourceLocation"]
-status = "pending"
+status = "diverged"
+hash = "d3403700a2ea44d345ab16ecefc9ab86b2aa51d8fd382623ceace1688fe832a9"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
 
 [items."loader/src/config/utils.ts:WRAPPER"]
-status = "pending"
+status = "diverged"
+hash = "adec67cca1200fc366dff4cea47e4f0464d293098a6d706ea6e4eb48c5454d84"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:counter"]
-status = "pending"
+status = "diverged"
+hash = "97a3464990d24f4d743810f715b2bc255e26ab1011e5508a43f9ab70fca50c4b"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:evaluate"]
-status = "pending"
+status = "diverged"
+hash = "0c749e5cb967000fba7ef556c45bfdbcc34b18835a998785b2fffa8762e20248"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:formatIssue"]
-status = "pending"
+status = "diverged"
+hash = "0dd4c908696b48b12e702a708f8b5afbdf78ba23e22e6b9fe7edb14336f10a42"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
 
 [items."loader/src/config/utils.ts:formatIssues"]
-status = "pending"
+status = "diverged"
+hash = "e54c474b2db426ab09109bffa4d49fc3043f3bf60883be15206b1b407d2b5df2"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
 
 [items."loader/src/config/utils.ts:formatLocation"]
-status = "pending"
+status = "diverged"
+hash = "ec8f283b2f6e30e0de8738d5c19866f825a8a0caa16fb847a069b7e1c9e0480a"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
 
 [items."loader/src/config/utils.ts:framePattern"]
-status = "pending"
+status = "diverged"
+hash = "865f0dc546f2003a8670f87cb0756a954095243404eeba0d3ab06db9670dc77b"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:interpolate"]
-status = "pending"
+status = "diverged"
+hash = "19ca055eca20178f4b4deb06714a2fd454eabbe9bc28fb69462df6afce146762"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:isJsExpr"]
-status = "pending"
+status = "diverged"
+hash = "a145ea01a4122e6af22eb054c9e87a4d1fd7b2fcc0e498ae50c6a80d011fb7b5"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:isPlainObject"]
-status = "pending"
+status = "not-applicable"
+hash = "abc0111a6d8fa7a94567e982b4b00d94956e6ce26ac925825fa46d2a41ba50de"
+note = "It tells an object from an expression node. Python has `Mapping`."
 
 [items."loader/src/config/utils.ts:parseFrame"]
-status = "pending"
+status = "diverged"
+hash = "0b895b3886b1b5b197d89cd3eac55e20ea90be850a08aab6124d92252bf7a349"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:relocate"]
-status = "pending"
+status = "diverged"
+hash = "1d47929502600a977408ab09f24f90c350925aa7a9d15ba3a062cedd9188920c"
+divergence = "loader-locations"
+note = "It formats source locations of the config file."
 
 [items."loader/src/config/utils.ts:swap"]
 status = "pending"
 
 [items."loader/src/config/utils.ts:toOffset"]
-status = "pending"
+status = "diverged"
+hash = "49e0968c89756408970f774f81803d05d34dc43d2cfd39c3098bf84f71928fc1"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:traceEvaluation"]
-status = "pending"
+status = "diverged"
+hash = "d6fda576328144653232cce76c58be32ff049d0c7557e8176437cea4d2f0745a"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/config/utils.ts:validateOptions"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader._entry.validate_options"
+hash = "f094b8ee8e9e1ec7ff1ee3d15866e0015675a302519a49a3333d5708813672fb"
 
 [items."loader/src/config/utils.ts:wrapper"]
-status = "pending"
+status = "diverged"
+hash = "aee7059c0a87a64efbe580de505f4bef8d25c091768c7aa52ecbc2234135cfe1"
+divergence = "loader-expressions"
+note = "It evaluates or traces JavaScript expressions."
 
 [items."loader/src/index.ts:<rest>"]
-status = "pending"
+status = "diverged"
+hash = "378890017d6a433e8634cfa87aa3334aa755a2f5dd94f5d47719b2c0e8af2ab0"
+divergence = "loader-process"
+note = "The rest of the module holds `envData`, the `exit` event, and the process fields."
 
 [items."loader/src/index.ts:Loader"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Loader"
+hash = "156fd041b463127ce407f96ef48e8ec4d60bc3bc10d7c2e756f17b5ec5494a5f"
 
 [items."loader/src/index.ts:Loader.[Service.check]"]
 status = "pending"
 
 [items."loader/src/index.ts:Loader.commit"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Loader.commit"
+hash = "9279ca5c8c5089c797b2c0b6842ccacc79d2cd58c8f21e9c56bbedb55e14926c"
 
 [items."loader/src/index.ts:Loader.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Loader.__init__"
+hash = "ddd1adb3775ff77ca6e6d158f39fd582b8de4568a2f271df0cbf676e06d3d7de"
 
 [items."loader/src/index.ts:Loader.locate"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Loader.locate"
+hash = "c58a25a459f5cba3042186e340dd04e928afeedf04579a5b9281502c90697970"
 
 [items."loader/src/index.ts:Loader.showLog"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Loader._show_log"
+hash = "4149dd24b5027ce5c62cb89c84061152202e7e04f748b8397c38780e78b78818"
 
 [items."loader/src/index.ts:Loader.unwrapExports"]
-status = "pending"
+status = "not-applicable"
+hash = "b755e28ff413fb36026781d866912e91b832cd1da905d2ce14e1015c3389dbae"
+note = "The import function returns the component."
 
 [items."loader/src/index.ts:default"]
-status = "pending"
+status = "not-applicable"
+hash = "50164f26e6f6ff846f1f7749a041b84dadc755f8c11cc742a14256ec928e8c5c"
+note = "`pycordis.loader` exports `Loader` by name."
 
 [items."loader/src/index.ts:module cordis"]
-status = "pending"
+status = "adapted"
+target = "pycordis.loader.Loader.entry_of"
+hash = "96dcd593aca89bcb6b1143b9b281f497cae89614f98b0810d0424ec234d43426"
+divergence = "loader-entry-link"
 
 [items."loader/src/internal.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "de46728aafc5a0080d42fe84d93cf644f02cb5ceebca447444e4d53ccbeb00c9"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/internal.ts:InternalLoader"]
-status = "pending"
+status = "not-applicable"
+hash = "137faa8f1c24535ee7730b7aa578c5593e73a7f36e854c555ba327247505702a"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/internal.ts:getInternalLoader"]
-status = "pending"
+status = "not-applicable"
+hash = "65a53fee1ede0669e58deaf09a429a299e1dac0853a9f3b4c3d6d5abd5cc10e2"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/internal.ts:unwrapExports"]
-status = "pending"
+status = "not-applicable"
+hash = "01db5feb5b2713d36026ec355e5ba0ae73cdc3a2dd24c6649c99c226d464cadc"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "fb234c2ab471c7f06ee43c7f7253aa741998660687327855db4270ff4579498d"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:HELPER_FILES"]
-status = "pending"
+status = "not-applicable"
+hash = "9edb5511e0057b35518cd7c02c519430c8b288f6059abc47ae14c14f5bf8e430"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:RENAME_BACKOFF"]
-status = "pending"
+status = "not-applicable"
+hash = "aa9f1ebd945f7324ec2bb09a9fdb29ca86675c25db353fe65322bb9e56c24948"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:RENAME_RETRIES"]
-status = "pending"
+status = "not-applicable"
+hash = "915fd190738c890c9492cb5548793a19cab6285e3f68db3a81e0fae43995816a"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:Resolve"]
-status = "pending"
+status = "not-applicable"
+hash = "67aa91b905b0ca687bee8df2230e7394ef6b3f93d357b9ea0050df26d4dffcb1"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:_createResolve"]
-status = "pending"
+status = "not-applicable"
+hash = "c5857e636ceb0891d6ec51ae690710e9eb6c4b1fd7e6240b00d74b4782b2880b"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:cache"]
-status = "pending"
+status = "not-applicable"
+hash = "530a838ea72eec7eb460461a5377400796c258e39cb42171853820cd212bfda0"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:createResolve"]
-status = "pending"
+status = "not-applicable"
+hash = "82459b88ffda122c04a51b71f931b2f1d4b49b2943cc5138385b6cfe60626755"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:findScope"]
-status = "pending"
+status = "not-applicable"
+hash = "2446a55675dd0cf783f819ba507629044ae54c4e320a44966a6bde30bb9add89"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:isTransientRenameError"]
-status = "pending"
+status = "not-applicable"
+hash = "8c24659e688a38f4007a4029355fff3a5e75821edc2ee51c3602f621e1132303"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:resolveScope"]
-status = "pending"
+status = "not-applicable"
+hash = "274520efc4894cfd61f665b02e970cd479c8b29490fa6c96af1d839c9a431a20"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/src/resolve.ts:write"]
-status = "pending"
+status = "not-applicable"
+hash = "1df10c00f11763289f0ee00f3528705811de1c1a7e6c0de2f9589e7888724c75"
+note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/tests/commit.spec.ts:<rest>"]
 status = "pending"
@@ -3085,7 +3413,9 @@ status = "pending"
 status = "pending"
 
 [items."loader/tests/resolve.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "a921b4fca0a623d145491ce3a3f53a54d38a7326375b31710c20afe8f64d2298"
+note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/tests/resolve.spec.ts:fixture"]
 status = "pending"
@@ -3133,20 +3463,28 @@ status = "pending"
 status = "pending"
 
 [items."loader/validate.spec.ts::Loader: entry options validation::accept an expression only for disabled"]
-status = "pending"
+status = "diverged"
+hash = "1ab65f8feda0a223536e8807d5de491132cdb8621e10a01ab90e7974b16a5c6d"
+divergence = "loader-expressions"
+note = "A dict is not an expression: no field accepts it."
 
 [items."loader/validate.spec.ts::Loader: entry options validation::accept valid options"]
-status = "pending"
+status = "ported"
+hash = "942464a2860746fe8a0d865aad9994ea2f0a3e35f86d6937749f4b528e328dca"
 
 [items."loader/validate.spec.ts::Loader: entry options validation::check the entries of a group passed at runtime as a whole"]
-status = "pending"
+status = "ported"
+hash = "2128e727c99091fa2ff14e9edecca40d50beaa072865cfa1e710383293ccfdf4"
 
 [items."loader/validate.spec.ts::Loader: entry options validation::reject a missing or invalid field"]
-status = "pending"
+status = "ported"
+hash = "f25234daf03aa08a5f3b186fcbb2bd2c7a04064f118ce93de12ff786946e685c"
 
 [items."loader/validate.spec.ts::Loader: entry options validation::reject invalid options at runtime before they are committed"]
-status = "pending"
+status = "ported"
+hash = "5c148867f9e5d65c3f84209a940ac9b5935764406c917d8c83160327f6c7fd8a"
 
 [items."loader/validate.spec.ts::Loader: entry options validation::unload an entry whose options turn invalid, and reload it once fixed"]
-status = "pending"
+status = "ported"
+hash = "6cf781558ffe95c9924a13b28f03793c336269789fd43fa069a34b46e3cb994d"
 

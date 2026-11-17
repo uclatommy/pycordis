@@ -56,6 +56,17 @@ The Python-runtime modules (`keys`, `scheduler`, `deferred`, `disposables`, `err
 other pycordis module except `errors`. The core modules import each other only where the
 upstream modules do.
 
+The upstream package `loader` maps to the public package `pycordis.loader`. It is not part of
+the core, and no core module imports it.
+
+| Upstream (`packages/loader/src`) | pycordis (`src/pycordis/loader/`) |
+|---|---|
+| `index.ts` | `_service.py` |
+| `config/tree.ts` | `_tree.py` |
+| `config/group.ts` | `_group.py` |
+| `config/entry.ts`, `config/utils.ts` (`validateOptions`, `EntryValidationError`) | `_entry.py` |
+| `internal.ts`, `resolve.ts` (Node module resolution) | Not ported |
+
 ## Semantic Contract
 
 Each row is a guarantee that pycordis keeps. The ID is stable: tests refer to it with
@@ -72,6 +83,7 @@ test.
 | `LIFE-PROGRESS` | With acyclic dependencies, every schedule reaches quiescence, and no fiber waits forever while a lifecycle step can run. | Theorem 73 |
 | `LIFE-CONFLUENT` | Two schedules that make the same `use` and `dispose` calls reach the same quiescent state: the same fiber tree, the same provider for each key, and the same effects per fiber. A failed fiber is outside this guarantee. | Theorem 80 |
 | `LIFE-FAILURE` | An `apply` that raises leaves its fiber with no installed effects and with the error recorded on the fiber. The error does not go to the parent or to siblings, and the fiber is not retried until its component or configuration changes. | Section 4.4, "Failure" |
+| `LOAD-OPTIONS` | The loader changes the options of an entry only for a host call (`create`, `update`, a move, `remove`) or when the entry's own component disposes its own fiber. The loss of a group, a tree, or a dependency, and a rebuild, never change the options of an entry that stays in the tree. | — (loader extension) |
 
 ## Conformance
 
@@ -159,5 +171,13 @@ change removes the reason for a divergence, remove the divergence and its row.
 | `host-introspection` | improvement | `state`, `uid`, `parent`, and `getEffects()` are public; the children of a fiber are in `runtime.fibers` | `fiber.error` and `fiber.children` are also public | `LIFE-FAILURE` | A host status view reads the failure cause and the fiber tree without the internals of the registry. Test: `divergence("host-introspection")` in `tests/test_fiber.py` |
 | `error-code` | omission | `CordisError(code, message?)`: `code` keys a message table that has one entry, and the instance keeps `code` | `CordisError(message)`: the instance has no `code` | — | The message states the rule, and a Python caller catches `CordisError` and reads the message. No upstream case reads `code` |
 | `deprecated-aliases` | omission | `ctx.plugin` / `registry.plugin`, `events.dispatch` | Not ported | — | No vestigial API |
+| `loader-expressions` | omission | JavaScript expressions in `disabled`, `config`, `inject`, and `intercept`, evaluated against the entry context | `disabled` is a `bool`; every option value is plain data | — | No `eval` of config data in a library; a host that needs a condition computes the tree before it calls the loader |
+| `loader-tree-owner` | adaptation | An entry fiber is a child of its group's fiber; a move swaps the parent of the entry context, and the disposal stays with the old group fiber | An entry fiber is a child of its tree's fiber; a group stops its members explicitly | — | A pycordis context cannot change its parent, and a fiber cannot change its owner; the move cases pass with no new core operation |
+| `loader-cross-tree-rebuild` | omission | A move to another tree keeps the fiber running | A move to another tree loads the component again in a new fiber under the target tree's fiber. A moved group loads its members again | — | The owner fiber changes, and a fiber cannot change its owner. Tests: `divergence("loader-cross-tree-rebuild")` in `tests/test_loader_commit.py` |
+| `loader-import` | adaptation | Import by module specifier, resolved through Node and a project helper | Import by `module` or `module:attribute` through an injected function; `importlib` by default. A missing entry module and a missing module of the component give different errors | — | Python import names; the upstream cases with a component table, and "leave a module imported by another one to Node", pass. Test: `divergence("loader-import")` in `tests/test_loader_import.py` |
+| `loader-entry-link` | adaptation | `fiber.entry` property on `Fiber` | `Loader.entry_of(fiber)` | — | No attributes added to a core class from outside it |
+| `loader-locations` | omission | Source locations of entry options, outer stack frames, `traceValidation` | Not ported | — | They serve the config file include, which pycordis does not port |
+| `loader-process` | omission | `envData`, `CORDIS_SHARED`, the `exit` event | Not ported | — | Process management of the upstream command line |
+| `loader-move-dispose` | improvement | After a move out of group A, the removal of A disposes the moved entry, and the loader reports that as a self-dispose: it writes `disabled: true` to the entry options and calls `commit` | The moved entry keeps running, and its options and `commit` reports do not change | `LOAD-OPTIONS` | Upstream breaks `LOAD-OPTIONS` here. The kind is `improvement` because no upstream issue exists. Test: `divergence("loader-move-dispose")` in `tests/test_loader_commit.py` |
 
 A change that adds a divergence adds its row in the same change.

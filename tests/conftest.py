@@ -11,6 +11,7 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 import pytest
+from loader_fakes import RecordingLoader
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
@@ -173,3 +174,10 @@ def run(
     timer leaves its `Deferred` incomplete until the test advances the clock.
     """
     return lambda coroutine: spawn(scheduler, coroutine)
+
+
+@pytest.fixture
+def loader(root: Context) -> RecordingLoader:
+    """A `RecordingLoader` that runs in `root`."""
+    root.use(RecordingLoader)
+    return root.get("loader")  # type: ignore[return-value]

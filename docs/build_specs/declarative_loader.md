@@ -1,6 +1,6 @@
 # Build Spec: Declarative Loader
 
-**Status**: 🚧 In progress (Increment 1 of 5 done); spec 1 of 3 (see [Dependencies](#dependencies))
+**Status**: 🚧 In progress (Increment 2 of 5 done); spec 1 of 3 (see [Dependencies](#dependencies))
 
 ## Goal
 
@@ -435,7 +435,35 @@ fiber from inside its component
 `LOAD-OPTIONS` contract row (with its marked test in `test_loader_commit.py`), and the
 `loader-import`, `loader-entry-link`, `loader-locations`, `loader-process`,
 `loader-tree-owner`, `loader-cross-tree-rebuild`, and `loader-move-dispose` rows
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/loader/_entry.py`: `EntryOptions`, `EntryValidationError`, `validate_options`, the option copy helpers, and `Entry` (verdict for `disabled`, update with the four results, init, import, start under the tree fiber)
+- `src/pycordis/loader/_group.py`: `EntryGroup` (create, remove, unlink, update, stop) and the `Group` component
+- `src/pycordis/loader/_tree.py`: `EntryTree` (create, update with moves and cross-tree moves, remove, resolve, entries), `EntryChange`, `ImportFunction`, and the `importlib` import function
+- `src/pycordis/loader/_service.py`: `Loader`, `LoaderConfig`, `read`, `wait`, `entry_of`, `locate`, and the `internal/plugin`, `internal/commit`, and `internal/update` listeners
+- `src/pycordis/loader/__init__.py`: the public names and the package page text
+- `scripts/gen_ref_pages.py`: a public package gives one page from its `__init__.py`
+- `docs/architecture.md`: module map, the `LOAD-OPTIONS` row, and eight divergence rows
+- `conformance/ledger.toml`: 169 loader entries reviewed (cases, the symbols of Increment 2, the location and expression items, and the Node resolution items)
+
+**Tests**:
+- `tests/loader_fakes.py` (`RecordingLoader`, `Mock`) and a `loader` fixture in `tests/conftest.py`
+- `tests/test_loader.py`, `test_loader_group.py`, `test_loader_commit.py`, `test_loader_validate.py`, `test_loader_import.py`: 80 tests
+- `uv run pytest`: 922 passed; coverage of `pycordis.loader` is 99%
+- `uv run ruff check .` and `uv run ruff format --check .` are clean
+
+**Deviations**:
+- The `loader-expressions` divergence row is added in this increment, not in Increment 3: the validation test needs it
+- The move rule compares the isolation, intercept, and `meta` mappings of two group contexts by the identity of each value (`_same_scope` in `_entry.py`), not by the identity of the layers. The rule is only tested with equal scopes until Increment 4 adds the context method
+- Entry `inject`, `intercept`, and `isolate` are validated and stored, but have no effect until Increments 3 and 4. No Increment 2 test uses them at runtime
+- `Group.update`, `EntryGroup.update`, and `Entry.update` are coroutines (they are awaited inside tasks). A host calls the `EntryTree` methods, which return `Deferred`
+- `EntryTree.create` and `EntryTree.update` raise `EntryValidationError` and `ValueError` at the call, not through the `Deferred`
+- The `Loader` sets `cordis_tracker` to `None`, so `ctx["loader"]` gives the loader itself and not a view. Its methods always act for the loader's own context
+- Case "transfers the entry to the store of the target tree" and "transfers the members of a moved group" are `diverged` (`loader-cross-tree-rebuild`): the component loads again after the move
+- `Entry.pending` (the task that loads the component) is public, because `Loader.wait` reads it from another module
+- The recovery cases of `index.spec.ts` use a component that declares `inject`, with plain config data, not an entry `inject`
+- Not done in this increment: `Group: intercept::initialize` and the other cases that use entry `inject`, `intercept`, or `isolate` stay `pending`
 
 ### Increment 3: Entry inject, rebuilds, and the await check
 **Goal**: An entry with `inject` waits for its services in an outer fiber, a change of `name` or

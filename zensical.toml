@@ -36,6 +36,7 @@ nav = [
     { "Events" = "api/events.md" },
     { "Fiber" = "api/fiber.md" },
     { "Keys" = "api/keys.md" },
+    { "Loader" = "api/loader.md" },
     { "Logger" = "api/logger.md" },
     { "Reflect" = "api/reflect.md" },
     { "Registry" = "api/registry.md" },
