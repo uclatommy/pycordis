@@ -4211,16 +4211,21 @@ divergence = "hmr-resolution"
 note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::aborts a component that newly imports a changed module of a failed unit"]
-status = "pending"
+status = "ported"
+hash = "85c17e000f161d973ec46953de980f07b2ee7f30f3f09c055d066b5a76f6fa74"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::aborts components that share a changed module together"]
-status = "pending"
+status = "ported"
+hash = "0d585b27e95ddecabccd5818690831d4f6857598c7ebb01f3798d72a80b21c06"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::applies a unit when another unit fails to import"]
-status = "pending"
+status = "ported"
+hash = "74b6c9fb8f7f6e17dd9be59069358eb5f52c370e7b85415ed0de093dc197f847"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::collects the host modules of a main entry started through a link"]
-status = "pending"
+status = "adapted"
+hash = "d8c1391af1b399e903ef7975b1936375127652aaffa63d693c0d53de073f4b7f"
+divergence = "hmr-modules"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::does not apply a unit whose module does not export a component"]
 status = "ported"
@@ -4281,7 +4286,9 @@ status = "ported"
 hash = "68b3f79341dbd47a0e6fe3a6bc4d7ab079c2d7705f368ee02ec7c75bd5bed775"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a transaction started inside another one"]
-status = "pending"
+status = "adapted"
+hash = "3f2f7d5997f41d3d7d78b892d1ab2b0331f1c4364dd79580752ca9d2129f3bbe"
+divergence = "hmr-modules"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects with the error of the callback"]
 status = "ported"
@@ -4332,29 +4339,38 @@ hash = "be1f4c7582809726ea369bf642a2f9f94095d852339a02b3f20c968fd57b474a"
 status = "pending"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::restores a changed module outside every component with the failed unit it imports"]
-status = "pending"
+status = "ported"
+hash = "121b149e25a488ec351240637ea5e5b23380ded8abcdc26da96bcf88b37b98f1"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::runs the callback inside the transaction"]
-status = "pending"
+status = "ported"
+hash = "81dfd8bab91b1228a998871a73694630f5bff0e2a9cde1445ff6953669482b70"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::runs transactions one at a time"]
 status = "ported"
 hash = "7fd49e5a9c061924d7a6d18bed77f18cd1996945505986fdd6abe0a4b1863560"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::shares a module first loaded by a failed unit with a unit that imports it dynamically"]
-status = "pending"
+status = "ported"
+hash = "cb5fba1aa7bdbe9b366f71561df74f96c7b7904a6bb75724f62c4e188e2c6a94"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed host module below a root and applies the other changes"]
-status = "pending"
+status = "ported"
+hash = "962290f045599d110c09b8b49a74d81d853163ed193bb733600c0baf8a5f786f"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed native addon"]
-status = "pending"
+status = "adapted"
+hash = "f562ee2320866fe6a1fac6967807eb2af733cc47a696bb48c6ae09e7ca5b5d28"
+divergence = "hmr-modules"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::skips a component whose exporting modules now export different components"]
-status = "pending"
+status = "ported"
+hash = "f21393445cb4e2a2de6f0dbaa09809406d3fb885b785006538e5fb883bb05148"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::starts one instance at a time in a thread"]
-status = "pending"
+status = "adapted"
+hash = "ba09ab08a9a1e487cfc44e8f41e6ead98858188e50992ed51116d65c89c378fe"
+divergence = "hmr-modules"
 
 [items."hmr/resolution.spec.ts::invalidateResolution::keeps resolving the version that another importer links"]
 status = "pending"
@@ -4416,10 +4432,16 @@ hash = "79e843a936623d7e9b31b3eae8b24fe4937ef09a25bb2d649be42913a72752cc"
 divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:Hmr.[Service.init]"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr.Hmr.cordis_init"
+hash = "683da650ef3d8779677c0e9ff4edfbf0dacd7a753bf30d5eb48eeacc77354a24"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:Hmr._analyze"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr._graph.accepted_modules"
+hash = "843d9eb554dc9970cff59c364c9e2dbcdb371d252ca5eb78277263e39d756c05"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:Hmr._discover"]
 status = "adapted"
@@ -4446,10 +4468,15 @@ divergence = "hmr-resolution"
 note = "An import by name finds a moved module."
 
 [items."hmr/src/index.ts:Hmr._partition"]
-status = "pending"
+status = "ported"
+target = "pycordis.hmr._graph.partition"
+hash = "408f0c8c18d214984ab75a2ff7eb32bf31bc78cdf9654a95ea853fd0b26aebe7"
 
 [items."hmr/src/index.ts:Hmr._reconcile"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr._service.Hmr._apply"
+hash = "c1a73784ce99086ca6ea7bb6e080eade4dbf2c92a4eaff98c35085cc2b4bfa6d"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:Hmr._relative"]
 status = "not-applicable"
@@ -4475,16 +4502,25 @@ hash = "4edf3712ff040eb0d1a37acaeb34c3c1f5da662f6e4c49e91b4f6b5b518d86f0"
 divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:ImportAttempt"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr._service._Stale"
+hash = "f5e76e1fc5bf4be696687a3828e57b766c78afb7dba391b8bf8ed2b2c7ca330e"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:ReconcileUnit"]
-status = "pending"
+status = "ported"
+target = "pycordis.hmr._graph.Unit"
+hash = "27ff24b7612b67a3c4a51a23b23a9a90918bdec68409802e193125bd86aa2643"
 
 [items."hmr/src/index.ts:SkipError"]
-status = "pending"
+status = "not-applicable"
+hash = "a75a424381ba9324cc0a3307d7b09f4c51fb526a49c01adfc2ee07b5e744638a"
+note = "A skip is the `skip` field of the import attempt, not an exception."
 
 [items."hmr/src/index.ts:SkipError.constructor"]
-status = "pending"
+status = "not-applicable"
+hash = "6c42cb8c57d07a9525e68abc12d2a5d4b926ea60a5a1d280adea4bd1ed21618c"
+note = "A skip is the `skip` field of the import attempt, not an exception."
 
 [items."hmr/src/index.ts:StaleComponent"]
 status = "adapted"
@@ -4523,7 +4559,10 @@ hash = "48fe6b5d785141599be8367f304daf83a51f1d9359c8f6d00e0649d8d01ed066"
 note = "A built-in module is outside the graph."
 
 [items."hmr/src/index.ts:isNativeAddon"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr._service._is_extension"
+hash = "a8cbc254aa42176dadf26045cfa218fb3d3eefb5983b10c78a085d824cf25036"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:isRequest"]
 status = "diverged"

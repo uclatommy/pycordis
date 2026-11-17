@@ -379,7 +379,29 @@ rule.
 `tests/test_hmr_reconcile.py`, `conformance/ledger.toml`
 **Validation**: `uv run pytest tests/test_hmr_graph.py tests/test_hmr_reconcile.py tests/test_replace.py`
 **Docs**: docstrings of `Skip`, `SkipReason`, and `Hmr` (host limits)
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/hmr/_service.py`: `HmrConfig.host_modules`; `Hmr.host_modules` (the `__main__` closure at start plus the config); `Hmr.cordis_init` takes the one active place of the process; `_apply` runs stages 1 and 2 with the unit partition, the skip and abort results, and the restore rules; `_classify` skips host and extension modules; `_is_nested` finds a call inside the running transaction; docstrings of `Hmr` (host limits), `Skip`, and `SkipReason`
+- `src/pycordis/hmr/_graph.py`: `partition` and `Unit` (union-find over shared evicted modules); `accepted_modules` ignores the imports of host modules; `EdgeCache.peek` reads the new edges without a change to the cache
+- `src/pycordis/hmr/_modules.py`: `Backup.unloaded` (the evicted modules that a failed import left out of `sys.modules`)
+- `tests/test_hmr_reconcile.py`: the `make_env` fixture disposes `Hmr` at the end of each test, because one `Hmr` is active in a process
+- `conformance/ledger.toml`: 21 hmr entries reviewed (10 `ported`, 9 `adapted`, 2 `not-applicable`); 206 stay `pending`
+
+**Tests**:
+- `tests/test_hmr_reconcile.py`: 16 new test functions, 18 cases (12 upstream cases, the host and nested-call cases parametrized, and the kept-unit eviction, the committed-unit stay, the fiber below a moved fiber, the new imports of a failed module, and the file-less `__main__` cases); coverage of `pycordis.hmr` is 99%
+- Re-run: `tests/test_hmr_graph.py`, `tests/test_replace.py`, `tests/test_conformance.py`, `tests/test_inventory.py`, `tests/test_docstrings.py`, `tests/test_doc_examples.py`, `tests/test_package.py`; the full suite has 1229 passing tests
+
+**Deviations**:
+- `Hmr._active` is a class flag that `cordis_init` sets and its disposer clears, not a reference to the service, because a hook runs with a view as `self`
+- `AMBIGUOUS_EXPORT` compares the runner that the registry resolves for each exporter in an entry module, because a module that has `apply` and its `apply` function are one component
+- A failed import leaves no module in `sys.modules`, so the new edges of the failed module come from the file again, through the old module object (`Backup.unloaded`, `EdgeCache.peek`)
+- `HmrConfig.host_modules` names are used as given; only `__main__` has its import closure added
+- The ledger entries `SkipError` and `SkipError.constructor` are `not-applicable`: a skip is the `skip` field of the import attempt
+- `test_one_hmr_is_active_in_a_process` carries `@pytest.mark.slow` (0.1 s in the full suite)
+
+**Manual validation**:
+- Three modules that share a changed module, one with a syntax error: one `Abort` lists all three, the old code still answers, and a second `Hmr` fails at start
 
 ### Increment 4: Loader entries and close-out
 **Goal**: The `index.spec.ts` cases pass with the loader, the contract tests cover reloads, and

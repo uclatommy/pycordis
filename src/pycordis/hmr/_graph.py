@@ -6,9 +6,11 @@ import logging
 import os
 import sys
 import sysconfig
-from collections.abc import Callable, Collection, Iterable, Mapping
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +145,10 @@ def _is_module(name: str) -> bool:
     )
 
 
+_UNREADABLE: Any = object()
+"""The result of `EdgeCache._read` for a file that cannot be read."""
+
+
 class EdgeCache:
     """The imports of each loaded module, as they were when the module was first seen.
 
@@ -164,30 +170,66 @@ class EdgeCache:
         in the result is a key of the result. A module that is no longer loaded leaves
         the cache.
         """
+        known, edges = self._scan({})
+        self._known = known
+        return edges
+
+    def peek(
+        self, unloaded: Mapping[str, ModuleType] | None = None
+    ) -> dict[str, tuple[str, ...]]:
+        """Return the edges that `snapshot` gives, and leave the cache as it is.
+
+        Args:
+            unloaded: Modules that `sys.modules` does not hold, by name, such as the old
+                module objects of a failed import. The graph function reads each one
+                again, so a file that changed gives its new edges.
+        """
+        return self._scan(unloaded or {})[1]
+
+    def _scan(
+        self, unloaded: Mapping[str, ModuleType]
+    ) -> tuple[
+        dict[str, tuple[ModuleType, tuple[str, ...] | None]],
+        dict[str, tuple[str, ...]],
+    ]:
+        """Return the new cache content and the edges of the modules in the graph."""
         known: dict[str, tuple[ModuleType, tuple[str, ...] | None]] = {}
         unreadable: set[str] = set()
-        for name, module in dict(sys.modules).items():
+        loaded = dict(sys.modules)
+        for name, module in loaded.items():
             cached = self._known.get(name)
             if cached is not None and cached[0] is module:
                 known[name] = cached
                 continue
-            try:
-                edges = self._graph(module)
-            except (SyntaxError, OSError):
+            edges = self._read(name, module)
+            if edges is _UNREADABLE:
                 # not cached, so that the next snapshot reads the file again
-                logger.warning("cannot read the imports of %s", name, exc_info=True)
                 unreadable.add(name)
-                continue
-            known[name] = (module, None if edges is None else tuple(edges))
-        self._known = known
+            else:
+                known[name] = (module, edges)
+        for name, module in unloaded.items():
+            edges = self._read(name, module)
+            if edges is _UNREADABLE:
+                unreadable.add(name)
+            else:
+                known[name] = (module, edges)
         edges_of = {
             name: edges for name, (_, edges) in known.items() if edges is not None
         }
         edges_of.update({name: () for name in unreadable})
-        return {
+        return known, {
             name: tuple(child for child in edges if child in edges_of)
             for name, edges in edges_of.items()
         }
+
+    def _read(self, name: str, module: ModuleType) -> tuple[str, ...] | None:
+        """Return the edges of `module`, `None` outside the graph, or `_UNREADABLE`."""
+        try:
+            edges = self._graph(module)
+        except (SyntaxError, OSError):
+            logger.warning("cannot read the imports of %s", name, exc_info=True)
+            return _UNREADABLE
+        return None if edges is None else tuple(edges)
 
 
 def closure(
@@ -212,15 +254,20 @@ def closure(
 
 
 def accepted_modules(
-    changed: Iterable[str], edges: Mapping[str, Collection[str]]
+    changed: Iterable[str],
+    edges: Mapping[str, Collection[str]],
+    hosts: Collection[str] = (),
 ) -> set[str]:
     """Return the changed modules and every module that imports one of them.
 
     A module that imports an accepted module is accepted too, also when no component
-    uses it, so that a later import of it gets the new code.
+    uses it, so that a later import of it gets the new code. A module in `hosts` never
+    counts as an importer, because it never reloads.
     """
     importers: dict[str, list[str]] = {}
     for name, children in edges.items():
+        if name in hosts:
+            continue
         for child in children:
             importers.setdefault(child, []).append(name)
     accepted: set[str] = set()
@@ -232,3 +279,52 @@ def accepted_modules(
         accepted.add(name)
         pending.extend(importers.get(name, ()))
     return accepted
+
+
+@dataclass(slots=True, eq=False)
+class Unit[T]:
+    """Items that commit, abort, or skip together.
+
+    Attributes:
+        items: The items of the unit, in their input order.
+        modules: The evicted modules that the items reach.
+    """
+
+    items: list[T] = field(default_factory=list)
+    modules: set[str] = field(default_factory=set)
+
+
+def partition[T](
+    items: Sequence[T], reaches: Sequence[Collection[str]], evicted: Collection[str]
+) -> list[Unit[T]]:
+    """Group the items whose reach shares an evicted module.
+
+    Two items are related when their reaches share an evicted module, and a unit is a
+    set of items that are related directly or through other items. Units come in the
+    order of their first item.
+
+    Args:
+        items: The items to group.
+        reaches: The modules that each item reaches, in the old and the new graph.
+        evicted: The modules that eviction removed. Other modules do not relate items.
+    """
+    parents = list(range(len(items)))
+
+    def find(index: int) -> int:
+        while parents[index] != index:
+            parents[index] = parents[parents[index]]
+            index = parents[index]
+        return index
+
+    owners: dict[str, int] = {}
+    for index, reach in enumerate(reaches):
+        for name in reach:
+            if name in evicted:
+                owner = owners.setdefault(name, index)
+                parents[find(index)] = find(owner)
+    units: dict[int, Unit[T]] = {}
+    for index, item in enumerate(items):
+        unit = units.setdefault(find(index), Unit())
+        unit.items.append(item)
+        unit.modules.update(name for name in reaches[index] if name in evicted)
+    return list(units.values())

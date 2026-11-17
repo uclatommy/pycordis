@@ -65,6 +65,14 @@ class Backup:
                 attribute = parent.__dict__.pop(child)
             self._saved[name] = _Saved(module, parent, attribute)
 
+    def unloaded(self) -> dict[str, ModuleType]:
+        """Return the evicted modules that `sys.modules` does not hold now, by name."""
+        return {
+            name: saved.module
+            for name, saved in self._saved.items()
+            if name not in sys.modules
+        }
+
     def restore(self, names: Iterable[str]) -> None:
         """Put the evicted modules `names` back, over a module that took the name."""
         for name in names:

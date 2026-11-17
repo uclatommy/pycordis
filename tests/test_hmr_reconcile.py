@@ -1,7 +1,10 @@
 """`Hmr.reconcile`: reload the changed modules and move component fibers."""
 
+import importlib.machinery
+import importlib.util
 import sys
 import textwrap
+from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -11,8 +14,9 @@ from hmr_fixtures import PluginDir
 
 from pycordis.context import Context
 from pycordis.deferred import Deferred
+from pycordis.errors import CordisError
 from pycordis.fiber import Fiber, FiberState
-from pycordis.hmr import Hmr, HmrConfig, ReloadResult
+from pycordis.hmr import Hmr, HmrConfig, ReloadResult, Skip, SkipReason
 
 
 def component(name: str, value: str, body: str = "") -> str:
@@ -28,11 +32,14 @@ def component(name: str, value: str, body: str = "") -> str:
 class Env:
     """A root context with `Hmr` over a plugin directory."""
 
-    def __init__(self, ctx: Context, plugins: PluginDir) -> None:
+    def __init__(self, ctx: Context, plugins: PluginDir, config: HmrConfig) -> None:
         self.ctx = ctx
         self.plugins = plugins
-        ctx.use(Hmr, HmrConfig(scope=(str(plugins.path),)))
+        self.fiber = ctx.use(Hmr, config)
         self.hmr: Hmr = ctx.get("hmr")
+
+    def path(self, name: str) -> Path:
+        return self.plugins.path / f"{name}.py"
 
     def write(self, name: str, source: str) -> Path:
         return self.plugins.write(f"{name}.py", source)
@@ -50,9 +57,32 @@ class Env:
         return self.ctx.bail(f"reconcile/{name}")
 
 
+type MakeEnv = Callable[..., Env]
+
+
 @pytest.fixture
-def env(root: Context, plugins: PluginDir) -> Env:
-    return Env(root, plugins)
+def make_env(
+    root: Context, plugins: PluginDir, request: pytest.FixtureRequest
+) -> MakeEnv:
+    """Start `Hmr` over the plugin directory; the fixture ends it with the test.
+
+    One `Hmr` is active in a process, so a test that ends without disposing it would
+    block the `Hmr` of the next test.
+    """
+
+    def make(**config: Any) -> Env:
+        environment = Env(
+            root, plugins, HmrConfig(scope=(str(plugins.path),), **config)
+        )
+        request.addfinalizer(environment.fiber.dispose)
+        return environment
+
+    return make
+
+
+@pytest.fixture
+def env(make_env: MakeEnv) -> Env:
+    return make_env()
 
 
 @pytest.mark.upstream(
@@ -533,7 +563,10 @@ def test_a_value_that_cannot_be_hashed_is_not_a_component(env: Env) -> None:
 
 
 def test_a_host_graph_decides_which_modules_reload(
-    root: Context, plugins: PluginDir, monkeypatch: pytest.MonkeyPatch
+    root: Context,
+    plugins: PluginDir,
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
 ) -> None:
     # `virtual` has no file, so no changed path matches it
     monkeypatch.setitem(sys.modules, "virtual", ModuleType("virtual"))
@@ -549,7 +582,7 @@ def test_a_host_graph_decides_which_modules_reload(
         def __init__(self, ctx: Context, config: HmrConfig | None = None) -> None:
             super().__init__(ctx, config, graph=graph)
 
-    root.use(HostHmr)
+    request.addfinalizer(root.use(HostHmr).dispose)
     hmr: Hmr = root.get("hmr")
     unlisted_path = plugins.write("unlisted.py", "value = 2\n")
     plugins.write("listed.py", "value = 2\n")
@@ -609,10 +642,13 @@ def test_paths_that_match_no_loaded_module_change_nothing(env: Env) -> None:
 
 
 def test_the_default_scope_is_the_working_directory_at_start(
-    root: Context, plugins: PluginDir, monkeypatch: pytest.MonkeyPatch
+    root: Context,
+    plugins: PluginDir,
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
 ) -> None:
     monkeypatch.chdir(plugins.path)
-    root.use(Hmr)
+    request.addfinalizer(root.use(Hmr).dispose)
     path = plugins.write("cwd_plugin.py", component("cwd", "v1"))
     root.use(__import__("cwd_plugin").apply)
     plugins.write("cwd_plugin.py", component("cwd", "v2"))
@@ -621,3 +657,432 @@ def test_the_default_scope_is_the_working_directory_at_start(
 
     assert len(result.settled) == 1
     assert root.bail("reconcile/cwd") == "v2"
+
+
+def sharing(name: str, extra: str = "") -> str:
+    """Return a component module that answers the value of the module `shared`."""
+    return (
+        f"import shared\n{extra}\n"
+        "def apply(ctx, config=None):\n"
+        f"    ctx.on('reconcile/{name}', lambda: shared.value)\n"
+    )
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::aborts components that share a changed module together"  # noqa: E501
+)
+def test_components_that_share_a_changed_module_abort_together(env: Env) -> None:
+    env.write("shared", "value = 'v1'\n")
+    env.load("left", sharing("left"))
+    env.load("right", sharing("right"))
+
+    shared = env.write("shared", "value = 'v2'\n")
+    left = env.write("left", sharing("left", "raise RuntimeError('left failed')"))
+    result = env.reload(shared, left)
+
+    assert result.settled == []
+    assert [abort.modules for abort in result.aborted] == [["left", "right", "shared"]]
+    assert (env.answer("left"), env.answer("right")) == ("v1", "v1")
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::applies a unit when another unit fails to import"  # noqa: E501
+)
+def test_a_unit_applies_when_a_unit_that_shares_only_an_unchanged_module_fails(
+    env: Env,
+) -> None:
+    env.write("shared", "value = 'common'\n")
+    env.load("broken", sharing("broken"))
+    env.load("healthy", sharing("healthy"))
+
+    broken = env.write("broken", "def apply(ctx {{{ BROKEN\n")
+    healthy = env.write("healthy", sharing("healthy", "# v2"))
+    result = env.reload(broken, healthy)
+
+    assert len(result.settled) == 1
+    assert [abort.modules for abort in result.aborted] == [["broken"]]
+    assert env.answer("healthy") == "common"
+    assert env.answer("broken") == "common"
+
+    # the failed unit is retried on its own
+    env.write("broken", sharing("broken", "# v2"))
+    retried = env.reload(broken)
+    assert (len(retried.settled), retried.aborted) == (1, [])
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::aborts a component that newly imports a changed module of a failed unit"  # noqa: E501
+)
+def test_a_component_that_newly_imports_a_module_of_a_failed_unit_joins_its_abort(
+    env: Env,
+) -> None:
+    env.write("shared", "value = 'v1'\n")
+    env.load("owner", sharing("owner"))
+    env.load("adopter", component("adopter", "v1"))
+    env.reload()  # record the imports as they are before the change
+
+    shared = env.write("shared", "value = 'v2'\n")
+    owner = env.write("owner", "import shared\nraise RuntimeError('owner failed')\n")
+    adopter = env.write("adopter", sharing("adopter"))
+    result = env.reload(shared, owner, adopter)
+
+    assert result.settled == []
+    assert [abort.modules for abort in result.aborted] == [
+        ["adopter", "owner", "shared"]
+    ]
+    assert (env.answer("owner"), env.answer("adopter")) == ("v1", "v1")
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::shares a module first loaded by a failed unit with a unit that imports it dynamically"  # noqa: E501
+)
+def test_a_module_that_a_failed_unit_loaded_first_stays_loaded_for_another_unit(
+    env: Env,
+) -> None:
+    env.load("failing", component("failing", "v1"))
+    env.load("importer", component("importer", "v1"))
+    env.write("late", "state = {}\n")
+
+    failing = env.write(
+        "failing", "import late\nraise RuntimeError('failing failed')\n"
+    )
+    importer = env.write(
+        "importer",
+        "import importlib\n"
+        "state = importlib.import_module('late').state\n\n"
+        "def apply(ctx, config=None):\n"
+        "    ctx.on('reconcile/importer', lambda: state)\n",
+    )
+    result = env.reload(failing, importer)
+
+    assert (len(result.settled), len(result.aborted)) == (1, 1)
+    assert env.answer("importer") is sys.modules["late"].state
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::restores a changed module outside every component with the failed unit it imports"  # noqa: E501
+)
+def test_a_module_outside_every_unit_comes_back_with_the_failed_unit_that_it_imports(
+    env: Env,
+) -> None:
+    env.write("shared", "value = 'v1'\n")
+    env.write("outside", "import shared\nderived = shared.value\n")
+    env.load("owner", sharing("owner"))
+    outside = __import__("outside")
+    env.reload()
+
+    # the new module needs an attribute that only the new `shared` has
+    shared = env.write("shared", "value = 'v2'\nextra = '!'\n")
+    changed = env.write(
+        "outside", "import shared\nderived = shared.value + shared.extra\n"
+    )
+    owner = env.write("owner", "import shared\nraise RuntimeError('owner failed')\n")
+    result = env.reload(shared, changed, owner)
+
+    assert [abort.modules for abort in result.aborted] == [
+        ["outside", "owner", "shared"]
+    ]
+    assert sys.modules["outside"] is outside
+    assert outside.derived == "v1"
+
+
+def test_a_module_that_reaches_a_committed_unit_stays_evicted_with_a_failed_unit(
+    env: Env,
+) -> None:
+    for name in ("dep_a", "dep_b"):
+        env.write(name, "value = 'v1'\n")
+    env.write("owner_a", "import dep_a\n" + component("a", "v1"))
+    env.write("owner_b", "import dep_b\n" + component("b", "v1"))
+    env.write("both", "import dep_a\nimport dep_b\n")
+    for name in ("owner_a", "owner_b", "both"):
+        __import__(name)
+    env.ctx.use(sys.modules["owner_a"].apply)
+    env.ctx.use(sys.modules["owner_b"].apply)
+    env.reload()
+    old_a = sys.modules["dep_a"]
+
+    paths = [
+        env.write("dep_a", "value = 'v2'\n"),
+        env.write("dep_b", "value = 'v2'\n"),
+        env.write("owner_a", "import dep_a\nraise RuntimeError('a failed')\n"),
+    ]
+    result = env.reload(*paths)
+
+    assert [abort.modules for abort in result.aborted] == [["dep_a", "owner_a"]]
+    assert len(result.settled) == 1
+    assert (sys.modules["dep_a"], "both" in sys.modules) == (old_a, False)
+    assert (env.answer("a"), env.answer("b")) == ("v1", "v1")
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::skips a component whose exporting modules now export different components"  # noqa: E501
+)
+def test_a_component_whose_exporting_modules_export_different_values_is_skipped(
+    env: Env,
+) -> None:
+    def impl(value: str) -> str:
+        return (
+            "def apply(ctx, config=None):\n"
+            f"    ctx.on('reconcile/split', lambda: '{value}')\n"
+        )
+
+    implementation = env.write("split_impl", impl("v1"))
+    env.write("split_a", "from split_impl import apply\n")
+    env.write("split_b", "from split_impl import apply\n")
+    env.ctx.use(__import__("split_a").apply)
+    other = __import__("split_b")
+    assert env.answer("split") == "v1"
+
+    result = env.reload(implementation, env.write("split_b", impl("other")))
+
+    assert result.settled == []
+    assert result.skipped == [
+        Skip(["split_a", "split_b", "split_impl"], SkipReason.AMBIGUOUS_EXPORT)
+    ]
+    assert sys.modules["split_b"] is other
+    assert env.answer("split") == "v1"
+
+
+@pytest.mark.parametrize("source", ["config", "main"])
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed host module below a root and applies the other changes"  # noqa: E501
+)
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::collects the host modules of a main entry started through a link"  # noqa: E501
+)
+def test_a_changed_host_module_is_skipped_and_the_other_changes_apply(
+    source: str,
+    make_env: MakeEnv,
+    plugins: PluginDir,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plugins.write("host.py", component("host", "v1"))
+    host = __import__("host")
+    if source == "main":
+        # a script and the modules that it imports belong to the host
+        file = plugins.write("script.py", "import host\n")
+        spec = importlib.util.spec_from_file_location("__main__", file)
+        assert spec is not None and spec.loader is not None
+        script = importlib.util.module_from_spec(spec)
+        monkeypatch.setitem(sys.modules, "__main__", script)
+        spec.loader.exec_module(script)
+    env = make_env(
+        host_modules=frozenset({"host"}) if source == "config" else frozenset()
+    )
+    env.ctx.use(host.apply)
+    env.load("other", component("other", "v1"))
+
+    result = env.reload(
+        env.write("host", component("host", "v2")),
+        env.write("other", component("other", "v2")),
+    )
+
+    assert "host" in env.hmr.host_modules
+    assert result.skipped == [Skip(["host"], SkipReason.HOST_MODULE)]
+    assert sys.modules["host"] is host
+    assert (env.answer("host"), env.answer("other")) == ("v1", "v2")
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed native addon"
+)
+def test_a_changed_extension_module_is_skipped(
+    env: Env, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    file = env.plugins.write(f"native{importlib.machinery.EXTENSION_SUFFIXES[0]}")
+    native = ModuleType("native")
+    native.__file__ = str(file)
+    native.value = "v1"  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "native", native)
+    env.load(
+        "extension_user",
+        "import native\n\n"
+        "def apply(ctx, config=None):\n"
+        "    ctx.on('reconcile/extension', lambda: native.value)\n",
+    )
+    env.reload()
+
+    result = env.reload(file)
+
+    assert result == ReloadResult(
+        skipped=[Skip(["native"], SkipReason.EXTENSION_MODULE)]
+    )
+    assert env.answer("extension") == "v1"
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::starts one instance at a time in a thread"
+)
+@pytest.mark.slow
+def test_one_hmr_is_active_in_a_process(env: Env) -> None:
+    scheduler = env.ctx.scheduler
+
+    second = Context(scheduler).use(Hmr)
+
+    assert second.state == FiberState.FAILED
+    assert str(second.error) == "another HMR instance is active in this process"
+    assert env.ctx.get("hmr") is not None
+
+    env.fiber.dispose()
+    third = Context(scheduler).use(Hmr)
+    try:
+        assert third.state == FiberState.ACTIVE
+    finally:
+        third.dispose()
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::runs the callback inside the transaction"
+)
+def test_a_call_from_the_changes_callback_rejects_and_a_later_call_waits(
+    env: Env,
+) -> None:
+    gate = Deferred[list[str]]()
+    order: list[str] = []
+    nested: list[Deferred[ReloadResult]] = []
+
+    def first_changes() -> Deferred[list[str]]:
+        nested.append(env.hmr.reconcile(lambda: []))
+        return gate
+
+    def second_changes() -> list[str]:
+        order.append("second")
+        return []
+
+    first = env.hmr.reconcile(first_changes)
+    second = env.hmr.reconcile(second_changes)
+
+    with pytest.raises(
+        CordisError, match="cannot start a transaction inside another transaction"
+    ):
+        nested[0].result()
+    assert (first.done(), second.done(), order) == (False, False, [])
+    gate.resolve([])
+    first.result()
+    second.result()
+    assert order == ["second"]
+
+
+NESTED = """
+from hmr_fixtures import STATS
+
+{keyword}def apply(ctx, config=None):
+    {gate}
+    STATS['nested'] = ctx.get('hmr').reconcile(lambda: [])
+    STATS['ctx'] = ctx
+"""
+
+
+@pytest.mark.parametrize("asynchronous", [False, True], ids=["sync", "after-a-wait"])
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::rejects a transaction started inside another one"  # noqa: E501
+)
+def test_a_moved_fiber_cannot_start_a_transaction_until_the_transaction_ends(
+    env: Env, stats: dict[str, Any], asynchronous: bool
+) -> None:
+    source = NESTED.format(
+        keyword="async " if asynchronous else "",
+        gate="await STATS['gate']" if asynchronous else "pass",
+    )
+    stats["gate"] = Deferred.resolved(None)
+    env.load("nested", source)
+    assert stats["nested"].result() == ReloadResult()  # no transaction runs yet
+
+    gate = stats["gate"] = Deferred[None]()
+    transaction = env.hmr.reconcile(lambda: [env.write("nested", source + "# v2")])
+    assert transaction.done() is not asynchronous
+    gate.resolve(None)
+
+    assert len(transaction.result().settled) == 1
+    with pytest.raises(
+        CordisError, match="cannot start a transaction inside another transaction"
+    ):
+        stats["nested"].result()
+    # the transaction is over, so the same call from the same fiber runs
+    later = stats["ctx"].get("hmr").reconcile(lambda: [])
+    assert later.result() == ReloadResult()
+
+
+TREE = """
+from hmr_fixtures import STATS
+
+async def child(ctx, config=None):
+    await STATS['gate']
+    STATS['nested'] = ctx.get('hmr').reconcile(lambda: [])
+
+async def apply(ctx, config=None):
+    ctx.use(child)
+    await STATS['hold']
+"""
+
+
+@pytest.mark.upstream(
+    "hmr/reconcile.spec.ts::Hmr.reconcile::rejects a transaction started inside another one"  # noqa: E501
+)
+def test_a_fiber_below_a_moved_fiber_cannot_start_a_transaction(
+    env: Env, stats: dict[str, Any]
+) -> None:
+    stats["gate"] = stats["hold"] = Deferred.resolved(None)
+    env.load("tree", TREE)
+    gate, hold = stats["gate"], stats["hold"] = Deferred[None](), Deferred[None]()
+
+    transaction = env.hmr.reconcile(lambda: [env.write("tree", TREE + "# v2")])
+    gate.resolve(None)
+
+    assert not transaction.done()
+    with pytest.raises(
+        CordisError, match="cannot start a transaction inside another transaction"
+    ):
+        stats["nested"].result()
+    hold.resolve(None)
+    assert len(transaction.result().settled) == 1
+
+
+def test_a_main_module_without_a_file_adds_no_host_modules(
+    make_env: MakeEnv, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setitem(sys.modules, "__main__", ModuleType("__main__"))
+
+    env = make_env()
+
+    assert env.hmr.host_modules == frozenset()
+
+
+def test_a_module_that_a_kept_unit_loaded_against_a_restored_module_is_evicted(
+    env: Env,
+) -> None:
+    env.write("shared", "value = 'v1'\n")
+    env.load("owner", sharing("owner"))
+    env.load("adopter", component("adopter", "v1"))
+    env.reload()
+
+    shared = env.write("shared", "value = 'v2'\n")
+    env.write("late", "import shared\nvalue = shared.value\n")
+    owner = env.write("owner", "import shared\nraise RuntimeError('owner failed')\n")
+    adopter = env.write("adopter", "import late\n" + component("adopter", "v2"))
+    result = env.reload(shared, owner, adopter)
+
+    assert [abort.modules for abort in result.aborted] == [
+        ["adopter", "owner", "shared"]
+    ]
+    # `late` ran against the new `shared`, which did not stay
+    assert "late" not in sys.modules
+
+
+def test_the_new_imports_of_a_failed_module_join_it_to_the_unit_that_it_reaches(
+    env: Env,
+) -> None:
+    # `broken` did not import `shared` before. Its new source imports it and then
+    # fails, so only the new file tells that `broken` and `user` share a unit.
+    env.write("shared", "value = 'v1'\n")
+    env.load("user", sharing("user"))
+    env.load("broken", component("broken", "v1"))
+    env.reload()
+
+    shared = env.write("shared", "value = 'v2'\n")
+    broken = env.write("broken", "import shared\nraise RuntimeError('broken failed')\n")
+    result = env.reload(shared, broken)
+
+    assert result.settled == []
+    assert [abort.modules for abort in result.aborted] == [["broken", "shared", "user"]]
+    assert (env.answer("user"), env.answer("broken")) == ("v1", "v1")
