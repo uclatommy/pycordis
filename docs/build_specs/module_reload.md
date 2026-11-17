@@ -311,7 +311,28 @@ the ledger as `pending` entries.
 **Validation**: `uv run pytest tests/test_hmr_graph.py tests/test_conformance.py tests/test_inventory.py`
 **Docs**: docstrings of `ModuleGraph` and `source_graph`; none in the guides yet, because no
 service uses them
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/hmr/__init__.py`: the module docstring, and the exports `ModuleGraph` and `source_graph`
+- `src/pycordis/hmr/_graph.py`: `ModuleGraph`, `source_graph`, and `module_file` (the file of a module, for the later classification)
+- `conformance/ledger.toml`: `hmr` in the package list, and 299 `pending` hmr entries
+- `conformance/upstream.json`: regenerated for the core, loader, timer, and hmr items
+- `scripts/upstream_inventory.py`: scans a destructuring `const`, `it.runIf(...).each(...)`, and an `it.each` row that holds a function after a leading string
+- `tests/hmr_fixtures.py`: `PluginDir` and the `plugins` fixture (imported in `tests/conftest.py`)
+- `zensical.toml`: the generated API nav has the Hmr page
+
+**Tests**:
+- `tests/test_hmr_graph.py`: 18 tests (one parametrized test of 11 cases, and the scope, installation, no-file, no-spec, and extension cases); coverage of `pycordis.hmr` is 100%
+- `tests/test_inventory.py`: 3 new snippet cases for the scanner
+- Re-run: `tests/test_conformance.py`, `tests/test_inventory.py`, `tests/test_docstrings.py`, `tests/test_doc_examples.py`, `tests/test_package.py` (all pass)
+
+**Deviations**:
+- `tests/hmr_fixtures.py` exists in this increment, not the next, because the graph tests need it
+- `scripts/upstream_inventory.py` needed three scanner extensions that the spec does not list, because it stopped on `hmr/tests/patches.spec.ts`, `reconcile.spec.ts`, and `watch.spec.ts`
+- `module_file` reads `__file__` for a module with no import spec (the `__main__` of a script), in addition to `__spec__.origin`
+- An import that goes above the top package is skipped, and `SyntaxError` from a bad source file is not caught
+- `from a.b import c` gives edges to every prefix (`a`, `a.b`), as `import a.b` does
 
 ### Increment 2: One unit: evict, import, replace, wait
 **Goal**: `Hmr.reconcile` reloads the changed modules and their importers, moves the fibers of

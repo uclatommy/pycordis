@@ -389,6 +389,15 @@ def _name_at(source: _Source, index: int, end: int) -> str:
     return token.text
 
 
+def _binding_name(source: _Source, index: int, end: int) -> str:
+    """Return the bound name, or the pattern text of a destructuring binding."""
+    token = source.tokens[index] if index < end else None
+    if token is not None and _is(token, "{", "["):
+        close = source.match[index]
+        return " ".join(t.text for t in source.tokens[index : close + 1])
+    return _name_at(source, index, end)
+
+
 def _classify(source: _Source, start: int, end: int) -> _Declaration | None:
     """Return the declaration that the statement makes, or ``None`` for other code."""
     tokens = source.tokens
@@ -429,7 +438,7 @@ def _classify(source: _Source, start: int, end: int) -> _Declaration | None:
         if _is(tokens[i + 2], "=", "<"):
             return _Declaration("symbol", tokens[i + 1].text)
     if word.text in ("const", "let", "var"):
-        return _Declaration("symbol", _name_at(source, i + 1, end))
+        return _Declaration("symbol", _binding_name(source, i + 1, end))
     if "default" in modifiers:
         if word.kind == "ident" and (nxt is None or _is(nxt, ";")):
             return _Declaration("symbol", "default")  # `export default Name`
@@ -570,6 +579,14 @@ def _primitive(source: _Source, element: list[Token]) -> str:
     raise _fail(source.path, first.start, "it.each row is not a primitive literal")
 
 
+def _is_primitive(element: list[Token]) -> bool:
+    try:
+        _primitive(_Source("", "", element, {}), element)
+    except ValueError:
+        return False
+    return True
+
+
 def _row_value(source: _Source, element: list[Token]) -> _Row:
     """Return the value of one row.
 
@@ -582,17 +599,22 @@ def _row_value(source: _Source, element: list[Token]) -> _Row:
     )
     if len(element) > 1 and local.match.get(0) == len(element) - 1:
         if _is(element[0], "["):
-            return _array_text(local)
+            return _array_text(local)  # may be a row that carries a function
         if _is(element[0], "{"):
             return _object_values(local)
     return _primitive(source, element)
 
 
 def _array_text(local: _Source) -> str:
-    items = []
-    for item in _split_elements(
+    elements = _split_elements(
         local, 1, len(local.tokens) - 1, "it.each array has an empty element"
-    ):
+    )
+    if len(elements) > 1 and not all(_is_primitive(e) for e in elements[1:]):
+        # A row that carries a callback or an expression: the title uses the first
+        # element, which must be a primitive literal.
+        return _primitive(local, elements[0])
+    items = []
+    for item in elements:
         text = _primitive(local, item)
         quoted = item[0].kind == "str"
         items.append(f"'{text}'" if quoted else text)
@@ -711,7 +733,7 @@ class _Collector:
             if start + 3 >= end:
                 raise _fail(path, second.start, f"incomplete {callee.text} call")
             if callee.text == "it" and _is(tokens[start + 2], "each"):
-                self.each_case(start, end, titles)
+                self.each_case(start, end, titles, start + 3)
             elif callee.text == "it" and _is(tokens[start + 2], "runIf"):
                 self.run_if_case(start, end, titles)
             else:
@@ -739,6 +761,9 @@ class _Collector:
                 self.source.path, tokens[start].start, "it.runIf has no condition"
             )
         call = self.source.match[condition] + 1
+        if call + 2 < end and _is(tokens[call], ".") and _is(tokens[call + 1], "each"):
+            self.each_case(start, end, titles, call + 2)  # `it.runIf(c).each(rows)(…)`
+            return
         if call >= end or not _is(tokens[call], "("):
             raise _fail(
                 self.source.path, tokens[start].start, "it.runIf has no test call"
@@ -756,9 +781,10 @@ class _Collector:
             raise _fail(self.source.path, offset, f"duplicate test ID {id_}")
         self.claim(id_, "case", indices)
 
-    def each_case(self, start: int, end: int, titles: list[str]) -> None:
+    def each_case(
+        self, start: int, end: int, titles: list[str], table_open: int
+    ) -> None:
         tokens = self.source.tokens
-        table_open = start + 3
         if not _is(tokens[table_open], "("):
             raise _fail(self.source.path, tokens[start].start, "it.each has no table")
         rows = _each_rows(self.source, table_open)

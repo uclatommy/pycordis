@@ -11,6 +11,7 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 import pytest
+from hmr_fixtures import plugins  # noqa: F401
 from loader_fakes import RecordingLoader
 
 from pycordis.context import Context

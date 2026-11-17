@@ -99,6 +99,27 @@ export * from './b.ts'
 SNIPPETS = [
     pytest.param(
         "tests/a.spec.ts",
+        "describe('T', () => {\n"
+        "  it.each([['a path', () => 1], ['a url', f(2), 3]])('takes %s', () => {})\n"
+        "})\n",
+        {
+            "a.spec.ts::T::takes a path": "case",
+            "a.spec.ts::T::takes a url": "case",
+            "tests/a.spec.ts:<rest>": "rest",
+        },
+        id="it-each-rows-with-expressions",
+    ),
+    pytest.param(
+        "src/a.ts",
+        "export const { a, b } = f()\nconst [c] = g()",
+        {
+            "src/a.ts:{ a , b }": "symbol",
+            "src/a.ts:[ c ]": "symbol",
+        },
+        id="destructuring-declaration",
+    ),
+    pytest.param(
+        "tests/a.spec.ts",
         NESTED,
         {
             "a.spec.ts::A::B::x": "case",
@@ -172,6 +193,7 @@ SNIPPETS = [
         "  it.each([undefined, null, -1, ['a', 1, -2], []])('r (%s)', () => {})\n"
         "  it.each([{ code: 'E1', n: 2 }])('o $code $n', () => {})\n"
         "  it.runIf(process.platform === 'win32')('win', () => {})\n"
+        "  it.runIf(ok).each(['p', 'q'])('both %s', () => {})\n"
         "})\n",
         {
             "a.spec.ts::T::r (undefined)": "case",
@@ -181,6 +203,8 @@ SNIPPETS = [
             "a.spec.ts::T::r ([])": "case",
             "a.spec.ts::T::o E1 2": "case",
             "a.spec.ts::T::win": "case",
+            "a.spec.ts::T::both p": "case",
+            "a.spec.ts::T::both q": "case",
             "tests/a.spec.ts:<rest>": "rest",
         },
         id="it-each-undefined-array-object-rows-and-run-if",

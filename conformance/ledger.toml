@@ -14,7 +14,7 @@
 # after the review of the upstream item.
 
 [inventory]
-packages = ["loader", "timer"]
+packages = ["loader", "timer", "hmr"]
 
 [contract]
 pending = []
@@ -3997,3 +3997,901 @@ note = "Imports of the TypeScript test module."
 status = "not-applicable"
 hash = "4deba2d9f7f64a04e49285624e84cf9825f872be16fda6937b736fb72335616e"
 note = "The fixtures `manual` and `plugin` of `tests/test_timer.py` provide a `ManualClock`, the timer service, and a plugin fiber."
+
+[items."hmr/index.spec.ts::HMR::component with multiple entries::should rebuild every fiber, each keeping its own config"]
+status = "pending"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::does not rebuild an entry disabled during unload"]
+status = "pending"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::does not rebuild an entry removed during unload"]
+status = "pending"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::rebuilds a child of an active host that reused the component"]
+status = "pending"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::skips a child whose host is replaced during unload"]
+status = "pending"
+
+[items."hmr/index.spec.ts::HMR::entry changed during unload::waits for a second re-enable init before deciding whether to rebuild"]
+status = "pending"
+
+[items."hmr/index.spec.ts::HMR::nested entry tree::should keep a single nested entry across a batch queued behind a stalled host"]
+status = "pending"
+
+[items."hmr/index.spec.ts::HMR::nested entry tree::should keep a single nested entry when its host reloads too"]
+status = "pending"
+
+[items."hmr/index.spec.ts::HMR::resource handoff on reload::should not delay an unrelated component behind a slow one"]
+status = "pending"
+
+[items."hmr/index.spec.ts::HMR::resource handoff on reload::should not start the new instance before the old one released"]
+status = "pending"
+
+[items."hmr/internal.spec.ts::ModuleLoader.fromInternal::tags the running loader with the resolver signature it accepts"]
+status = "pending"
+
+[items."hmr/message:another HMR instance is active in this thread"]
+status = "pending"
+
+[items."hmr/message:cannot start a transaction inside another transaction"]
+status = "pending"
+
+[items."hmr/message:invalid component at {}, expect function or object with an \"apply\" method, received {}"]
+status = "pending"
+
+[items."hmr/message:invalid root {}, expected an absolute path"]
+status = "pending"
+
+[items."hmr/message:loader internals are unavailable, pass --expose-internals or install node-addon-require-builtin"]
+status = "pending"
+
+[items."hmr/message:the methods replaced by an earlier HMR cannot be restored, restart the process to use this one"]
+status = "pending"
+
+[items."hmr/message:{}."]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::evaluates an evicted module again on its next import"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::keeps the jobs that have not failed through a sweep"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::lets a module that failed to evaluate be imported again after a sweep"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::lets a module that failed to link be imported again after a sweep"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::lets a module that failed to load be imported again after a sweep"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::lists the modules of both caches"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::reads the exports of a CommonJS module that has finished loading only"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::reads the namespace of an evaluated module only"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::removes a module on restore that was not loaded when evicted"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::reports static imports and CommonJS children as edges"]
+status = "pending"
+
+[items."hmr/modules.spec.ts::ModuleCaches::restores the evicted instances"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::leaves Node unchanged when a replacement cannot be installed"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::loads a hook-resolved file as the hook reports it, once replaced"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::loads a module that a load hook substitutes for `node:path` as a child, once"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::loads a module that a load hook substitutes for `node:test` as a child, once"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::reads an invalidated manifest as Node does"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::reads the format of a file from the manifests added and removed around it"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::refuses to take over replacements that another wrapper has covered"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::requires a `node:` builtin past a module cached under its name"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::requires a request that only a synchronous hook resolves"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::resolves a CommonJS require through a retargeted link whose manifest differs"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::resolves a later CommonJS require after a change confined to the manifest"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::resolves a later CommonJS require to a package added below the importer"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::resolves a later require of a file to itself once the redirecting hook is deregistered"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::resolves a later require to the builtin that a hook newly reports"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::resolves an ESM import through a retargeted link whose manifest differs"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::takes over the manifests that a disposed HMR has invalidated, in another copy of the runtime"]
+status = "pending"
+
+[items."hmr/patches.spec.ts::manifests::throws from a later CommonJS require after `exports` is updated to exclude the request"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::aborts it with a component that imports a module that its new entry newly imports"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::keeps it when its imports now resolve to different versions"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it given only its manifest and the module that it newly exports"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports after a transaction that only changes its manifest"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports in place of a removed one"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports once that module is fixed, also after HMR restarts"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that its `exports` newly points to"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that its `main` newly points to"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the version that a retargeted link selects"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that imports it"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that requires it, given its location"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that requires it, given its manifest"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::aborts a component that newly imports a changed module of a failed unit"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::aborts components that share a changed module together"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::applies a unit when another unit fails to import"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::collects the host modules of a main entry started through a link"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::does not apply a unit whose module does not export a component"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::does not apply a unit whose module fails to import"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::fails to start without loader internals"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::follows the dependencies of a module job when its job of another type fails to link"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::imports a module again after it failed in an aborted attempt"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::imports a module again after its evaluation failed for a reason outside its file"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::keeps the job of a module when its job of another type fails"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::keeps the metadata of an entry that re-exports the changed component"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::leaves a fiber failed when the new component fails to apply"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a disabled component for when it is enabled again"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a module that no component depends on for its next import"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a file URL as a root"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a relative path as a root"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a transaction started inside another one"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects with the error of the callback"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component exported from a data: URL"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component that no entry manages"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component that only require() has loaded when its dependency changes"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component when a module inside a package changes"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component when one of its dependencies changes"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component whose nested dependency is removed in favor of a hoisted copy"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a service"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces an entry component in place"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces the components below a directory root"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces the inner fiber of an entry with an injection scope in place"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::restores a changed module outside every component with the failed unit it imports"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::runs the callback inside the transaction"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::runs transactions one at a time"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::shares a module first loaded by a failed unit with a unit that imports it dynamically"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed host module below a root and applies the other changes"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed native addon"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::skips a component whose exporting modules now export different components"]
+status = "pending"
+
+[items."hmr/reconcile.spec.ts::Hmr.reconcile::starts one instance at a time in a thread"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::keeps resolving the version that another importer links"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::reports realpath support under a synchronous hook that short-circuits file URLs"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::reports realpath support where Node passes the ESM realpath cache to fs.realpathSync"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a CommonJS require through a retargeted link when the ESM probe fails"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a CommonJS require to the hoisted copy after the nested one is removed"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import after only the manifest changes, keeping the static bindings"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import of a package import after only the manifest changes"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import to a package added below the importer"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import through a retargeted link after the runtime itself is removed"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import to the hoisted copy after the nested one is removed"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import to the hoisted copy under a synchronous hook that short-circuits file URLs"]
+status = "pending"
+
+[items."hmr/resolution.spec.ts::invalidateResolution::retries a probe that failed"]
+status = "pending"
+
+[items."hmr/src/error.ts:<rest>"]
+status = "pending"
+
+[items."hmr/src/error.ts:handleError"]
+status = "pending"
+
+[items."hmr/src/error.ts:isBuildFailure"]
+status = "pending"
+
+[items."hmr/src/index.ts:<rest>"]
+status = "pending"
+
+[items."hmr/src/index.ts:Awaitable"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr.[Service.init]"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr._analyze"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr._discover"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr._locate"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr._match"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr._moved"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr._partition"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr._reconcile"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr._relative"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr._watch"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr.constructor"]
+status = "pending"
+
+[items."hmr/src/index.ts:Hmr.reconcile"]
+status = "pending"
+
+[items."hmr/src/index.ts:ImportAttempt"]
+status = "pending"
+
+[items."hmr/src/index.ts:ReconcileUnit"]
+status = "pending"
+
+[items."hmr/src/index.ts:SkipError"]
+status = "pending"
+
+[items."hmr/src/index.ts:SkipError.constructor"]
+status = "pending"
+
+[items."hmr/src/index.ts:StaleComponent"]
+status = "pending"
+
+[items."hmr/src/index.ts:closure"]
+status = "pending"
+
+[items."hmr/src/index.ts:contains"]
+status = "pending"
+
+[items."hmr/src/index.ts:covers"]
+status = "pending"
+
+[items."hmr/src/index.ts:default"]
+status = "pending"
+
+[items."hmr/src/index.ts:driveLetter"]
+status = "pending"
+
+[items."hmr/src/index.ts:isBuiltin"]
+status = "pending"
+
+[items."hmr/src/index.ts:isNativeAddon"]
+status = "pending"
+
+[items."hmr/src/index.ts:isRequest"]
+status = "pending"
+
+[items."hmr/src/index.ts:module cordis"]
+status = "pending"
+
+[items."hmr/src/index.ts:scheme"]
+status = "pending"
+
+[items."hmr/src/index.ts:toPath"]
+status = "pending"
+
+[items."hmr/src/index.ts:unwrapExports"]
+status = "pending"
+
+[items."hmr/src/runtime/index.ts:<rest>"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:<rest>"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:LoadCache"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:LoadCacheData"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:LoadResult"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleFormat"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleJob"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleLoader"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleLoaderV1"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleLoaderV2"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModulePhase"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleRequest"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleRequestType"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleSource"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleStatus"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ModuleWrap"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:ResolveResult"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:getModuleJobs"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:internalBinding"]
+status = "pending"
+
+[items."hmr/src/runtime/internal.ts:requireInternal"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:<rest>"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleBackup"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches._delete"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.children"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.constructor"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.edges"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.evict"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.exports"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.has"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.namespace"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.sweep"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:ModuleCaches.urls"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:isBuiltin"]
+status = "pending"
+
+[items."hmr/src/runtime/modules.ts:toPath"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:<rest>"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:Binding"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:ErrorContext"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:Load"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:Manifest"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:ManifestState"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:PackageJSON"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:Patches"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:Reader"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:Resolution"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:ResolveForCJSWithHooks"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:ResolveHook"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:activate"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:current"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:deserialize"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:install"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:invalidateManifests"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:isInvalidated"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:kDefer"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:key"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:nearest"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:parseManifest"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:read"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:scope"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:setup"]
+status = "pending"
+
+[items."hmr/src/runtime/patches.ts:within"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:<rest>"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:Captured"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:Resolution"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:ResolutionSupport"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:capture"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:captureCJS"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:captureESM"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:captured"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:getCaptured"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:getResolutionSupport"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:invalidateResolution"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:locatePackage"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:packageName"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:parseKey"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:removeResolutions"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:resolveRequest"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:restoreResolutions"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:toPath"]
+status = "pending"
+
+[items."hmr/src/runtime/resolution.ts:within"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:<rest>"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:Gate"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:arm"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:configTree"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:copyFixtures"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:createContext"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:disarm"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:dropCached"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:findEntry"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:fixture"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:fixtureDir"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:installGate"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:liveNested"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:liveUids"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:templateDir"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:testDir"]
+status = "pending"
+
+[items."hmr/tests/index.spec.ts:waitFor"]
+status = "pending"
+
+[items."hmr/tests/internal.spec.ts:<rest>"]
+status = "pending"
+
+[items."hmr/tests/modules.spec.ts:<rest>"]
+status = "pending"
+
+[items."hmr/tests/modules.spec.ts:counted"]
+status = "pending"
+
+[items."hmr/tests/modules.spec.ts:counts"]
+status = "pending"
+
+[items."hmr/tests/modules.spec.ts:dir"]
+status = "pending"
+
+[items."hmr/tests/modules.spec.ts:fixture"]
+status = "pending"
+
+[items."hmr/tests/modules.spec.ts:importModule"]
+status = "pending"
+
+[items."hmr/tests/modules.spec.ts:loader"]
+status = "pending"
+
+[items."hmr/tests/patches.spec.ts:<rest>"]
+status = "pending"
+
+[items."hmr/tests/patches.spec.ts:baz"]
+status = "pending"
+
+[items."hmr/tests/patches.spec.ts:fixtures"]
+status = "pending"
+
+[items."hmr/tests/patches.spec.ts:importModule"]
+status = "pending"
+
+[items."hmr/tests/patches.spec.ts:loader"]
+status = "pending"
+
+[items."hmr/tests/patches.spec.ts:require"]
+status = "pending"
+
+[items."hmr/tests/patches.spec.ts:url"]
+status = "pending"
+
+[items."hmr/tests/patches.spec.ts:{ fixture , runESM }"]
+status = "pending"
+
+[items."hmr/tests/reconcile.spec.ts:<rest>"]
+status = "pending"
+
+[items."hmr/tests/reconcile.spec.ts:component"]
+status = "pending"
+
+[items."hmr/tests/reconcile.spec.ts:fixture"]
+status = "pending"
+
+[items."hmr/tests/reconcile.spec.ts:fixtureDir"]
+status = "pending"
+
+[items."hmr/tests/reconcile.spec.ts:loader"]
+status = "pending"
+
+[items."hmr/tests/reconcile.spec.ts:stats"]
+status = "pending"
+
+[items."hmr/tests/reconcile.spec.ts:testDir"]
+status = "pending"
+
+[items."hmr/tests/resolution.spec.ts:<rest>"]
+status = "pending"
+
+[items."hmr/tests/resolution.spec.ts:fixtures"]
+status = "pending"
+
+[items."hmr/tests/resolution.spec.ts:importModule"]
+status = "pending"
+
+[items."hmr/tests/resolution.spec.ts:install"]
+status = "pending"
+
+[items."hmr/tests/resolution.spec.ts:link"]
+status = "pending"
+
+[items."hmr/tests/resolution.spec.ts:loader"]
+status = "pending"
+
+[items."hmr/tests/resolution.spec.ts:modules"]
+status = "pending"
+
+[items."hmr/tests/resolution.spec.ts:{ fixture , runESM }"]
+status = "pending"
+
+[items."hmr/tests/utils.ts:<rest>"]
+status = "pending"
+
+[items."hmr/tests/utils.ts:RunOptions"]
+status = "pending"
+
+[items."hmr/tests/utils.ts:realpathESM"]
+status = "pending"
+
+[items."hmr/tests/utils.ts:useFixtures"]
+status = "pending"
+
+[items."hmr/tests/watch.spec.ts:<rest>"]
+status = "pending"
+
+[items."hmr/tests/watch.spec.ts:FakeFs"]
+status = "pending"
+
+[items."hmr/tests/watch.spec.ts:FakeFs.constructor"]
+status = "pending"
+
+[items."hmr/tests/watch.spec.ts:FakeFs.watch"]
+status = "pending"
+
+[items."hmr/tests/watch.spec.ts:Watch"]
+status = "pending"
+
+[items."hmr/tests/watch.spec.ts:change"]
+status = "pending"
+
+[items."hmr/tests/watch.spec.ts:component"]
+status = "pending"
+
+[items."hmr/tests/watch.spec.ts:fixtureDir"]
+status = "pending"
+
+[items."hmr/tests/watch.spec.ts:testDir"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::accepts a absolute path without a context directory"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::accepts a drive-letter base"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::accepts a file URL without a context directory"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::accepts a relative path without a context directory"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::defaults to the context directory"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::defaults to the working directory without a context directory"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::base::resolves a relative base against the context"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::does not watch with empty `files`"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::only reports a change to a host module"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::reconciles the changes of one debounce window as a batch"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::reloads a component when its file changes on disk"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::retries an entry that a manifest has moved with the next batch"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::retries an importer of a package that a nearer package shadows with the next batch"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::retries the changes of a failed batch with a batch queued behind it"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::retries the changes of a failed batch with the next one"]
+status = "pending"
+
+[items."hmr/watch.spec.ts::Hmr with fs::watches `files` in `base`"]
+status = "pending"
+

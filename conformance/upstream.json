@@ -423,6 +423,1209 @@
       "hash": "9209b74a95447b0ea2e72646d29ac773c115643cb190f162425abc1dc5767db1",
       "kind": "case"
     },
+    "hmr/index.spec.ts::HMR::component with multiple entries::should rebuild every fiber, each keeping its own config": {
+      "hash": "9dd8c4b633349bcbbc83d3f16e572532157d70b49164f54450e2684343d16e4a",
+      "kind": "case"
+    },
+    "hmr/index.spec.ts::HMR::entry changed during unload::does not rebuild an entry disabled during unload": {
+      "hash": "26e2785209c818967f813bcdaa8f4ed206234a9988925369d97d92f4a4c9b203",
+      "kind": "case"
+    },
+    "hmr/index.spec.ts::HMR::entry changed during unload::does not rebuild an entry removed during unload": {
+      "hash": "bfd0a69e3434b271a98e8846b61daf786c392969f14e54a400f869755d2c7c62",
+      "kind": "case"
+    },
+    "hmr/index.spec.ts::HMR::entry changed during unload::rebuilds a child of an active host that reused the component": {
+      "hash": "2254ed79a67eb3122dd0c0b1ae79891731f0e642da79dfc54ce3ba472692d969",
+      "kind": "case"
+    },
+    "hmr/index.spec.ts::HMR::entry changed during unload::skips a child whose host is replaced during unload": {
+      "hash": "d4762462918db606eb80dda2943ff230f26da5a72705052ccf5fb9dbfbb483ca",
+      "kind": "case"
+    },
+    "hmr/index.spec.ts::HMR::entry changed during unload::waits for a second re-enable init before deciding whether to rebuild": {
+      "hash": "9f803f41b99e26288f9f86044787c5b0d5616ad5ab784f68c2a259d60598ac9f",
+      "kind": "case"
+    },
+    "hmr/index.spec.ts::HMR::nested entry tree::should keep a single nested entry across a batch queued behind a stalled host": {
+      "hash": "95fa823ecdcc0a5626808542c9879db94105699dccff3bd4d8c56ac4391019a6",
+      "kind": "case"
+    },
+    "hmr/index.spec.ts::HMR::nested entry tree::should keep a single nested entry when its host reloads too": {
+      "hash": "3225e3bff3c84efae62cd8b7226aa3a883836c8cbdb11189af8dc41db6666036",
+      "kind": "case"
+    },
+    "hmr/index.spec.ts::HMR::resource handoff on reload::should not delay an unrelated component behind a slow one": {
+      "hash": "5744dc5d420e12f8650390387dade41c0f7bb9ba44de31f46f48ebff4701f4f4",
+      "kind": "case"
+    },
+    "hmr/index.spec.ts::HMR::resource handoff on reload::should not start the new instance before the old one released": {
+      "hash": "791350910bf6132cb281d12fb71587679c837ab825e3a3c009a46b196b6f233c",
+      "kind": "case"
+    },
+    "hmr/internal.spec.ts::ModuleLoader.fromInternal::tags the running loader with the resolver signature it accepts": {
+      "hash": "6214c7e7b72b6e06399f677ad638f0b51254a90c87b28e5b5c58a3735e654dd1",
+      "kind": "case"
+    },
+    "hmr/message:another HMR instance is active in this thread": {
+      "hash": "ac4fbcb69de07c14026d41c14bc03e94360fc7f4370d30990499d5942bacd9e9",
+      "kind": "message",
+      "text": "another HMR instance is active in this thread"
+    },
+    "hmr/message:cannot start a transaction inside another transaction": {
+      "hash": "319e8e4f4ec559af372941f07c8711a76273972ad4099bfd37a1a54d5fc9290f",
+      "kind": "message",
+      "text": "cannot start a transaction inside another transaction"
+    },
+    "hmr/message:invalid component at {}, expect function or object with an \"apply\" method, received {}": {
+      "hash": "d4148536d40ef7282cd894ca9a219b67477364f7f45da962ee2b70cda41bba56",
+      "kind": "message",
+      "text": "invalid component at {}, expect function or object with an \"apply\" method, received {}"
+    },
+    "hmr/message:invalid root {}, expected an absolute path": {
+      "hash": "b6f347c759894b261fa2b4436682991155836493a2bce35bb0c46029c44c197d",
+      "kind": "message",
+      "text": "invalid root {}, expected an absolute path"
+    },
+    "hmr/message:loader internals are unavailable, pass --expose-internals or install node-addon-require-builtin": {
+      "hash": "86029174b2dbb13433a14c03c2d49aba3b599363c999f50d9c652bf3b632971d",
+      "kind": "message",
+      "text": "loader internals are unavailable, pass --expose-internals or install node-addon-require-builtin"
+    },
+    "hmr/message:the methods replaced by an earlier HMR cannot be restored, restart the process to use this one": {
+      "hash": "1753314b3f7200ca64d37d1d661e7a5c544d2787957882e93ee997777743a9de",
+      "kind": "message",
+      "text": "the methods replaced by an earlier HMR cannot be restored, restart the process to use this one"
+    },
+    "hmr/message:{}.": {
+      "hash": "b4ecea9969b835e7698be34143aeecded3ff084e6ef1d35b27f6fd631670910b",
+      "kind": "message",
+      "text": "{}."
+    },
+    "hmr/modules.spec.ts::ModuleCaches::evaluates an evicted module again on its next import": {
+      "hash": "48e5811f6c877e7039f6d1cc33d66b8e49fb5756f525bf97b47c4998267f21c9",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::keeps the jobs that have not failed through a sweep": {
+      "hash": "b5ec99150284718939bcc281a7bc880efa13037c46e0d60b33f6ca0b2af47ade",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::lets a module that failed to evaluate be imported again after a sweep": {
+      "hash": "5346b76b3e811a1a4541727a2e8e167d360f52d7ae441fa728358aee5ac01e70",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::lets a module that failed to link be imported again after a sweep": {
+      "hash": "13fe2090c47f306a3b66a70f4a6e805437f83886a735b51a4246091ad25dec05",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::lets a module that failed to load be imported again after a sweep": {
+      "hash": "b0b280a907b58264b545912ee537c29fcd2066e690135730c92c228bb0c75c91",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::lists the modules of both caches": {
+      "hash": "c2b8f9d5e489dc3853c5de03bfbd85fda1f00ed1e33c22896c7048847ac3c2c1",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::reads the exports of a CommonJS module that has finished loading only": {
+      "hash": "024918803823a0a84eaf040acd0011444afe6643f69e3c5b3c670390a25ea5d5",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::reads the namespace of an evaluated module only": {
+      "hash": "7fc74a49dfe841725be71ee8c28f25a3068111419aba6ecbda77a622685f099c",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::removes a module on restore that was not loaded when evicted": {
+      "hash": "026224958ac1b2bc672429b6dfc9367256337618f12e125c37e4f14ca4f88ada",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::reports static imports and CommonJS children as edges": {
+      "hash": "849168cab4fc950a0dc19f921669ca4e1a3b7dfc33913191912268af1fe7a98d",
+      "kind": "case"
+    },
+    "hmr/modules.spec.ts::ModuleCaches::restores the evicted instances": {
+      "hash": "4e8c87cf8ccf4018b1d7dc437ccaac0a024ff2b6979c3b39f5b3a29d86c15097",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::leaves Node unchanged when a replacement cannot be installed": {
+      "hash": "32229a837f270952a5e1774b57420dbcc9d75775a5751ea35fa78ab636bef6a9",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::loads a hook-resolved file as the hook reports it, once replaced": {
+      "hash": "8542b1ac571779ef9a44175b25f7a46f3d0d0fa65d96cf141181893690c98e22",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::loads a module that a load hook substitutes for `node:path` as a child, once": {
+      "hash": "9bdf64a577ff6432df09e7b3f402448708e65ce5c16e0fac675848fcca4e946f",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::loads a module that a load hook substitutes for `node:test` as a child, once": {
+      "hash": "9bdf64a577ff6432df09e7b3f402448708e65ce5c16e0fac675848fcca4e946f",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::reads an invalidated manifest as Node does": {
+      "hash": "de8d8e475f7b1a95f459eeef14a47488620f90b78ee27f8e3fd0abbfc15f6601",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::reads the format of a file from the manifests added and removed around it": {
+      "hash": "03885a3bb2ce4c7a4c6233a85d12fa406902d7c00c6de354ace89af53d09ebe1",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::refuses to take over replacements that another wrapper has covered": {
+      "hash": "a07338a897780ea329d4d010035a8152636d4e92a0c3e688a69e6a6ffeed57d0",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::requires a `node:` builtin past a module cached under its name": {
+      "hash": "e24905d775024b64471b0f06899add8e4e6b8764a23d4f35e0e8fa946122126a",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::requires a request that only a synchronous hook resolves": {
+      "hash": "de9711730b6e554a6b042998b3ac603fa7d46f1c2200313792741eb61d7a27cb",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::resolves a CommonJS require through a retargeted link whose manifest differs": {
+      "hash": "c4322dacccee5a4a44e35b96f31de1eb1219862b56edd42ccb23bbc8d8842c6c",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::resolves a later CommonJS require after a change confined to the manifest": {
+      "hash": "779642aa6c0d973596824c7c2f240575f71e2299c1124a5be5ddf491943af427",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::resolves a later CommonJS require to a package added below the importer": {
+      "hash": "768a3d1ff9b7bc001c6346b063ba5aef315a96bf9dc9c34e970d3c9aef388221",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::resolves a later require of a file to itself once the redirecting hook is deregistered": {
+      "hash": "f62769a5f1535b5f2a0231b86bdd8dc44b91cb2db004d9b66a874160ffd876a4",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::resolves a later require to the builtin that a hook newly reports": {
+      "hash": "3d1ffef74578a2ea4b0fa054f692736b8874bd463964f393a890f33b083acf0c",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::resolves an ESM import through a retargeted link whose manifest differs": {
+      "hash": "4f388441af22e4d927dba8f005dded4ae5d8143e5aa7a0dd83c604f7ebc22fb5",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::takes over the manifests that a disposed HMR has invalidated, in another copy of the runtime": {
+      "hash": "81d80a3c3d7c75b57cb1bf0dfb507d92f5185e70b9dec1664a818ad177850974",
+      "kind": "case"
+    },
+    "hmr/patches.spec.ts::manifests::throws from a later CommonJS require after `exports` is updated to exclude the request": {
+      "hash": "c5fa5021e1ddc2050e717748903dbcde4213f86268a9d09f57172a5b481ccd54",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a component package::aborts it with a component that imports a module that its new entry newly imports": {
+      "hash": "7f3eccd56701e2fafe9ad72deb3bc8bdfdb97a7d8c42d2440c1359311033613f",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a component package::keeps it when its imports now resolve to different versions": {
+      "hash": "080610ea3afc076313b9c1ea20036c0cc0f8ddcd16714fc87f95b4f05f0b161d",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it given only its manifest and the module that it newly exports": {
+      "hash": "0d20e2ef422a9bb1f2433f1421f34179dcda865989fa7a465f9c0637addec976",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports after a transaction that only changes its manifest": {
+      "hash": "341a45836fa1c1f9436bffd27d9ecbbe560b16033d66857074ecd19855d5a7d6",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports in place of a removed one": {
+      "hash": "a45151a7e22a29b5d0fd4004aa520184b3423c4d9f629c6488741d496fbddc4e",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports once that module is fixed, also after HMR restarts": {
+      "hash": "607fd5060a979f1407ab49a87254a0ad0929ac26ebd21fa179c37eb5a36e9f9c",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that its `exports` newly points to": {
+      "hash": "fc70e4e59fb83d770b45bd183f2c0d7c8d0206dfdcc5f58e4141230eaa89d05f",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that its `main` newly points to": {
+      "hash": "fc70e4e59fb83d770b45bd183f2c0d7c8d0206dfdcc5f58e4141230eaa89d05f",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the version that a retargeted link selects": {
+      "hash": "f6eb16311b967be8f400897b3d290373daeb6be8fa679ff0ef75f2062b3e7e2c",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that imports it": {
+      "hash": "b55167e2c097612258cf5bd1e20fcb6d0a0bef9b90cb33fe4fa9cf03b12531a2",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that requires it, given its location": {
+      "hash": "b1a87a3a736e741f2dc024590d8a87f5e69c5d393a5ccfedfe3ece7bed65f8af",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that requires it, given its manifest": {
+      "hash": "b1a87a3a736e741f2dc024590d8a87f5e69c5d393a5ccfedfe3ece7bed65f8af",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::aborts a component that newly imports a changed module of a failed unit": {
+      "hash": "85c17e000f161d973ec46953de980f07b2ee7f30f3f09c055d066b5a76f6fa74",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::aborts components that share a changed module together": {
+      "hash": "0d585b27e95ddecabccd5818690831d4f6857598c7ebb01f3798d72a80b21c06",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::applies a unit when another unit fails to import": {
+      "hash": "74b6c9fb8f7f6e17dd9be59069358eb5f52c370e7b85415ed0de093dc197f847",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::collects the host modules of a main entry started through a link": {
+      "hash": "d8c1391af1b399e903ef7975b1936375127652aaffa63d693c0d53de073f4b7f",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::does not apply a unit whose module does not export a component": {
+      "hash": "50ac4844453d7e2606ce2aa9058a37f14fef4f06aa6df87b878af43446984e73",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::does not apply a unit whose module fails to import": {
+      "hash": "52f4da493f47708266d979a5954b525b2c9bb7e43741968cbbaba15938024172",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::fails to start without loader internals": {
+      "hash": "acf9519b87ddb7c14a91e6c56701426bade08418738cbfbdd1de8e9b80541f4b",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::follows the dependencies of a module job when its job of another type fails to link": {
+      "hash": "8f59b65e068403b12fc7ab678eb52c3112b636e182f095ef248a7bccf21156c1",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::imports a module again after it failed in an aborted attempt": {
+      "hash": "e015f2387b8333765e08b32bd3222dc96ae854bb937d139a12038e2397f996fe",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::imports a module again after its evaluation failed for a reason outside its file": {
+      "hash": "f1a56e2820b019870182936edebd759165e951aeefe95d216ad4488114b683f1",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::keeps the job of a module when its job of another type fails": {
+      "hash": "f2be7148ac130c3a3afbedf4c872a59c27b98b2fe65bffd7e9e67207baedc30e",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::keeps the metadata of an entry that re-exports the changed component": {
+      "hash": "2cc116345781101e482e45ffc9f5a3a62850b76ce3fbccac4c132ace7eb65820",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::leaves a fiber failed when the new component fails to apply": {
+      "hash": "111047e3b8b634edc0567882bd023f238589d61157f9a2f8283f5468f4398c10",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a disabled component for when it is enabled again": {
+      "hash": "26946117385ba3ec3b352e3890c254a0d176561882dbc711d9b7d665feafdd17",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a module that no component depends on for its next import": {
+      "hash": "dd1a5bbdba44718a2a0ffee141b74b14549388761ca8cfcef31b50b727c75714",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::rejects a file URL as a root": {
+      "hash": "68b3f79341dbd47a0e6fe3a6bc4d7ab079c2d7705f368ee02ec7c75bd5bed775",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::rejects a relative path as a root": {
+      "hash": "68b3f79341dbd47a0e6fe3a6bc4d7ab079c2d7705f368ee02ec7c75bd5bed775",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::rejects a transaction started inside another one": {
+      "hash": "3f2f7d5997f41d3d7d78b892d1ab2b0331f1c4364dd79580752ca9d2129f3bbe",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::rejects with the error of the callback": {
+      "hash": "9685e170cb7971f6d51a09b021740ae55f6384e4b24561629efbea62a4b3433e",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component exported from a data: URL": {
+      "hash": "c6f1a1eaada4e6ce22b40f0181938a68541a9f2194e9d58611954cdbde899257",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component that no entry manages": {
+      "hash": "172369797ddff0c40cac222197fdc9f48aa44317ae4e3a2abea79fa8323a8171",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component that only require() has loaded when its dependency changes": {
+      "hash": "ffb048759dcfee8e99972e7b892bbc957369c76cf70bff1d0def7ce4bab21957",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component when a module inside a package changes": {
+      "hash": "4d17b54dbca92e34c03a821641b2f11548b634b2ef1803dd48ad65f56c936869",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component when one of its dependencies changes": {
+      "hash": "cce7a69e2ce314c77c72ac787b3b6ff655bc0863784dcb8305ff1842721a1da1",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component whose nested dependency is removed in favor of a hoisted copy": {
+      "hash": "66402e5a1ea435d24e3822dc06b1c7cf4a0a369116f32cf2335751ecf186c086",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces a service": {
+      "hash": "065ee53d0dc7511166f7fa1f8ec40bb98112f29cc00d090c59227c4ce33ba54a",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces an entry component in place": {
+      "hash": "643570b729499f184b6b00dbc50a81243cbd37c06ea6bb08b7cc7373254e9b15",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces the components below a directory root": {
+      "hash": "be1f4c7582809726ea369bf642a2f9f94095d852339a02b3f20c968fd57b474a",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::replaces the inner fiber of an entry with an injection scope in place": {
+      "hash": "e5f470ce09a2a3a19d285241afb92cf2a02edc79034604c527f3dab0829c4383",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::restores a changed module outside every component with the failed unit it imports": {
+      "hash": "121b149e25a488ec351240637ea5e5b23380ded8abcdc26da96bcf88b37b98f1",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::runs the callback inside the transaction": {
+      "hash": "81dfd8bab91b1228a998871a73694630f5bff0e2a9cde1445ff6953669482b70",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::runs transactions one at a time": {
+      "hash": "7fd49e5a9c061924d7a6d18bed77f18cd1996945505986fdd6abe0a4b1863560",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::shares a module first loaded by a failed unit with a unit that imports it dynamically": {
+      "hash": "cb5fba1aa7bdbe9b366f71561df74f96c7b7904a6bb75724f62c4e188e2c6a94",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed host module below a root and applies the other changes": {
+      "hash": "962290f045599d110c09b8b49a74d81d853163ed193bb733600c0baf8a5f786f",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::skips a changed native addon": {
+      "hash": "f562ee2320866fe6a1fac6967807eb2af733cc47a696bb48c6ae09e7ca5b5d28",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::skips a component whose exporting modules now export different components": {
+      "hash": "f21393445cb4e2a2de6f0dbaa09809406d3fb885b785006538e5fb883bb05148",
+      "kind": "case"
+    },
+    "hmr/reconcile.spec.ts::Hmr.reconcile::starts one instance at a time in a thread": {
+      "hash": "ba09ab08a9a1e487cfc44e8f41e6ead98858188e50992ed51116d65c89c378fe",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::keeps resolving the version that another importer links": {
+      "hash": "b0663d199e4b9e15b0f18c090c995d985267b2455991c9a12403d5a7adcb9fdb",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::reports realpath support under a synchronous hook that short-circuits file URLs": {
+      "hash": "7023888de280e4d2a7f2e949dcfddf085074924d32b088cbdcaa9204cfedad6b",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::reports realpath support where Node passes the ESM realpath cache to fs.realpathSync": {
+      "hash": "2d12ec54143178840fee074127fdf8db03c0a0d71a547398faf28d8279600b42",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::resolves a CommonJS require through a retargeted link when the ESM probe fails": {
+      "hash": "1f211ba7bc100afbfb45cfa2d2c1bcfc01c02583eeb83c454f8acbb57f2551a9",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::resolves a CommonJS require to the hoisted copy after the nested one is removed": {
+      "hash": "dc697d18ac54153d80fa58bc02ba35efc8ca5c4912075ce4105fafca8f117e1d",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import after only the manifest changes, keeping the static bindings": {
+      "hash": "e0becae4460dd7af02a65a2ed77bcbad3bd335b14fe0c5e4722e443da2f9ba7e",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import of a package import after only the manifest changes": {
+      "hash": "66d40cc595b2f72c6d00f0437ed9780fdb50f897bba9a6739591b0b61899fd39",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::resolves a later ESM import to a package added below the importer": {
+      "hash": "6b8d5b7fcd128b692e8e92a142edb095dd04be2a60391a8c6bc615e81e42cb0c",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import through a retargeted link after the runtime itself is removed": {
+      "hash": "4520ffc9b86e2770dbd34207ebafc46a86dbbb269568d28a289b026e6f821bf2",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import to the hoisted copy after the nested one is removed": {
+      "hash": "d9d7d09a4cc32fb1edffd749bdd7c7fb1e2c9d5e36f42078454eb262427d5c4d",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::resolves an ESM import to the hoisted copy under a synchronous hook that short-circuits file URLs": {
+      "hash": "715076e7c420d402beddc981fc3739f4b6e6640d9152b612162cbbe09e26a5e2",
+      "kind": "case"
+    },
+    "hmr/resolution.spec.ts::invalidateResolution::retries a probe that failed": {
+      "hash": "a1b296c159cefccc92ff42d9bfdd9437d095681c2cdd7e369b93ad233ae83ea0",
+      "kind": "case"
+    },
+    "hmr/src/error.ts:<rest>": {
+      "hash": "3cbba59375626acbd89e1e0124b2f4cb5e6ebb7635282019384f86b007ed4e9a",
+      "kind": "rest"
+    },
+    "hmr/src/error.ts:handleError": {
+      "hash": "5229b1a95d6cf85240f0473ec37e26d5cb7249f2432353bd0339efd30dbad4c8",
+      "kind": "symbol"
+    },
+    "hmr/src/error.ts:isBuildFailure": {
+      "hash": "8672ae48214c9d4a1df01b90b634895dc7c8eb7ae249cc19c668fba8f0a060fb",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:<rest>": {
+      "hash": "82a25bd0942a09346dee4436f2334de7a94b138ad210b0a7254bd3f38e0dc47d",
+      "kind": "rest"
+    },
+    "hmr/src/index.ts:Awaitable": {
+      "hash": "a5ba06d5440bd4f6124fa8c8f6378ae4bd66a166601a25238d5d6a733cff3103",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:Hmr": {
+      "hash": "79e843a936623d7e9b31b3eae8b24fe4937ef09a25bb2d649be42913a72752cc",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:Hmr.[Service.init]": {
+      "hash": "683da650ef3d8779677c0e9ff4edfbf0dacd7a753bf30d5eb48eeacc77354a24",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr._analyze": {
+      "hash": "843d9eb554dc9970cff59c364c9e2dbcdb371d252ca5eb78277263e39d756c05",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr._discover": {
+      "hash": "a71cc8c289982e0a47d7b07dea317c429c7067bda6a8940557cadde0949ac333",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr._locate": {
+      "hash": "abfa02cbb3e79a560c25442b3c6f7f47c81289bef69faf43764e1a2edd39ad09",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr._match": {
+      "hash": "9c4e623a035afb9d8946797412e1430643f88af10aecd383607b433e10a24c63",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr._moved": {
+      "hash": "2df33cb45815fa87b16a61d74876f47dc9fcd96e318b2769907727f0a4e19bd3",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr._partition": {
+      "hash": "408f0c8c18d214984ab75a2ff7eb32bf31bc78cdf9654a95ea853fd0b26aebe7",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr._reconcile": {
+      "hash": "c1a73784ce99086ca6ea7bb6e080eade4dbf2c92a4eaff98c35085cc2b4bfa6d",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr._relative": {
+      "hash": "7f54370e5d8701127bcc1cfb438e3059ef04caae77e35f800581f07ee2643f93",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr._watch": {
+      "hash": "f046a24fe1ae784dcfa2636771f8e3bfd5657f0d9151f5f40602e786202d72e2",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr.constructor": {
+      "hash": "a0b6b8919c425a50c277c962e9a5dfb70cb798d5b9bc80d533f578eefdc0d38d",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:Hmr.reconcile": {
+      "hash": "4edf3712ff040eb0d1a37acaeb34c3c1f5da662f6e4c49e91b4f6b5b518d86f0",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:ImportAttempt": {
+      "hash": "f5e76e1fc5bf4be696687a3828e57b766c78afb7dba391b8bf8ed2b2c7ca330e",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:ReconcileUnit": {
+      "hash": "27ff24b7612b67a3c4a51a23b23a9a90918bdec68409802e193125bd86aa2643",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:SkipError": {
+      "hash": "a75a424381ba9324cc0a3307d7b09f4c51fb526a49c01adfc2ee07b5e744638a",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:SkipError.constructor": {
+      "hash": "6c42cb8c57d07a9525e68abc12d2a5d4b926ea60a5a1d280adea4bd1ed21618c",
+      "kind": "member"
+    },
+    "hmr/src/index.ts:StaleComponent": {
+      "hash": "abb9fd4993bde073723a5d65f69c8706c7aaccd30f3c2bfe37d37e03e544a426",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:closure": {
+      "hash": "ce657fb0cedeb92dcea0a97f485071b0e8f234d9bf85ac0132f8c750cdd69283",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:contains": {
+      "hash": "9620c542f17f72bd23ab3107fffb7f5bdedd70ac355bb07d4c19eb0a0b593eb2",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:covers": {
+      "hash": "afdcd60233b09aba3eea6e67a11ead3c9bd289a6e52960335a16d29271f820ea",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:default": {
+      "hash": "f8ff6ad0a73a692f5f7cebefc35b6d32f3eef923f4c8aa28d6c5082b9e6036c0",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:driveLetter": {
+      "hash": "800e1149b15a4b33ddbac21f03f35a914be93454259dca250c5ddbe720f564f1",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:isBuiltin": {
+      "hash": "48fe6b5d785141599be8367f304daf83a51f1d9359c8f6d00e0649d8d01ed066",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:isNativeAddon": {
+      "hash": "a8cbc254aa42176dadf26045cfa218fb3d3eefb5983b10c78a085d824cf25036",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:isRequest": {
+      "hash": "20404d5e534427efe19007f0536bfe6da8c540f35267b020544b10d0cdb15410",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:module cordis": {
+      "hash": "089ad5d37ab36aab13be3353533875dd28f8c8132c9cf4c4fa7c3015a020a127",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:scheme": {
+      "hash": "d80149b206f06961be7a261a65996f215212bc7c9beca233e2323405a133d6e5",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:toPath": {
+      "hash": "129180770f7f7e624cbba90e83403d73ba5757f17867ebd4e786b980a4d51cd4",
+      "kind": "symbol"
+    },
+    "hmr/src/index.ts:unwrapExports": {
+      "hash": "faf5fa25257d22934b6050e902ab1383bd76388eb995e29452c84d7faadd9b31",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/index.ts:<rest>": {
+      "hash": "a42913745ee8283f44ddadef2ae2ff232967c9ebe039372371560740a82eff34",
+      "kind": "rest"
+    },
+    "hmr/src/runtime/internal.ts:<rest>": {
+      "hash": "659952f4bce827b2bbd340548960dbfadae042f438db27ddfce6799cb5688516",
+      "kind": "rest"
+    },
+    "hmr/src/runtime/internal.ts:LoadCache": {
+      "hash": "2efb24d52ea9b4dfd22409eb00431dd91575270fd1810faa2ae6a91c5035ca53",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:LoadCacheData": {
+      "hash": "0adfc2b2861f1634040be2ce018384a1677e4d1a22762e24078fafbe36940424",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:LoadResult": {
+      "hash": "260d2c89e2408ebd893407ef3a2c4793056d03605e85b426486f45071f7c05c1",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleFormat": {
+      "hash": "5522fc5e6f407497a560508c8ba8ebcca05f43ab8a055bf259734e2cb21a2b89",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleJob": {
+      "hash": "7f60486f310fe71304ecbe64ffe6f38df46f2a57989c9cea52badaffc3218250",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleLoader": {
+      "hash": "28a2d460db0748e8e95d6e450a6cff0d1744169ce870f5000ba43d6a8a06df48",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleLoaderV1": {
+      "hash": "07317f986f0bd00b3e947352095268557dbc514b862d59d96db5b1e5ff3c1322",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleLoaderV2": {
+      "hash": "287b492d1056e487b5e2a113f7bf9d465af82d7a2ce2fffefca0551eca7f23f6",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModulePhase": {
+      "hash": "ab4a6e1ec7177026c67b4ecf6eb1ac63f74e6f9d11e4cb914f5796d9d6d4acdb",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleRequest": {
+      "hash": "b213f0bf41a91550159bf62bca4d8b4eb197d73fc9cbe27104375fc8814e098f",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleRequestType": {
+      "hash": "e3bb98958988dff532951d10fecf06820e107f07df3850a9e19add46f8ee35f0",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleSource": {
+      "hash": "0a3dcb05e6099034ea81e739da19208a3e98ff7e7ee0da19c587df852bdbfba0",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleStatus": {
+      "hash": "7a284f7fcf0509d3595614637eb3ac11c3979ca2f54004cc4e17d1758bdf5095",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ModuleWrap": {
+      "hash": "c9a73013582dabbc3b06c3181587a62a7995217343b86da608ff18c9c36d8af8",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:ResolveResult": {
+      "hash": "69aed5a37663705acf4606f139d94bebfdb2f79a0cbef994431b082ffe4144ed",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:getModuleJobs": {
+      "hash": "a093805b3d19e31139de83fffdea08e5a4c8b2ae46013fe3262da49227ee3db2",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:internalBinding": {
+      "hash": "2500d909c4606f47ec0d3fd47da960faedb65dcbf1100e676fe4e64215214de6",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/internal.ts:requireInternal": {
+      "hash": "edd6d2404158b3a3a9f1a0157076a503e625246bf56d8c9196ab1fd137552419",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/modules.ts:<rest>": {
+      "hash": "6778cda14679cfae9325385f1aa26014117e9579d02d02ada086a20f595b9e0e",
+      "kind": "rest"
+    },
+    "hmr/src/runtime/modules.ts:ModuleBackup": {
+      "hash": "6899819b1c6765a0c182c8c9862faae27d5de80d9375083eec6f643da535972b",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches": {
+      "hash": "bdb6600c7c8768f975bfc34717f0e22a0fd5dd951f858b383339e4c6f169615a",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches._delete": {
+      "hash": "54857f4a50438770442f6bbceb58e660e29869b45523e83fd09fe44afa50c169",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches.children": {
+      "hash": "7b88c1e20613b2002c249bd4517caa2a47c4a845e71303610119a80059b3ff68",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches.constructor": {
+      "hash": "909a8cb2e850765a2ad2451bd098d37367f69ad3243ca95f5af566507efd7e3a",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches.edges": {
+      "hash": "4f36d2fa0186177261ce9ef0ec668a2537a14e72d10917179973970c60436102",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches.evict": {
+      "hash": "091bb7a2b3e66abe6b042b97694a93e163c9f27d2ddd18ac16a06503023a26d4",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches.exports": {
+      "hash": "ef7c975038cb84ddbbe422df8c1bfc818faf6300c837950da038cfe3dc811dce",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches.has": {
+      "hash": "1c5c04f7c663d54e191004df137515a11e1ba5554cc29999d0e3a8a9f1ee8539",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches.namespace": {
+      "hash": "1f8905ad086722886ec07f8e2acde1b48b02c2c65fbf5f758c278edb95155187",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches.sweep": {
+      "hash": "6ae0ff54ed09b88837d26be8146a95d752402c80663b0a079688d45091f691ee",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:ModuleCaches.urls": {
+      "hash": "c745afdc46e6df2073557a6fb005d6bc31f3e828feb647d63188d6cac5885d2c",
+      "kind": "member"
+    },
+    "hmr/src/runtime/modules.ts:isBuiltin": {
+      "hash": "48fe6b5d785141599be8367f304daf83a51f1d9359c8f6d00e0649d8d01ed066",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/modules.ts:toPath": {
+      "hash": "129180770f7f7e624cbba90e83403d73ba5757f17867ebd4e786b980a4d51cd4",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:<rest>": {
+      "hash": "264c08ac8a6eac8c463074a815f3709696c6eb5597511481e59328a22a24eda1",
+      "kind": "rest"
+    },
+    "hmr/src/runtime/patches.ts:Binding": {
+      "hash": "75e6c4d26dc40b56682b7f6141c9642af34a72366b4ae39cf0965b6222a8716e",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:ErrorContext": {
+      "hash": "a1540f5d555fd03bdaff5e91cc8ec1a2d510d57eb91b40d1bcbf5ca051deaa22",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:Load": {
+      "hash": "21773fb8842781095b80bc6c417c3ed9260dcc2f320336d771172839e2bdd9d8",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:Manifest": {
+      "hash": "7b37b9d45dc21d96a96f13c3828041a2927d9511fe5da06ac71c85b2b224c360",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:ManifestState": {
+      "hash": "14629e5ca49f335b4e00144009c73d6d6f72484a7c8988fbc008269308755024",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:PackageJSON": {
+      "hash": "660c99167f18e5ae7f58d283d7e0894bb0a09283dc3bb8cb3bf9028e9b1d2fc8",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:Patches": {
+      "hash": "7fb3ea3b160ca129303b8dd0079a834671d80f263efe36ee7a799268c40c73be",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:Reader": {
+      "hash": "b358ba27667073af65a41bf5f065833c2e5863a485ea45139694bd6400afb926",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:Resolution": {
+      "hash": "d948bf49145a9aa27dadbfd9a31e517bf25dc8d6d2ce4b5fd307893e6689f60e",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:ResolveForCJSWithHooks": {
+      "hash": "29eed47f978f5c36ad6241f63284bb18ead3d75c04e64174352ed5d4ed8b98a2",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:ResolveHook": {
+      "hash": "2ab2619378d27adca59a821a213278ccfac3bd204cf3c9a2c4932525067f3d36",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:activate": {
+      "hash": "3bc7503e883b2cd65ec0a9b97396118f89e3171613c9d9eb4f03346d24ed1e21",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:current": {
+      "hash": "40daa97389a49c3bad9ba045c90ba0be0db12339829a0999789b784fd49eb02a",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:deserialize": {
+      "hash": "782543f3f2e2b42bd2c4e35096f85ea123cb9d12bf4d292fa37ba97b5ecc2978",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:install": {
+      "hash": "4f0b78e053e6fa01c766ad6a852804154ea18ce041a70fc4d56a369535a992a8",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:invalidateManifests": {
+      "hash": "16cbdd819235954d10fba6ec8e6b44c22b939156791aecb19f59694d5b2fadcb",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:isInvalidated": {
+      "hash": "23244208d827fa8a123b6870140e517476bb5ad18b6a4000b276f2f7ad445458",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:kDefer": {
+      "hash": "7bae41a0c55c475d03c6c099d4d7a8b0b1fcbb3e3fc051cd66e2aee73ffec584",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:key": {
+      "hash": "c360f501d58af1476279df1a9cb314d8180f24d4914de2f99c821a6931cbc16b",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:nearest": {
+      "hash": "38998451ec4af0fb779446e046a44554bac76e0b0d40eba7a4bd99b3259bfb39",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:parseManifest": {
+      "hash": "328972cfabe8a75b40f59fc87d95fab96e2efd50c1fcd0aacd7a64b0f3ca78b0",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:read": {
+      "hash": "0e2129308b86c617330802f5fcffe74a51164f4d81d737983e4082edce28bed1",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:scope": {
+      "hash": "c64506514d4e59582ad04437171d104e85a484947f8e1817c112db1a9fdf8337",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:setup": {
+      "hash": "ef9855fb3a8a2d0f4b875c5f73f92156b04b44a8d3d76e5d932e522cc3172b62",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/patches.ts:within": {
+      "hash": "cc6529bdeab803ecb81ba752680f37e7481f0df4e44a5b0973ca26fa56020f6a",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:<rest>": {
+      "hash": "629e1f4122a36551193e6a2281e229f4d8c6250f662829d8c3a67e0ab8e55a12",
+      "kind": "rest"
+    },
+    "hmr/src/runtime/resolution.ts:Captured": {
+      "hash": "29726f363b8a45581a017399ee81696806ff8f09103492f4033658e6f444cc2e",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:Resolution": {
+      "hash": "8eb1a7a1219ff0be6487325c39419ac39d0190284f888f091e1ebdf7fc4be0f0",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:ResolutionSupport": {
+      "hash": "959d7e54ddb3012e9de382179186c60cb9fb021ad2dbecfba514297ba22d1843",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:capture": {
+      "hash": "4228c63d80e9510f9a32c18ceccece93c39c7696e9a445a96bae27b3548e3c2e",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:captureCJS": {
+      "hash": "85ffadd2e09893657d7c25259ad0491691f3f2795c6b194979259ba60fb07a01",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:captureESM": {
+      "hash": "0fe00bacae17c14da46e7ce164fe9d84a5e821edd1e61f97e0d53e9dccfe90c4",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:captured": {
+      "hash": "54cb527bde9a9902cb7db6083609b1784a9861d667b7c8183dc9f06f81d24b31",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:getCaptured": {
+      "hash": "efe2bebbe81b9172fcc48097e8f53157b7780c352ef6faeaa9c974a07771c632",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:getResolutionSupport": {
+      "hash": "260ac29d5af5f1f0386b1b90153112e53d0df988a1a2772abe2de15cc46b0a76",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:invalidateResolution": {
+      "hash": "bf87f32c3ac7aa40b08fabdcb01b6ea57ae1e9670c6a4ae518abe52179e82b1c",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:locatePackage": {
+      "hash": "39ca32b3e823b06c4dfb4e068a179c9f0c1f984c24d149e8e690d41755430114",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:packageName": {
+      "hash": "3946e60e18802cdcf691cd6d38e59482bfea890394ef8208cbe33ec8ca8d00c3",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:parseKey": {
+      "hash": "c1b2bf30d1021199821f1ba4051c7a4358bbd4a556997621ee944ad95994bada",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:removeResolutions": {
+      "hash": "1ff2c8a4209414e427666306c421e5e8a645b5efe9f0a1376905c0a62505d4e4",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:resolveRequest": {
+      "hash": "5da6e07f877ebbfa3f15f57520f4b4433312407b8d7e3cc0c1a5eb49c2d5e841",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:restoreResolutions": {
+      "hash": "a483999ddd470a3f502c079d3f9517f84e15ad5af004e1451796011d6aefcd52",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:toPath": {
+      "hash": "3ff9a28b9bf53a940c48efe7b3f74b71c58cb0c4a52dc6d33b2437d43c7ea893",
+      "kind": "symbol"
+    },
+    "hmr/src/runtime/resolution.ts:within": {
+      "hash": "dc9f923b96872c18c310a7b4c0f2cdac4c42ef45f3ae65a0e96bb2cbf6b4c8a0",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:<rest>": {
+      "hash": "aef6d9f70a8b10bfb7bc3f19a4a36e9abc87e094c70ce2134cae5fb373b85f57",
+      "kind": "rest"
+    },
+    "hmr/tests/index.spec.ts:Gate": {
+      "hash": "184c6f6d2418064d0d4a22c0a49db27304a7b6235c82987d0769dd0f454369ce",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:arm": {
+      "hash": "198317987abb4fbf399fcc852d581084623e8be8b43238c078dd93957763406e",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:configTree": {
+      "hash": "1cc58a246ce2462c6bf17a5b5962a17421dde6948e47f35dbedb58bdbe217ef4",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:copyFixtures": {
+      "hash": "fb41b2ca5739443379c9baf60d9fdae6ea06f425804c1a46547566b757fdb91e",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:createContext": {
+      "hash": "2c5d5f30f9fca1d4204c9a73bb27f71753a214b19d0f067522143e085d120038",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:disarm": {
+      "hash": "01ddae5da8cc5ef4d33069817ac06fa94fcae9b7a28765253bfe31aaa7625e53",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:dropCached": {
+      "hash": "3257597b4064c9edf2ca318aa5be7b319385ccb842e94b8a1d0641328cd47e10",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:findEntry": {
+      "hash": "ef6d2cd4916c2e1cb8a607458192f5b62ed52f38d14f131a9a871065edde16d3",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:fixture": {
+      "hash": "325eed7a0965cb6d1ef6d1f9801d3f65752dc4d397d48252513207ecc4c3b178",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:fixtureDir": {
+      "hash": "ea2588540a1eab8a05d54019059ea097fceb971b87b4ea81102c02d1e876f815",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:installGate": {
+      "hash": "96673eda90d3582f74b97cf7fd305ae7767192f16e09efbe763b1d0ca98ef7ad",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:liveNested": {
+      "hash": "939bd614a20c0acf68e82b790fb948a0b317ec173b206b3b7b1f48fbfe088d19",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:liveUids": {
+      "hash": "41c1e36e022876fc466aebb970090a0925f6faf5dfc4854ef9d432f0294982b8",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:templateDir": {
+      "hash": "e9f9e1d8e26577ee62207f87dde9a97408a6b82220279d4210171c471974bc5d",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:testDir": {
+      "hash": "05c0a5e69137a6b19b176dbb8f0ad2581c46f3d7e518a47d4e6a93edd3b68ef1",
+      "kind": "symbol"
+    },
+    "hmr/tests/index.spec.ts:waitFor": {
+      "hash": "63c48aefc3f16d094c7edf95fc55178f147e427dcb60e1323ea337c76a709b63",
+      "kind": "symbol"
+    },
+    "hmr/tests/internal.spec.ts:<rest>": {
+      "hash": "89589c2dd01add5bc0ba74c00342f55de93bfeb48bcad4727ddf01ed2cd94c52",
+      "kind": "rest"
+    },
+    "hmr/tests/modules.spec.ts:<rest>": {
+      "hash": "72245aef688196b26eb5b3370ccc5ee7bf821bf3d9cd1bb4b0df88d56558b295",
+      "kind": "rest"
+    },
+    "hmr/tests/modules.spec.ts:counted": {
+      "hash": "5eaa8dab39bcbff51660f562d6b8a8483799f80bde28a46a22854509bbabd27e",
+      "kind": "symbol"
+    },
+    "hmr/tests/modules.spec.ts:counts": {
+      "hash": "c955f0f89faa69f852fecb89d5f66f470990d73439d259b80368571c8d23e559",
+      "kind": "symbol"
+    },
+    "hmr/tests/modules.spec.ts:dir": {
+      "hash": "170244d4ebc272c1611aeaea0bcba780200a31a2959d457c38307d01930a2f1e",
+      "kind": "symbol"
+    },
+    "hmr/tests/modules.spec.ts:fixture": {
+      "hash": "7e911968733ffb16f25c93ba4042c0f7662292efddacab3149695a227314ba24",
+      "kind": "symbol"
+    },
+    "hmr/tests/modules.spec.ts:importModule": {
+      "hash": "fdc2cf860892e9e691a0da03b4d9f4bf23c1b2f3c8fa077e19792b2e7b4f39e1",
+      "kind": "symbol"
+    },
+    "hmr/tests/modules.spec.ts:loader": {
+      "hash": "21b74fd8071a153768beb613d92b2fb7aef3470b111fb03874ba706952365719",
+      "kind": "symbol"
+    },
+    "hmr/tests/patches.spec.ts:<rest>": {
+      "hash": "e8bd687daab0703868f95a1942ab538f544f2ad7cc85c0fde8a2946da86dc903",
+      "kind": "rest"
+    },
+    "hmr/tests/patches.spec.ts:baz": {
+      "hash": "d2a9c69fa00d0e3b7bc2f89c79850a6f8830c35a051b50d59844333a08ab3432",
+      "kind": "symbol"
+    },
+    "hmr/tests/patches.spec.ts:fixtures": {
+      "hash": "11edb1d96c35df40ecebe90d0c9a6b9fe95f9aa398fa6bcd250dadf81ca535d3",
+      "kind": "symbol"
+    },
+    "hmr/tests/patches.spec.ts:importModule": {
+      "hash": "fdc2cf860892e9e691a0da03b4d9f4bf23c1b2f3c8fa077e19792b2e7b4f39e1",
+      "kind": "symbol"
+    },
+    "hmr/tests/patches.spec.ts:loader": {
+      "hash": "21b74fd8071a153768beb613d92b2fb7aef3470b111fb03874ba706952365719",
+      "kind": "symbol"
+    },
+    "hmr/tests/patches.spec.ts:require": {
+      "hash": "74af4cf6e0a3b7d1c6995502b5691a3cffe44062ee50e79c21cb66953d3780b0",
+      "kind": "symbol"
+    },
+    "hmr/tests/patches.spec.ts:url": {
+      "hash": "c308b57215ce409f67512224a22c32c270ee82b645f2f1ca96dd0e1646d805f5",
+      "kind": "symbol"
+    },
+    "hmr/tests/patches.spec.ts:{ fixture , runESM }": {
+      "hash": "7352c80cc164390d961a78fff6768b043d07df862be6e22e1cbe4327061aff12",
+      "kind": "symbol"
+    },
+    "hmr/tests/reconcile.spec.ts:<rest>": {
+      "hash": "1ddfbca63736a6c0089ff0c20e83fafb18121f2606d033992fd630c08a95871c",
+      "kind": "rest"
+    },
+    "hmr/tests/reconcile.spec.ts:component": {
+      "hash": "1dbdf3d375da091513836abfe8708aeb4de051522748a0fc43aaa5570e39b789",
+      "kind": "symbol"
+    },
+    "hmr/tests/reconcile.spec.ts:fixture": {
+      "hash": "66a20fdcc1e4efb53343520e4961404b1ad7f38d1d75094432b53f70877d1147",
+      "kind": "symbol"
+    },
+    "hmr/tests/reconcile.spec.ts:fixtureDir": {
+      "hash": "7b0fadffe2f42f865180c0add7035b1011f87cd17b0d01abd27c37388950ad27",
+      "kind": "symbol"
+    },
+    "hmr/tests/reconcile.spec.ts:loader": {
+      "hash": "005fc25d472c9ef01735248d2bdc2f02bc0c8b1bd412e15c158a2b6b52a5303c",
+      "kind": "symbol"
+    },
+    "hmr/tests/reconcile.spec.ts:stats": {
+      "hash": "476ba58e156cdb33a4d684539f4065fe6c128419b45f08e86f0a21fe1b917ef9",
+      "kind": "symbol"
+    },
+    "hmr/tests/reconcile.spec.ts:testDir": {
+      "hash": "05c0a5e69137a6b19b176dbb8f0ad2581c46f3d7e518a47d4e6a93edd3b68ef1",
+      "kind": "symbol"
+    },
+    "hmr/tests/resolution.spec.ts:<rest>": {
+      "hash": "0d081a63d07fbc6ab6e5b2f5c7c56a0001a37c4f6144f9fb097dfad860a12010",
+      "kind": "rest"
+    },
+    "hmr/tests/resolution.spec.ts:fixtures": {
+      "hash": "dfe3f1c200f279d670f55a0fcf96ce0947c18e43eeb1a4e5e056f4744da44132",
+      "kind": "symbol"
+    },
+    "hmr/tests/resolution.spec.ts:importModule": {
+      "hash": "fdc2cf860892e9e691a0da03b4d9f4bf23c1b2f3c8fa077e19792b2e7b4f39e1",
+      "kind": "symbol"
+    },
+    "hmr/tests/resolution.spec.ts:install": {
+      "hash": "82c0d223c0b5d97e26e3f1d56894ded7b65da5e92fcdb900e3e854c05cfc7210",
+      "kind": "symbol"
+    },
+    "hmr/tests/resolution.spec.ts:link": {
+      "hash": "5bfe211ef2e39bfb08900cf1ab6f9ac9710eb8444121a8f4b7a264182b680c20",
+      "kind": "symbol"
+    },
+    "hmr/tests/resolution.spec.ts:loader": {
+      "hash": "5fb8baf97dfdb63d7782ffbcc6afc1be2269ef1548163e237463c2b02ff2a745",
+      "kind": "symbol"
+    },
+    "hmr/tests/resolution.spec.ts:modules": {
+      "hash": "67c6cff0ddaea210bb9ce672955e76178e19a9ec32dcea7736ba3bd4be540da0",
+      "kind": "symbol"
+    },
+    "hmr/tests/resolution.spec.ts:{ fixture , runESM }": {
+      "hash": "7352c80cc164390d961a78fff6768b043d07df862be6e22e1cbe4327061aff12",
+      "kind": "symbol"
+    },
+    "hmr/tests/utils.ts:<rest>": {
+      "hash": "6c8e4bbcd642899c723a6b816280cb3859a93bbb204734ea195b20dc68b7a6b9",
+      "kind": "rest"
+    },
+    "hmr/tests/utils.ts:RunOptions": {
+      "hash": "0c499fe08cc30e11eba41a1aa7da4ef8fd5f090650e8b5ac80131ff947e639a5",
+      "kind": "symbol"
+    },
+    "hmr/tests/utils.ts:realpathESM": {
+      "hash": "fbfaccba45b3e37e7a1bfc9e848fb5200d18370a6a75e98bcc8afc55776f51f2",
+      "kind": "symbol"
+    },
+    "hmr/tests/utils.ts:useFixtures": {
+      "hash": "cf3e51b1947e9bcb572f21f29343542dba579d9fe00e46fe3869e722aa3f4cd2",
+      "kind": "symbol"
+    },
+    "hmr/tests/watch.spec.ts:<rest>": {
+      "hash": "211fe08eb2e34e464edc46814d28f4f05c51a892662756d327e78889249ada95",
+      "kind": "rest"
+    },
+    "hmr/tests/watch.spec.ts:FakeFs": {
+      "hash": "0e466bf74c009f3c919af588175a388c10ffbc06df73713de09d76fca6008aa4",
+      "kind": "symbol"
+    },
+    "hmr/tests/watch.spec.ts:FakeFs.constructor": {
+      "hash": "6c0f9fdcc26a2f445a2897833b9ea6558ec5f5592943b3d1fbc1d915593e5e8c",
+      "kind": "member"
+    },
+    "hmr/tests/watch.spec.ts:FakeFs.watch": {
+      "hash": "dfb1ec8d5c65fb02d59daf761beceb034cc198a4a8ccd8892f51660c7dd25334",
+      "kind": "member"
+    },
+    "hmr/tests/watch.spec.ts:Watch": {
+      "hash": "86880a1c6b3fa6fb2b49e7e74f0bfe45c2351e5731488c45b406fb5ba034d433",
+      "kind": "symbol"
+    },
+    "hmr/tests/watch.spec.ts:change": {
+      "hash": "b2f3b40a7f5abfabd8e0f309a12389f3dd1a437619bdc55e582c5371484aa60c",
+      "kind": "symbol"
+    },
+    "hmr/tests/watch.spec.ts:component": {
+      "hash": "8daae61a2c6f48db37cfc3195b6a09244e3973cef1a185e1655ee0af82526d90",
+      "kind": "symbol"
+    },
+    "hmr/tests/watch.spec.ts:fixtureDir": {
+      "hash": "3caa4ec0f4bd2d2e32bc004db5d2ddd9fca9bf216781102cbd56c842e63df3eb",
+      "kind": "symbol"
+    },
+    "hmr/tests/watch.spec.ts:testDir": {
+      "hash": "05c0a5e69137a6b19b176dbb8f0ad2581c46f3d7e518a47d4e6a93edd3b68ef1",
+      "kind": "symbol"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::base::accepts a absolute path without a context directory": {
+      "hash": "1e0eec99f54f1f66a05772487ba081fba29e74c73e90aa09abf42a40560b467a",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::base::accepts a drive-letter base": {
+      "hash": "ae9733eb1922ea4112d9031acf5e63e1922fcbdaddabe37377a2a7d52e847ad6",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::base::accepts a file URL without a context directory": {
+      "hash": "1e0eec99f54f1f66a05772487ba081fba29e74c73e90aa09abf42a40560b467a",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::base::accepts a relative path without a context directory": {
+      "hash": "1e0eec99f54f1f66a05772487ba081fba29e74c73e90aa09abf42a40560b467a",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::base::defaults to the context directory": {
+      "hash": "3b6a13eebd5fa9afed417dd3fba2731982f62fb11ab9da43292be211d96a8873",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::base::defaults to the working directory without a context directory": {
+      "hash": "4b76ecf2a461025ae24978b196409cbcc476c4d33591b2c0962bb6cbadc4a00a",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::base::resolves a relative base against the context": {
+      "hash": "03f441078d66db43e3bf55b203e81597d2f7055d6ed210f5e5ed8be19f5afef5",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::does not watch with empty `files`": {
+      "hash": "5c8f5f3db6dc1a9738cebb76d65cc028377212afabb0ded283c3c12307c009ec",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::only reports a change to a host module": {
+      "hash": "022339281d3162212387c5717b467601b3bc8cd088450fe64632ae472cb01c4a",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::reconciles the changes of one debounce window as a batch": {
+      "hash": "31b7270647c131fe69e087dc038900db0e3ad5024dc1eba5f080a752ecb695cc",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::reloads a component when its file changes on disk": {
+      "hash": "b1ddd3a57b735e0dec284675fbd0dafe57482f3340c50d0171c82540980358c7",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::retries an entry that a manifest has moved with the next batch": {
+      "hash": "6768da7c718c1f2ad11ae15531b26e0506e3bd35d6e8df87f648119cf9743699",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::retries an importer of a package that a nearer package shadows with the next batch": {
+      "hash": "006ed574e9e28b27917a2d5b504b7459d2ae7cc5a4f770730efdb67844c2da62",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::retries the changes of a failed batch with a batch queued behind it": {
+      "hash": "5a3746475444f4cd6c8dcc05f2dae2e1ec1c4d6b978e3914e5904790745a33a6",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::retries the changes of a failed batch with the next one": {
+      "hash": "1be7b74975bdd187016c74a67a40fa5a78d81bdbc91041fbf40ea1ba955c0506",
+      "kind": "case"
+    },
+    "hmr/watch.spec.ts::Hmr with fs::watches `files` in `base`": {
+      "hash": "b9118ee060aec5258b7cd24e94e3f7701f32880f458c55b82abbb90715d2d48e",
+      "kind": "case"
+    },
     "intercept.spec.ts::Intercept::custom merge": {
       "hash": "1ae2ca48cd5f2c0e38d273babb23ed1c0ca518f69b95451d1f4b9bb2f7ffc636",
       "kind": "case"
