@@ -630,6 +630,28 @@ def test_a_file_that_cannot_be_parsed_is_logged_and_has_no_imports(
     assert "cannot read the imports of parse_broken" in caplog.text
 
 
+@pytest.mark.parametrize("name", ["stray", "__main__"])
+def test_a_sys_modules_value_that_is_not_a_module_is_outside_the_graph(
+    make_env: MakeEnv, monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    # Python 3.12 holds classes as `typing.io` and `typing.re`. An `object()` also has
+    # no `__dict__`, so it reaches every reader of a `sys.modules` value.
+    stray = object()
+    monkeypatch.setitem(sys.modules, name, stray)
+    env = make_env()
+    importer = component(
+        "stray_importer", "v1", f"def unused():\n    from {name} import value\n"
+    )
+    env.load("stray_importer", importer)
+
+    path = env.write("stray_importer", importer.replace('"v1"', '"v2"'))
+    result = env.reload(path)
+
+    assert len(result.settled) == 1
+    assert env.answer("stray_importer") == "v2"
+    assert sys.modules[name] is stray
+
+
 def test_paths_that_match_no_loaded_module_change_nothing(env: Env) -> None:
     env.load("untouched", component("untouched", "v1"))
     module = sys.modules["untouched"]

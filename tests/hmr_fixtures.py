@@ -3,6 +3,7 @@
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import pytest
@@ -32,6 +33,8 @@ class PluginDir:
     def forget(self) -> None:
         """Remove the modules below the directory and the directory itself."""
         for name, module in list(sys.modules.items()):
+            if not isinstance(module, ModuleType):
+                continue  # `sys.modules` can hold any object
             origin = module.__dict__.get("__file__")
             if origin is not None and Path(origin).is_relative_to(self.path):
                 del sys.modules[name]

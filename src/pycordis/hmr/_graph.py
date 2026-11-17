@@ -36,6 +36,16 @@ def module_file(module: ModuleType) -> str | None:
     return spec.origin if spec.has_location else None
 
 
+def loaded_module(name: str) -> ModuleType | None:
+    """Return the module `sys.modules` holds as `name`, or `None`.
+
+    `sys.modules` can hold any object, such as a class that stands for a deprecated
+    module. A value that is not a module gives `None`, as a missing name does.
+    """
+    value = sys.modules.get(name)
+    return value if isinstance(value, ModuleType) else None
+
+
 def source_graph(scope: Iterable[str]) -> ModuleGraph:
     """Build the default `ModuleGraph`, which reads the imports of a file.
 
@@ -137,7 +147,7 @@ def _is_module(name: str) -> bool:
     """Tell whether `name` is a module, without importing it."""
     if name in sys.modules:
         return True
-    parent = sys.modules.get(name.rpartition(".")[0])
+    parent = loaded_module(name.rpartition(".")[0])
     path = parent.__dict__.get("__path__") if parent is not None else None
     return (
         path is not None
@@ -156,7 +166,8 @@ class EdgeCache:
     cannot come from its file. The cache reads the edges of a module once, with the
     graph function, and keeps them for as long as the same module object is loaded.
     A module object that replaced the cached one (an import after eviction) has its
-    edges read again, and a restored module object keeps the edges that it had.
+    edges read again, and a restored module object keeps the edges that it had. A
+    `sys.modules` value that is not a module is outside the graph.
     """
 
     def __init__(self, graph: ModuleGraph) -> None:
@@ -222,8 +233,14 @@ class EdgeCache:
             for name, edges in edges_of.items()
         }
 
-    def _read(self, name: str, module: ModuleType) -> tuple[str, ...] | None:
-        """Return the edges of `module`, `None` outside the graph, or `_UNREADABLE`."""
+    def _read(self, name: str, module: object) -> tuple[str, ...] | None:
+        """Return the edges of `module`, `None` outside the graph, or `_UNREADABLE`.
+
+        A value that is not a module is outside the graph, so the graph function gets
+        only modules.
+        """
+        if not isinstance(module, ModuleType):
+            return None
         try:
             edges = self._graph(module)
         except (SyntaxError, OSError):

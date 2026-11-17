@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import Any
 
-from pycordis.hmr._graph import module_file
+from pycordis.hmr._graph import loaded_module, module_file
 from pycordis.registry import Component, RegistryService, Runtime
 
 
@@ -59,7 +59,7 @@ class Backup:
         for name in sorted(names, key=lambda name: -name.count(".")):
             module = sys.modules.pop(name)
             parent_name, _, child = name.rpartition(".")
-            parent = sys.modules.get(parent_name) if parent_name else None
+            parent = loaded_module(parent_name) if parent_name else None
             attribute = None
             if parent is not None and child in parent.__dict__:
                 attribute = parent.__dict__.pop(child)

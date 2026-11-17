@@ -1,6 +1,7 @@
 """Tests of `source_graph`: the module names that a loaded module imports."""
 
 import importlib
+import importlib.machinery
 import importlib.util
 import json
 import sys
@@ -126,10 +127,15 @@ def test_graph_reads_the_file_of_a_module_without_an_import_spec(
     assert source_graph([str(plugins.path)])(script) == ("json",)
 
 
+@pytest.mark.parametrize(
+    "suffix",
+    [importlib.machinery.EXTENSION_SUFFIXES[0], ".pyc"],
+    ids=["extension", "bytecode"],
+)
 def test_graph_has_no_edges_for_a_module_that_is_not_python_source(
-    plugins: PluginDir,
+    plugins: PluginDir, suffix: str
 ) -> None:
-    file = plugins.write("m.so")
+    file = plugins.write(f"m{suffix}")
     module = ModuleType("m")
     module.__spec__ = importlib.util.spec_from_file_location("m", file)
 

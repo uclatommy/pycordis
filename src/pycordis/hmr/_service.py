@@ -21,6 +21,7 @@ from pycordis.hmr._graph import (
     Unit,
     accepted_modules,
     closure,
+    loaded_module,
     module_file,
     partition,
     source_graph,
@@ -266,7 +267,7 @@ class Hmr(Service):
         if Hmr._active:
             raise CordisError("another HMR instance is active in this process")
         edges = self._edges.snapshot()
-        main = sys.modules.get("__main__")
+        main = loaded_module("__main__")
         if main is not None and module_file(main) is not None:
             self.host_modules |= closure(["__main__"], edges)
         Hmr._active = True
