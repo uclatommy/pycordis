@@ -595,6 +595,54 @@ def test_a_host_graph_decides_which_modules_reload(
     assert "virtual" in sys.modules
 
 
+@pytest.mark.parametrize("failure", ["graph", "interrupt"])
+def test_an_error_that_ends_the_transaction_leaves_the_modules_as_they_were(
+    root: Context,
+    plugins: PluginDir,
+    request: pytest.FixtureRequest,
+    failure: str,
+) -> None:
+    plugins.write("rb_helper.py", "value = 1\n")
+    entry = plugins.write(
+        "rb_entry.py",
+        component("rb", "v1", "").replace(
+            "from hmr_fixtures import STATS",
+            "import rb_helper\nfrom hmr_fixtures import STATS",
+        ),
+    )
+    module = __import__("rb_entry")
+    helper = sys.modules["rb_helper"]
+    fiber = root.use(module.apply)
+    old = set(sys.modules.values())
+
+    def graph(candidate: ModuleType) -> list[str] | None:
+        if failure == "graph" and candidate not in old:
+            raise ValueError("host graph failed")
+        return {"rb_entry": ["rb_helper"], "rb_helper": []}.get(candidate.__name__)
+
+    class HostHmr(Hmr):
+        def __init__(self, ctx: Context, config: HmrConfig | None = None) -> None:
+            super().__init__(ctx, config, graph=graph)
+
+    config = HmrConfig(scope=(str(plugins.path),))
+    request.addfinalizer(root.use(HostHmr, config).dispose)
+    hmr: Hmr = root.get("hmr")
+    before = dict(sys.modules)
+    source = "import rb_helper\nvalue = 2\n"
+    if failure == "interrupt":
+        source = "raise KeyboardInterrupt\n"
+    changed = plugins.write("rb_helper.py", source)
+
+    with pytest.raises(ValueError if failure == "graph" else KeyboardInterrupt):
+        hmr.reconcile(lambda: [changed, entry]).result()
+
+    assert sys.modules == before
+    assert sys.modules["rb_entry"] is module
+    assert sys.modules["rb_helper"] is helper
+    assert fiber.state is FiberState.ACTIVE
+    assert root.bail("reconcile/rb") == "v1"
+
+
 def test_every_entry_module_of_a_component_imports_again_with_the_implementation(
     env: Env,
 ) -> None:

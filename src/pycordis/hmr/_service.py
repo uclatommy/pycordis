@@ -295,7 +295,12 @@ class Hmr(Service):
         a fiber below one. A call from a moved fiber after the transaction ended runs
         normally.
         If `changes` raises, or returns a `Deferred` that rejects, the transaction
-        rejects with that error and `sys.modules` is as it was.
+        rejects with that error and `sys.modules` is as it was. The same holds for any
+        other error that ends the transaction after the modules are evicted, such as an
+        error of the host `graph` function or a `KeyboardInterrupt` from an import: the
+        transaction restores every evicted module, removes the modules that it loaded
+        for the first time, and rejects with that error. An `Exception` from the import
+        of a component is not such an error: it aborts that component only.
 
         The import of a module runs on the owner thread and blocks it until the import
         ends.
@@ -387,39 +392,46 @@ class Hmr(Service):
             self._logger.debug("evict %s (no dependent component)", name)
 
         backup = Backup()
-        backup.evict(accepted)
-        importlib.invalidate_caches()
-        retained = set(sys.modules)
-        for item in stale:
-            self._import(item, accepted)
+        present = set(sys.modules)
+        # an error that ends the transaction here puts every module back, so that the
+        # transaction commits or leaves `sys.modules` as it was
+        try:
+            backup.evict(accepted)
+            importlib.invalidate_caches()
+            retained = set(sys.modules)
+            for item in stale:
+                self._import(item, accepted)
 
-        # the new graph is read once, before any module comes back
-        new = self._edges.peek(backup.unloaded())
-        units = partition(
-            stale,
-            [
-                item.modules | closure(item.roots(), new, retained.__contains__)
-                for item in stale
-            ],
-            accepted,
-        )
-        aborted = [u for u in units if any(i.error is not None for i in u.items)]
-        skipped = [
-            u
-            for u in units
-            if u not in aborted and any(i.skip is not None for i in u.items)
-        ]
-        committed = [u for u in units if u not in aborted and u not in skipped]
-        kept = [*aborted, *skipped]
+            # the new graph is read once, before any module comes back
+            new = self._edges.peek(backup.unloaded())
+            units = partition(
+                stale,
+                [
+                    item.modules | closure(item.roots(), new, retained.__contains__)
+                    for item in stale
+                ],
+                accepted,
+            )
+            aborted = [u for u in units if any(i.error is not None for i in u.items)]
+            skipped = [
+                u
+                for u in units
+                if u not in aborted and any(i.skip is not None for i in u.items)
+            ]
+            committed = [u for u in units if u not in aborted and u not in skipped]
+            kept = [*aborted, *skipped]
 
-        self._adopt_unowned(units, committed, kept, accepted, old)
-        restored = set().union(*(unit.modules for unit in kept))
-        # a module that stage 1 loaded for the first time stays loaded, unless it ran
-        # against the new version of a module that comes back
-        for name in (name for item in stale for name in item.loaded):
-            if closure([name], new, retained.__contains__) & restored:
-                backup.evict([name])
-        backup.restore(restored)
+            self._adopt_unowned(units, committed, kept, accepted, old)
+            restored = set().union(*(unit.modules for unit in kept))
+            # a module that stage 1 loaded for the first time stays loaded, unless it
+            # ran against the new version of a module that comes back
+            for name in (name for item in stale for name in item.loaded):
+                if closure([name], new, retained.__contains__) & restored:
+                    backup.evict([name])
+            backup.restore(restored)
+        except BaseException:
+            backup.rollback(present)
+            raise
 
         for unit in aborted:
             failure = next(item.error for item in unit.items if item.error is not None)

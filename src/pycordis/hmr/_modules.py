@@ -2,7 +2,7 @@
 
 import os
 import sys
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from types import ModuleType
 from typing import Any
@@ -80,6 +80,24 @@ class Backup:
             sys.modules[name] = saved.module
             if saved.parent is not None and saved.attribute is not None:
                 setattr(saved.parent, name.rpartition(".")[2], saved.attribute)
+
+    def rollback(self, present: Collection[str]) -> None:
+        """Make `sys.modules` hold the modules of `present`, as `evict` found them.
+
+        The method removes each module that `sys.modules` holds and `present` does not
+        name, and then restores each evicted module that `present` names, also over a
+        module that took its name. A removed module leaves no attribute on its parent
+        package.
+        """
+        for name in sorted(
+            set(sys.modules) - set(present), key=lambda n: -n.count(".")
+        ):
+            module = sys.modules.pop(name)
+            parent_name, _, child = name.rpartition(".")
+            parent = sys.modules.get(parent_name) if parent_name else None
+            if parent is not None and parent.__dict__.get(child) is module:
+                del parent.__dict__[child]
+        self.restore(name for name in self._saved if name in present)
 
 
 @dataclass(frozen=True, slots=True)
