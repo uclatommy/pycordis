@@ -4038,10 +4038,12 @@ status = "pending"
 status = "pending"
 
 [items."hmr/message:invalid component at {}, expect function or object with an \"apply\" method, received {}"]
-status = "pending"
+status = "ported"
+hash = "d4148536d40ef7282cd894ca9a219b67477364f7f45da962ee2b70cda41bba56"
 
 [items."hmr/message:invalid root {}, expected an absolute path"]
-status = "pending"
+status = "ported"
+hash = "b6f347c759894b261fa2b4436682991155836493a2bce35bb0c46029c44c197d"
 
 [items."hmr/message:loader internals are unavailable, pass --expose-internals or install node-addon-require-builtin"]
 status = "pending"
@@ -4137,40 +4139,76 @@ status = "pending"
 status = "pending"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::aborts it with a component that imports a module that its new entry newly imports"]
-status = "pending"
+status = "diverged"
+hash = "7f3eccd56701e2fafe9ad72deb3bc8bdfdb97a7d8c42d2440c1359311033613f"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::keeps it when its imports now resolve to different versions"]
-status = "pending"
+status = "diverged"
+hash = "080610ea3afc076313b9c1ea20036c0cc0f8ddcd16714fc87f95b4f05f0b161d"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it given only its manifest and the module that it newly exports"]
-status = "pending"
+status = "diverged"
+hash = "0d20e2ef422a9bb1f2433f1421f34179dcda865989fa7a465f9c0637addec976"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports after a transaction that only changes its manifest"]
-status = "pending"
+status = "diverged"
+hash = "341a45836fa1c1f9436bffd27d9ecbbe560b16033d66857074ecd19855d5a7d6"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports in place of a removed one"]
-status = "pending"
+status = "diverged"
+hash = "a45151a7e22a29b5d0fd4004aa520184b3423c4d9f629c6488741d496fbddc4e"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that it newly exports once that module is fixed, also after HMR restarts"]
-status = "pending"
+status = "diverged"
+hash = "607fd5060a979f1407ab49a87254a0ad0929ac26ebd21fa179c37eb5a36e9f9c"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that its `exports` newly points to"]
-status = "pending"
+status = "diverged"
+hash = "fc70e4e59fb83d770b45bd183f2c0d7c8d0206dfdcc5f58e4141230eaa89d05f"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the module that its `main` newly points to"]
-status = "pending"
+status = "diverged"
+hash = "fc70e4e59fb83d770b45bd183f2c0d7c8d0206dfdcc5f58e4141230eaa89d05f"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a component package::replaces it with the version that a retargeted link selects"]
-status = "pending"
+status = "diverged"
+hash = "f6eb16311b967be8f400897b3d290373daeb6be8fa679ff0ef75f2062b3e7e2c"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that imports it"]
-status = "pending"
+status = "diverged"
+hash = "b55167e2c097612258cf5bd1e20fcb6d0a0bef9b90cb33fe4fa9cf03b12531a2"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that requires it, given its location"]
-status = "pending"
+status = "diverged"
+hash = "b1a87a3a736e741f2dc024590d8a87f5e69c5d393a5ccfedfe3ece7bed65f8af"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::a package added below the importer::replaces a component that requires it, given its manifest"]
-status = "pending"
+status = "diverged"
+hash = "b1a87a3a736e741f2dc024590d8a87f5e69c5d393a5ccfedfe3ece7bed65f8af"
+divergence = "hmr-resolution"
+note = "It tests the resolution of a package manifest, a link, or a package added below the importer."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::aborts a component that newly imports a changed module of a failed unit"]
 status = "pending"
@@ -4185,76 +4223,110 @@ status = "pending"
 status = "pending"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::does not apply a unit whose module does not export a component"]
-status = "pending"
+status = "ported"
+hash = "50ac4844453d7e2606ce2aa9058a37f14fef4f06aa6df87b878af43446984e73"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::does not apply a unit whose module fails to import"]
-status = "pending"
+status = "ported"
+hash = "52f4da493f47708266d979a5954b525b2c9bb7e43741968cbbaba15938024172"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::fails to start without loader internals"]
-status = "pending"
+status = "not-applicable"
+hash = "acf9519b87ddb7c14a91e6c56701426bade08418738cbfbdd1de8e9b80541f4b"
+note = "Python needs no loader internals."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::follows the dependencies of a module job when its job of another type fails to link"]
-status = "pending"
+status = "diverged"
+hash = "8f59b65e068403b12fc7ab678eb52c3112b636e182f095ef248a7bccf21156c1"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::imports a module again after it failed in an aborted attempt"]
-status = "pending"
+status = "ported"
+hash = "e015f2387b8333765e08b32bd3222dc96ae854bb937d139a12038e2397f996fe"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::imports a module again after its evaluation failed for a reason outside its file"]
-status = "pending"
+status = "diverged"
+hash = "f1a56e2820b019870182936edebd759165e951aeefe95d216ad4488114b683f1"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::keeps the job of a module when its job of another type fails"]
-status = "pending"
+status = "diverged"
+hash = "f2be7148ac130c3a3afbedf4c872a59c27b98b2fe65bffd7e9e67207baedc30e"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::keeps the metadata of an entry that re-exports the changed component"]
-status = "pending"
+status = "ported"
+hash = "2cc116345781101e482e45ffc9f5a3a62850b76ce3fbccac4c132ace7eb65820"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::leaves a fiber failed when the new component fails to apply"]
-status = "pending"
+status = "ported"
+hash = "111047e3b8b634edc0567882bd023f238589d61157f9a2f8283f5468f4398c10"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a disabled component for when it is enabled again"]
 status = "pending"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::refreshes a module that no component depends on for its next import"]
-status = "pending"
+status = "ported"
+hash = "dd1a5bbdba44718a2a0ffee141b74b14549388761ca8cfcef31b50b727c75714"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a file URL as a root"]
-status = "pending"
+status = "ported"
+hash = "68b3f79341dbd47a0e6fe3a6bc4d7ab079c2d7705f368ee02ec7c75bd5bed775"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a relative path as a root"]
-status = "pending"
+status = "ported"
+hash = "68b3f79341dbd47a0e6fe3a6bc4d7ab079c2d7705f368ee02ec7c75bd5bed775"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects a transaction started inside another one"]
 status = "pending"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::rejects with the error of the callback"]
-status = "pending"
+status = "ported"
+hash = "9685e170cb7971f6d51a09b021740ae55f6384e4b24561629efbea62a4b3433e"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component exported from a data: URL"]
-status = "pending"
+status = "diverged"
+hash = "c6f1a1eaada4e6ce22b40f0181938a68541a9f2194e9d58611954cdbde899257"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component that no entry manages"]
-status = "pending"
+status = "ported"
+hash = "172369797ddff0c40cac222197fdc9f48aa44317ae4e3a2abea79fa8323a8171"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component that only require() has loaded when its dependency changes"]
-status = "pending"
+status = "diverged"
+hash = "ffb048759dcfee8e99972e7b892bbc957369c76cf70bff1d0def7ce4bab21957"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component when a module inside a package changes"]
-status = "pending"
+status = "ported"
+hash = "4d17b54dbca92e34c03a821641b2f11548b634b2ef1803dd48ad65f56c936869"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component when one of its dependencies changes"]
-status = "pending"
+status = "ported"
+hash = "cce7a69e2ce314c77c72ac787b3b6ff655bc0863784dcb8305ff1842721a1da1"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a component whose nested dependency is removed in favor of a hoisted copy"]
-status = "pending"
+status = "diverged"
+hash = "66402e5a1ea435d24e3822dc06b1c7cf4a0a369116f32cf2335751ecf186c086"
+divergence = "hmr-resolution"
+note = "Python resolves an import by name and has no module jobs, package manifests, or links."
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces a service"]
-status = "pending"
+status = "ported"
+hash = "065ee53d0dc7511166f7fa1f8ec40bb98112f29cc00d090c59227c4ce33ba54a"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces an entry component in place"]
 status = "pending"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces the components below a directory root"]
-status = "pending"
+status = "ported"
+hash = "be1f4c7582809726ea369bf642a2f9f94095d852339a02b3f20c968fd57b474a"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::replaces the inner fiber of an entry with an injection scope in place"]
 status = "pending"
@@ -4266,7 +4338,8 @@ status = "pending"
 status = "pending"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::runs transactions one at a time"]
-status = "pending"
+status = "ported"
+hash = "7fd49e5a9c061924d7a6d18bed77f18cd1996945505986fdd6abe0a4b1863560"
 
 [items."hmr/reconcile.spec.ts::Hmr.reconcile::shares a module first loaded by a failed unit with a unit that imports it dynamically"]
 status = "pending"
@@ -4332,10 +4405,15 @@ status = "pending"
 status = "pending"
 
 [items."hmr/src/index.ts:Awaitable"]
-status = "pending"
+status = "not-applicable"
+hash = "a5ba06d5440bd4f6124fa8c8f6378ae4bd66a166601a25238d5d6a733cff3103"
+note = "A TypeScript type. `Hmr.reconcile` takes a function that returns paths or a `Deferred` of them."
 
 [items."hmr/src/index.ts:Hmr"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr.Hmr"
+hash = "79e843a936623d7e9b31b3eae8b24fe4937ef09a25bb2d649be42913a72752cc"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:Hmr.[Service.init]"]
 status = "pending"
@@ -4344,16 +4422,28 @@ status = "pending"
 status = "pending"
 
 [items."hmr/src/index.ts:Hmr._discover"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr._modules.find_components"
+hash = "a71cc8c289982e0a47d7b07dea317c429c7067bda6a8940557cadde0949ac333"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:Hmr._locate"]
-status = "pending"
+status = "diverged"
+hash = "abfa02cbb3e79a560c25442b3c6f7f47c81289bef69faf43764e1a2edd39ad09"
+divergence = "hmr-resolution"
+note = "An import by name finds a moved module."
 
 [items."hmr/src/index.ts:Hmr._match"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr._modules.match_roots"
+hash = "9c4e623a035afb9d8946797412e1430643f88af10aecd383607b433e10a24c63"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:Hmr._moved"]
-status = "pending"
+status = "diverged"
+hash = "2df33cb45815fa87b16a61d74876f47dc9fcd96e318b2769907727f0a4e19bd3"
+divergence = "hmr-resolution"
+note = "An import by name finds a moved module."
 
 [items."hmr/src/index.ts:Hmr._partition"]
 status = "pending"
@@ -4362,16 +4452,27 @@ status = "pending"
 status = "pending"
 
 [items."hmr/src/index.ts:Hmr._relative"]
-status = "pending"
+status = "not-applicable"
+hash = "7f54370e5d8701127bcc1cfb438e3059ef04caae77e35f800581f07ee2643f93"
+note = "A module is its name, so no path is shown relative to a base directory."
 
 [items."hmr/src/index.ts:Hmr._watch"]
-status = "pending"
+status = "diverged"
+hash = "f046a24fe1ae784dcfa2636771f8e3bfd5657f0d9151f5f40602e786202d72e2"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/src/index.ts:Hmr.constructor"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr.Hmr"
+hash = "a0b6b8919c425a50c277c962e9a5dfb70cb798d5b9bc80d533f578eefdc0d38d"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:Hmr.reconcile"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr.Hmr.reconcile"
+hash = "4edf3712ff040eb0d1a37acaeb34c3c1f5da662f6e4c49e91b4f6b5b518d86f0"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:ImportAttempt"]
 status = "pending"
@@ -4386,43 +4487,68 @@ status = "pending"
 status = "pending"
 
 [items."hmr/src/index.ts:StaleComponent"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr._service._Stale"
+hash = "abb9fd4993bde073723a5d65f69c8706c7aaccd30f3c2bfe37d37e03e544a426"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:closure"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr._graph.closure"
+hash = "ce657fb0cedeb92dcea0a97f485071b0e8f234d9bf85ac0132f8c750cdd69283"
+divergence = "hmr-modules"
 
 [items."hmr/src/index.ts:contains"]
-status = "pending"
+status = "not-applicable"
+hash = "9620c542f17f72bd23ab3107fffb7f5bdedd70ac355bb07d4c19eb0a0b593eb2"
+note = "`match_roots` looks up the ancestors of a file path."
 
 [items."hmr/src/index.ts:covers"]
-status = "pending"
+status = "diverged"
+hash = "afdcd60233b09aba3eea6e67a11ead3c9bd289a6e52960335a16d29271f820ea"
+divergence = "hmr-resolution"
+note = "It resolves a package manifest and a package location."
 
 [items."hmr/src/index.ts:default"]
 status = "pending"
 
 [items."hmr/src/index.ts:driveLetter"]
-status = "pending"
+status = "not-applicable"
+hash = "800e1149b15a4b33ddbac21f03f35a914be93454259dca250c5ddbe720f564f1"
+note = "`os.path.isabs` decides whether a path is absolute."
 
 [items."hmr/src/index.ts:isBuiltin"]
-status = "pending"
+status = "not-applicable"
+hash = "48fe6b5d785141599be8367f304daf83a51f1d9359c8f6d00e0649d8d01ed066"
+note = "A built-in module is outside the graph."
 
 [items."hmr/src/index.ts:isNativeAddon"]
 status = "pending"
 
 [items."hmr/src/index.ts:isRequest"]
-status = "pending"
+status = "diverged"
+hash = "20404d5e534427efe19007f0536bfe6da8c540f35267b020544b10d0cdb15410"
+divergence = "hmr-resolution"
+note = "Python records no request of an import."
 
 [items."hmr/src/index.ts:module cordis"]
 status = "pending"
 
 [items."hmr/src/index.ts:scheme"]
-status = "pending"
+status = "not-applicable"
+hash = "d80149b206f06961be7a261a65996f215212bc7c9beca233e2323405a133d6e5"
+note = "A URL is not an absolute path, so a root rejects it."
 
 [items."hmr/src/index.ts:toPath"]
-status = "pending"
+status = "not-applicable"
+hash = "129180770f7f7e624cbba90e83403d73ba5757f17867ebd4e786b980a4d51cd4"
+note = "A module is its name and has a file path."
 
 [items."hmr/src/index.ts:unwrapExports"]
-status = "pending"
+status = "adapted"
+target = "pycordis.hmr._modules.Exporter"
+hash = "faf5fa25257d22934b6050e902ab1383bd76388eb995e29452c84d7faadd9b31"
+divergence = "hmr-modules"
 
 [items."hmr/src/runtime/index.ts:<rest>"]
 status = "pending"
@@ -4848,50 +4974,98 @@ status = "pending"
 status = "pending"
 
 [items."hmr/watch.spec.ts::Hmr with fs::base::accepts a absolute path without a context directory"]
-status = "pending"
+status = "diverged"
+hash = "1e0eec99f54f1f66a05772487ba081fba29e74c73e90aa09abf42a40560b467a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::base::accepts a drive-letter base"]
-status = "pending"
+status = "diverged"
+hash = "ae9733eb1922ea4112d9031acf5e63e1922fcbdaddabe37377a2a7d52e847ad6"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::base::accepts a file URL without a context directory"]
-status = "pending"
+status = "diverged"
+hash = "1e0eec99f54f1f66a05772487ba081fba29e74c73e90aa09abf42a40560b467a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::base::accepts a relative path without a context directory"]
-status = "pending"
+status = "diverged"
+hash = "1e0eec99f54f1f66a05772487ba081fba29e74c73e90aa09abf42a40560b467a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::base::defaults to the context directory"]
-status = "pending"
+status = "diverged"
+hash = "3b6a13eebd5fa9afed417dd3fba2731982f62fb11ab9da43292be211d96a8873"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::base::defaults to the working directory without a context directory"]
-status = "pending"
+status = "diverged"
+hash = "4b76ecf2a461025ae24978b196409cbcc476c4d33591b2c0962bb6cbadc4a00a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::base::resolves a relative base against the context"]
-status = "pending"
+status = "diverged"
+hash = "03f441078d66db43e3bf55b203e81597d2f7055d6ed210f5e5ed8be19f5afef5"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::does not watch with empty `files`"]
-status = "pending"
+status = "diverged"
+hash = "5c8f5f3db6dc1a9738cebb76d65cc028377212afabb0ded283c3c12307c009ec"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::only reports a change to a host module"]
-status = "pending"
+status = "diverged"
+hash = "022339281d3162212387c5717b467601b3bc8cd088450fe64632ae472cb01c4a"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::reconciles the changes of one debounce window as a batch"]
-status = "pending"
+status = "diverged"
+hash = "31b7270647c131fe69e087dc038900db0e3ad5024dc1eba5f080a752ecb695cc"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::reloads a component when its file changes on disk"]
-status = "pending"
+status = "diverged"
+hash = "b1ddd3a57b735e0dec284675fbd0dafe57482f3340c50d0171c82540980358c7"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::retries an entry that a manifest has moved with the next batch"]
-status = "pending"
+status = "diverged"
+hash = "6768da7c718c1f2ad11ae15531b26e0506e3bd35d6e8df87f648119cf9743699"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::retries an importer of a package that a nearer package shadows with the next batch"]
-status = "pending"
+status = "diverged"
+hash = "006ed574e9e28b27917a2d5b504b7459d2ae7cc5a4f770730efdb67844c2da62"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::retries the changes of a failed batch with a batch queued behind it"]
-status = "pending"
+status = "diverged"
+hash = "5a3746475444f4cd6c8dcc05f2dae2e1ec1c4d6b978e3914e5904790745a33a6"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::retries the changes of a failed batch with the next one"]
-status = "pending"
+status = "diverged"
+hash = "1be7b74975bdd187016c74a67a40fa5a78d81bdbc91041fbf40ea1ba955c0506"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 
 [items."hmr/watch.spec.ts::Hmr with fs::watches `files` in `base`"]
-status = "pending"
+status = "diverged"
+hash = "b9118ee060aec5258b7cd24e94e3f7701f32880f458c55b82abbb90715d2d48e"
+divergence = "hmr-watch"
+note = "The host watches files and calls `reconcile` with the changed paths."
 

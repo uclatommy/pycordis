@@ -2,12 +2,15 @@
 
 import ast
 import importlib.machinery
+import logging
 import os
 import sys
 import sysconfig
-from collections.abc import Callable, Collection, Iterable
+from collections.abc import Callable, Collection, Iterable, Mapping
 from pathlib import Path
 from types import ModuleType
+
+logger = logging.getLogger(__name__)
 
 type ModuleGraph = Callable[[ModuleType], Collection[str] | None]
 """A function that gives the names of the modules that a loaded module imports.
@@ -138,3 +141,94 @@ def _is_module(name: str) -> bool:
         path is not None
         and importlib.machinery.PathFinder.find_spec(name, list(path)) is not None
     )
+
+
+class EdgeCache:
+    """The imports of each loaded module, as they were when the module was first seen.
+
+    A file that changed holds the new source, so the old imports of a loaded module
+    cannot come from its file. The cache reads the edges of a module once, with the
+    graph function, and keeps them for as long as the same module object is loaded.
+    A module object that replaced the cached one (an import after eviction) has its
+    edges read again, and a restored module object keeps the edges that it had.
+    """
+
+    def __init__(self, graph: ModuleGraph) -> None:
+        self._graph = graph
+        self._known: dict[str, tuple[ModuleType, tuple[str, ...] | None]] = {}
+
+    def snapshot(self) -> dict[str, tuple[str, ...]]:
+        """Return the edges of every loaded module in the graph, and update the cache.
+
+        An edge to a module that is not loaded and in the graph is dropped, so a name
+        in the result is a key of the result. A module that is no longer loaded leaves
+        the cache.
+        """
+        known: dict[str, tuple[ModuleType, tuple[str, ...] | None]] = {}
+        unreadable: set[str] = set()
+        for name, module in dict(sys.modules).items():
+            cached = self._known.get(name)
+            if cached is not None and cached[0] is module:
+                known[name] = cached
+                continue
+            try:
+                edges = self._graph(module)
+            except (SyntaxError, OSError):
+                # not cached, so that the next snapshot reads the file again
+                logger.warning("cannot read the imports of %s", name, exc_info=True)
+                unreadable.add(name)
+                continue
+            known[name] = (module, None if edges is None else tuple(edges))
+        self._known = known
+        edges_of = {
+            name: edges for name, (_, edges) in known.items() if edges is not None
+        }
+        edges_of.update({name: () for name in unreadable})
+        return {
+            name: tuple(child for child in edges if child in edges_of)
+            for name, edges in edges_of.items()
+        }
+
+
+def closure(
+    roots: Iterable[str],
+    edges: Mapping[str, Collection[str]],
+    stop: Callable[[str], bool] = lambda name: False,
+) -> set[str]:
+    """Return the modules that `roots` reach along `edges`, and the roots.
+
+    The traversal neither includes nor passes through a module for which `stop` holds.
+    A name that is not a key of `edges` is not included.
+    """
+    reached: set[str] = set()
+    pending = list(roots)
+    while pending:
+        name = pending.pop()
+        if name in reached or name not in edges or stop(name):
+            continue
+        reached.add(name)
+        pending.extend(edges[name])
+    return reached
+
+
+def accepted_modules(
+    changed: Iterable[str], edges: Mapping[str, Collection[str]]
+) -> set[str]:
+    """Return the changed modules and every module that imports one of them.
+
+    A module that imports an accepted module is accepted too, also when no component
+    uses it, so that a later import of it gets the new code.
+    """
+    importers: dict[str, list[str]] = {}
+    for name, children in edges.items():
+        for child in children:
+            importers.setdefault(child, []).append(name)
+    accepted: set[str] = set()
+    pending = list(changed)
+    while pending:
+        name = pending.pop()
+        if name in accepted:
+            continue
+        accepted.add(name)
+        pending.extend(importers.get(name, ()))
+    return accepted

@@ -344,7 +344,32 @@ their components, aborts a unit whose import fails, and runs transactions one at
 file, and call `reconcile`
 **Docs**: docstrings; `docs/architecture.md` module map and the `hmr-modules`,
 `hmr-resolution`, and `hmr-watch` rows
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+
+**Changed**:
+- `src/pycordis/hmr/_service.py`: `Hmr`, `HmrConfig`, `ReloadResult`, `Abort`, `Skip`, `SkipReason`; the transaction queue; stage 1 (import, check the new component), stage 2 (`RegistryService.replace`), stage 3 (wait for the moved fibers)
+- `src/pycordis/hmr/_modules.py`: `match_roots`, `Backup` (evict and restore with the parent package attribute), `Exporter`, `find_components`
+- `src/pycordis/hmr/_graph.py`: `EdgeCache` (old edges by module object), `closure`, `accepted_modules`
+- `src/pycordis/hmr/__init__.py`: exports the service and result names
+- `tests/hmr_fixtures.py`, `tests/conftest.py`: the `STATS` dict and the `stats` fixture for plugin modules
+- `docs/architecture.md`: the `hmr` module map and the `hmr-modules`, `hmr-resolution`, and `hmr-watch` rows
+- `conformance/ledger.toml`: 72 hmr entries reviewed (17 `ported`, 8 `adapted`, 39 `diverged`, 8 `not-applicable`); 227 stay `pending`
+
+**Tests**:
+- `tests/test_hmr_reconcile.py`: 28 tests (15 upstream cases, the no-match and default-scope cases, the old graph, the importer restore of an aborted unit, the package submodule attribute, a failed replace, an unhashable value, a host graph, several entry modules, and an unreadable file); coverage of `pycordis.hmr` is 98%
+- Re-run: `tests/test_hmr_graph.py`, `tests/test_replace.py`, `tests/test_conformance.py`, `tests/test_inventory.py`, `tests/test_docstrings.py`, `tests/test_doc_examples.py`, `tests/test_package.py`; the full suite has 1211 passing tests
+
+**Deviations**:
+- A transaction is one unit: any failed attempt aborts every component of the transaction. The partition into units is Increment 3
+- `Skip` and `SkipReason` exist because `ReloadResult` refers to them; nothing produces a skip yet, and the host-module and extension-module classification is Increment 3
+- `HmrConfig.scope` is `()` by default, which means the working directory at service start; `host_modules` is added with the host classification
+- A replacement is skipped when its runner equals the runner of the old value, not when the values are the same object: a module that exports `apply` stands for its function, and an importer's new module object would otherwise restart the fibers
+- `EdgeCache` keeps the edges for as long as the same module object is loaded, so a module that the host imports again gets its edges read again; the end of a transaction needs no separate record step
+- `find_components` skips a value that cannot be hashed (`TypeError` from the registry)
+- Ledger: the clear-cut `hmr-resolution` and `hmr-watch` entries (package, link, manifest, `require()`, `data:` URL, and watcher cases) are reviewed now, because the divergence rows need a ledger entry; the runtime, patches, and resolution suites stay `pending`
+
+**Manual validation**:
+- A plugin module in a temporary directory, used with `ctx.use`, then changed and passed to `reconcile`: the fiber stays the same and answers with the new code
 
 ### Increment 3: Units, skips, and nested calls
 **Goal**: The partition into units, the restore rules for modules outside every unit and for

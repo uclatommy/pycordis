@@ -74,6 +74,14 @@ the core, and no core module imports it.
 |---|---|
 | `index.ts` | `timer.py` |
 
+The upstream package `hmr` maps to the public package `pycordis.hmr`. It is not part of the
+core, and no core module imports it.
+
+| Upstream (`packages/hmr/src`) | pycordis (`src/pycordis/hmr/`) |
+|---|---|
+| `index.ts` | `_service.py` (the service and the transaction), `_graph.py` (the module graph, the edge cache, the closure), `_modules.py` (the match of files, eviction, component discovery) |
+| `runtime/*.ts`, `error.ts` (Node module-loader internals) | Not ported |
+
 ## Semantic Contract
 
 Each row is a guarantee that pycordis keeps. The ID is stable: tests refer to it with
@@ -189,5 +197,8 @@ change removes the reason for a divergence, remove the divergence and its row.
 | `loader-locations` | omission | Source locations of entry options, outer stack frames, `traceValidation` | Not ported | — | They serve the config file include, which pycordis does not port |
 | `loader-process` | omission | `envData`, `CORDIS_SHARED`, the `exit` event | Not ported | — | Process management of the upstream command line |
 | `loader-move-dispose` | improvement | After a move out of group A, the removal of A disposes the moved entry, and the loader reports that as a self-dispose: it writes `disabled: true` to the entry options and calls `commit` | The moved entry keeps running, and its options and `commit` reports do not change | `LOAD-OPTIONS` | Upstream breaks `LOAD-OPTIONS` here. The kind is `improvement` because no upstream issue exists. Test: `divergence("loader-move-dispose")` in `tests/test_loader_commit.py` |
+| `hmr-modules` | adaptation | Modules by URL in the Node caches; edges from the module loader; the default export as the component; `native-addon` skip reason; one instance in each thread; a nested call found through the async context | Modules by `sys.modules` name; edges from `ast` over the modules in `scope`, cached when first seen, or a host function; components by module attribute; `extension-module` skip reason; one instance in each process; a nested call found through the caller fiber | — | The Python import system and the pycordis scheduler. The upstream transaction, unit, abort, skip, and nested-call cases pass |
+| `hmr-resolution` | omission | Resolution of moved modules through package manifests and links; `ambiguous-import` skip reason; `require()` modules; `data:` URLs; the sweep of failed module jobs | An import by name finds a moved module; a failed import leaves no module | — | Python has no package manifests or module jobs, and an import by name has one result |
+| `hmr-watch` | omission | A file watcher through the `fs` service, with a debounce and a retry of failed batches | The host calls `reconcile` with the changed paths | — | The file system service is not ported; a host has its own watcher |
 
 A change that adds a divergence adds its row in the same change.

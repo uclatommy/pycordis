@@ -3,8 +3,12 @@
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
+
+STATS: dict[str, Any] = {}
+"""Counters that plugin modules write. They survive a reload of the module."""
 
 
 class PluginDir:
@@ -45,3 +49,11 @@ def plugins(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[PluginD
         yield directory
     finally:
         directory.forget()
+
+
+@pytest.fixture(autouse=True)
+def stats() -> Iterator[dict[str, Any]]:
+    """The `STATS` of the test, empty at its start and at its end."""
+    STATS.clear()
+    yield STATS
+    STATS.clear()
