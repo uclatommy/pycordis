@@ -355,23 +355,98 @@ def test_a_failing_submitted_function_leaves_later_work_queued(
 # FramePumpScheduler
 
 
+class StepClock:
+    """A clock that each step advances by one second, and that counts its reads."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.reads = 0
+
+    def __call__(self) -> float:
+        self.reads += 1
+        return self.now
+
+    def step(self) -> None:
+        self.now += 1.0
+
+
 @pytest.mark.parametrize(
-    ("queued", "limit", "ran"), [(5, 2, 2), (3, 10, 3), (3, 0, 0), (0, 4, 0)]
+    ("queued", "max_steps", "budget", "ran"),
+    [
+        (5, 2, None, 2),
+        (3, 10, None, 3),
+        (3, 0, None, 0),
+        (0, 4, None, 0),
+        (5, None, 2.5, 3),
+        (5, 4, 2.5, 3),
+        (5, 2, 10.5, 2),
+        (2, None, 10.5, 2),
+        (5, None, 0.0, 1),
+    ],
 )
-def test_pump_runs_at_most_the_limit_and_returns_the_steps_run(
-    queued: int, limit: int, ran: int
+def test_pump_stops_at_the_first_limit_and_the_next_call_continues(
+    queued: int, max_steps: int | None, budget: float | None, ran: int
 ) -> None:
-    pump = FramePumpScheduler()
+    clock = StepClock()
+    pump = FramePumpScheduler(clock=clock)
     seen: list[int] = []
     for index in range(queued):
-        pump.submit(lambda index=index: seen.append(index))
+        pump.submit(lambda index=index: (seen.append(index), clock.step()))
 
-    assert pump.pump(limit) == ran
+    assert pump.pump(max_steps, budget=budget) == ran
     assert seen == list(range(ran))
+    assert pump.pending == queued - ran
     assert pump.pump(queued) == queued - ran
+    assert pump.pending == 0
 
 
-def test_pump_runs_a_step_that_another_step_submits_within_the_limit() -> None:
+@pytest.mark.parametrize(
+    ("queued", "max_steps", "budget", "ran", "reads"),
+    [
+        (0, None, 1.0, 0, 0),
+        (3, 0, 1.0, 0, 0),
+        (3, None, 0.0, 1, 2),
+        (3, 2, 5.0, 2, 2),
+        (1, None, 5.0, 1, 1),
+        (3, 2, None, 2, 0),
+    ],
+)
+def test_pump_reads_the_clock_only_when_a_budget_step_will_run(
+    queued: int, max_steps: int | None, budget: float | None, ran: int, reads: int
+) -> None:
+    clock = StepClock()
+    pump = FramePumpScheduler(clock=clock)
+    for _ in range(queued):
+        pump.submit(lambda: None)
+
+    assert pump.pump(max_steps, budget=budget) == ran
+    assert clock.reads == reads
+
+
+@pytest.mark.parametrize(
+    ("max_steps", "budget", "message"),
+    [
+        (None, None, "max_steps, budget"),
+        (-1, None, "max_steps must not be negative, got -1"),
+        (None, -0.5, "budget must be a number of seconds >= 0, got -0.5"),
+        (3, float("nan"), "got nan"),
+    ],
+)
+def test_pump_rejects_an_invalid_limit(
+    max_steps: int | None, budget: float | None, message: str
+) -> None:
+    pump = FramePumpScheduler()
+    pump.submit(lambda: None)
+
+    with pytest.raises(ValueError, match=message):
+        pump.pump(max_steps, budget=budget)
+    assert pump.pending == 1
+
+
+@pytest.mark.parametrize("limit", [{"max_steps": 1}, {"budget": 0.0}])
+def test_pump_runs_a_step_that_another_step_submits_within_the_limit(
+    limit: dict[str, Any],
+) -> None:
     pump = FramePumpScheduler()
     seen: list[str] = []
 
@@ -381,18 +456,16 @@ def test_pump_runs_a_step_that_another_step_submits_within_the_limit() -> None:
 
     pump.submit(first)
 
-    assert pump.pump(1) == 1
+    assert pump.pump(**limit) == 1
     assert seen == ["first"]
     assert pump.pump(5) == 1
     assert seen == ["first", "second"]
 
 
-def test_pump_rejects_a_negative_limit() -> None:
-    with pytest.raises(ValueError, match="-1"):
-        FramePumpScheduler().pump(-1)
-
-
-def test_pump_leaves_later_steps_queued_when_a_step_raises() -> None:
+@pytest.mark.parametrize("limit", [{"max_steps": 5}, {"budget": 60.0}])
+def test_pump_leaves_later_steps_queued_when_a_step_raises(
+    limit: dict[str, Any],
+) -> None:
     pump = FramePumpScheduler()
     seen: list[str] = []
 
@@ -403,7 +476,8 @@ def test_pump_leaves_later_steps_queued_when_a_step_raises() -> None:
     pump.submit(lambda: seen.append("later"))
 
     with pytest.raises(RuntimeError, match="step failed"):
-        pump.pump(5)
+        pump.pump(**limit)
+    assert pump.pending == 1
     assert pump.pump(5) == 1
     assert seen == ["later"]
 

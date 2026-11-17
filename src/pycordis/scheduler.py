@@ -10,6 +10,7 @@ Start with `ImmediateScheduler` for tests and headless programs, or with
 a scheduler in a later step, and `start` to run its first step at once.
 """
 
+import math
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -33,9 +34,17 @@ class Scheduler(ABC):
     The thread that creates the scheduler is the owner thread. Every method of the
     context, its fibers, and its services runs on that thread. Only `submit` and the
     completion of a `Deferred` are allowed from other threads.
+
+    Args:
+        clock: A function that returns monotonic time in seconds. The scheduler uses it
+            to measure work, such as the budget of `FramePumpScheduler.pump`. A host
+            that drives time with a `ManualClock` passes `manual_clock.now`, so that
+            timers and budgets share one time source. A blocking wait, such as
+            `ImmediateScheduler.serve`, uses real time and ignores the clock.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, clock: Callable[[], float] = time.monotonic) -> None:
+        self._clock = clock
         self._parked: set[_Task[Any]] = set()
         self._owner = threading.get_ident()
 
@@ -88,6 +97,11 @@ class ImmediateScheduler(Scheduler):
     other work runs waits in a queue and runs in the same drain. Work that other
     threads submit runs at the next drain on the owner thread.
 
+    Args:
+        clock: A function that returns monotonic time in seconds, as for `Scheduler`.
+            The `timeout` of `run_until_quiet` and `serve` always uses real time,
+            because those methods wait on a condition that waits in real time.
+
     Examples:
         ```python
         >>> scheduler = ImmediateScheduler()
@@ -99,8 +113,8 @@ class ImmediateScheduler(Scheduler):
         ```
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *, clock: Callable[[], float] = time.monotonic) -> None:
+        super().__init__(clock=clock)
         self._ready = threading.Condition()
         self._queue: deque[Callable[[], None]] = deque()
         self._depth = 0
@@ -218,13 +232,18 @@ class ImmediateScheduler(Scheduler):
 class FramePumpScheduler(Scheduler):
     """A scheduler that a host with a frame loop drives with `pump`.
 
-    Submitted work waits in a queue. `pump` runs a bounded number of steps and never
-    blocks, so a host calls it once per frame without a long pause. Work that any
-    thread submits runs on the owner thread in a later `pump` call.
+    Submitted work waits in a queue. `pump` runs a bounded number of steps, for a
+    bounded time, or both, and never blocks, so a host calls it once per frame without a
+    long pause. Work that any thread submits runs on the owner thread in a later `pump`
+    call.
 
     To run all ready work, for example before the first frame, call `pump` with a limit
     that is larger than the work. A task that waits for a `Deferred` stays parked, and
     it resumes in the `pump` call that follows the completion.
+
+    Args:
+        clock: A function that returns monotonic time in seconds, as for `Scheduler`.
+            `pump` reads it to apply a `budget`.
 
     Examples:
         ```python
@@ -235,39 +254,87 @@ class FramePumpScheduler(Scheduler):
         1
         >>> scheduler.pump(10)
         0
+        >>> scheduler.submit(lambda: print("step"))
+        >>> scheduler.pump(budget=0.002)
+        step
+        1
+        >>> scheduler.pending
+        0
         ```
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *, clock: Callable[[], float] = time.monotonic) -> None:
+        super().__init__(clock=clock)
         self._queue: deque[Callable[[], None]] = deque()
+
+    @property
+    def pending(self) -> int:
+        """The number of queued steps. Read it on the owner thread.
+
+        Raises:
+            CordisError: If another thread reads it (`WRONG_THREAD`).
+        """
+        self.assert_owner()
+        return len(self._queue)
 
     def submit(self, fn: Callable[[], None]) -> None:
         self._queue.append(fn)
 
-    def pump(self, max_steps: int) -> int:
-        """Run at most `max_steps` queued steps, then return.
+    def pump(self, max_steps: int | None = None, *, budget: float | None = None) -> int:
+        """Run queued steps until a limit is reached, then return.
 
-        A step that another step submits is in the same call when the limit allows it.
-        An empty queue returns `0` at once. If a step raises, the exception goes to the
-        caller and the later steps stay queued. Call it on the owner thread.
+        The call stops at the first limit that it reaches: the queue is empty,
+        `max_steps` steps ran, or the time `budget` is used up. When the queue has work,
+        the first step always runs, also with a `budget` of `0`, so that every frame
+        makes progress. The budget is checked only before each later step, so a frame
+        can be late by at most one step.
+
+        A step that another step submits is in the same call when the limits allow it.
+        An empty queue returns `0` at once. A step that does not run stays queued, in
+        order. If a step raises, the exception goes to the caller and the later steps
+        stay queued. Call it on the owner thread.
+
+        The budget measures the scheduler's clock, which must be monotonic. A clock that
+        does not move during the call, such as a `ManualClock.now` that no step
+        advances, gives no time limit. A call without a `budget` does not read the
+        clock; a call with a `budget` reads it only when a step will run.
 
         Args:
             max_steps: The most steps to run. `0` runs none.
+            budget: The time in seconds after which no later step starts. `0` runs one
+                step.
 
         Returns:
             The number of steps that ran.
 
         Raises:
-            ValueError: If `max_steps` is negative.
+            ValueError: If neither limit is given, `max_steps` is negative, or `budget`
+                is negative or NaN.
             CordisError: If another thread calls (`WRONG_THREAD`).
         """
         self.assert_owner()
-        if max_steps < 0:
+        if max_steps is None and budget is None:
+            raise ValueError("pump needs max_steps, budget, or both")
+        if max_steps is not None and max_steps < 0:
             raise ValueError(f"max_steps must not be negative, got {max_steps}")
+        if budget is not None and not budget >= 0:
+            raise ValueError(f"budget must be a number of seconds >= 0, got {budget}")
         queue = self._queue
         steps = 0
-        while steps < max_steps and queue:
+        if budget is None:
+            assert max_steps is not None
+            while steps < max_steps and queue:
+                steps += 1
+                queue.popleft()()
+            return steps
+        limit = math.inf if max_steps is None else max_steps
+        clock = self._clock
+        deadline = 0.0
+        while steps < limit and queue:
+            if steps == 0:
+                deadline = clock() + budget
+            elif clock() >= deadline:
+                break
             steps += 1
             queue.popleft()()
         return steps

@@ -111,7 +111,28 @@ context.
 | Scheduler | Use it when |
 |---|---|
 | `ImmediateScheduler` | Tests and headless programs. Lifecycle work runs to completion when the outermost call returns. |
-| `FramePumpScheduler` | A host with a frame loop. Call `scheduler.pump(max_steps)` once per frame. A call runs at most `max_steps` steps and never blocks. |
+| `FramePumpScheduler` | A host with a frame loop. Call `scheduler.pump(max_steps)` or `scheduler.pump(budget=seconds)` once per frame. A call stops at its step limit or its time budget, and never blocks. |
+
+A frame loop that limits lifecycle work by time passes a budget, and reads `pending` to see
+whether steps remain:
+
+```python
+from pycordis import Context, FramePumpScheduler
+
+scheduler = FramePumpScheduler()
+root = Context(scheduler)
+
+
+def on_frame() -> None:
+    scheduler.pump(budget=0.002)  # no later step starts after 2 ms
+    if scheduler.pending:
+        ...  # work remains for the next frame
+```
+
+When the queue has work, the first step of a call always runs, so a frame can be late by at
+most one step. The budget measures the scheduler clock (`time.monotonic` by default). Pass
+`FramePumpScheduler(clock=manual_clock.now)` to use the clock of a `ManualClock`. A blocking
+wait, such as `ImmediateScheduler.serve`, uses real time.
 
 An asynchronous effect is an `async def` coroutine or an async generator that awaits only a
 `Deferred` or a `Fiber`. Use `fiber.wait()` to get a `Deferred` that completes when a fiber

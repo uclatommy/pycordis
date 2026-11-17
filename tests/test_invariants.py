@@ -7,6 +7,7 @@ random number of steps between the calls. The seed is part of every assertion me
 
 import itertools
 import random
+import time
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from functools import partial
@@ -216,6 +217,15 @@ def settle(pump: FramePumpScheduler, seed: int) -> None:
     assert steps < QUIESCENCE_LIMIT, f"seed {seed}: no quiescence"
 
 
+def settle_by_budget(pump: FramePumpScheduler, rng: random.Random, seed: int) -> None:
+    """Run budget frames until nothing is queued. A budget can allow only one step."""
+    for _ in range(QUIESCENCE_LIMIT):
+        if not pump.pending:
+            return
+        pump.pump(budget=rng.choice([0, 0.3, 1.0, 2.5]))
+    raise AssertionError(f"seed {seed}: no quiescence")
+
+
 def run_schedule(
     root: Context,
     pump: FramePumpScheduler,
@@ -223,15 +233,22 @@ def run_schedule(
     ops: list[Op],
     rng: random.Random,
     seed: int,
+    finish: Callable[[], None] | None = None,
 ) -> None:
-    """Make each call, and pump single steps between calls. Check after each step."""
+    """Make each call, and pump single steps between calls. Check after each step.
+
+    `finish` settles the schedule at the end. The default runs one large pump.
+    """
     for op in ops:
         apply_op(root, pump, slots, op, seed)
         check_well_formed(root, seed)
         for _ in range(rng.randrange(4)):
             pump.pump(1)
             check_well_formed(root, seed)
-    settle(pump, seed)
+    if finish is None:
+        settle(pump, seed)
+    else:
+        finish()
 
 
 def structure(root: Context, keys: list[str]) -> tuple[Any, dict[str, str | None]]:
@@ -252,8 +269,10 @@ def structure(root: Context, keys: list[str]) -> tuple[Any, dict[str, str | None
     return node(root.fiber), providers
 
 
-def new_root() -> tuple[Context, FramePumpScheduler, Probe]:
-    pump = FramePumpScheduler()
+def new_root(
+    clock: Callable[[], float] = time.monotonic,
+) -> tuple[Context, FramePumpScheduler, Probe]:
+    pump = FramePumpScheduler(clock=clock)
     return Context(pump), pump, Probe()
 
 
@@ -300,15 +319,27 @@ def test_a_provider_never_reverts_under_an_installed_dependent(seed: int) -> Non
 
 
 @pytest.mark.contract("LIFE-PROGRESS")
+@pytest.mark.parametrize("driver", ["steps", "budget"])
 @pytest.mark.parametrize("seed", SEEDS)
 def test_every_schedule_reaches_quiescence_with_each_fiber_in_its_right_state(
-    seed: int,
+    seed: int, driver: str
 ) -> None:
     rng = random.Random(seed)
-    root, pump, probe = new_root()
-    slots = build_pool(probe)
+    time_rng = random.Random(seed + 1000)
+    now = 0.0
 
-    run_schedule(root, pump, slots, random_ops(rng, slots, OPS), rng, seed)
+    def seeded_clock() -> float:
+        nonlocal now
+        now += time_rng.random()
+        return now
+
+    root, pump, probe = new_root(seeded_clock)
+    slots = build_pool(probe)
+    finish = (
+        None if driver == "steps" else lambda: settle_by_budget(pump, time_rng, seed)
+    )
+
+    run_schedule(root, pump, slots, random_ops(rng, slots, OPS), rng, seed, finish)
 
     for slot in slots:
         if not slot.live:

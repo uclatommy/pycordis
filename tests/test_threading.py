@@ -89,16 +89,17 @@ def test_a_call_from_a_second_thread_raises_wrong_thread(
 
 @pytest.mark.divergence("owner-thread")
 def test_the_scheduler_drivers_reject_a_second_thread(any_scheduler: Scheduler) -> None:
-    drive = (
-        (lambda: any_scheduler.pump(1))
+    drives = (
+        [lambda: any_scheduler.pump(1), lambda: any_scheduler.pending]
         if isinstance(any_scheduler, FramePumpScheduler)
-        else any_scheduler.run_until_quiet  # type: ignore[attr-defined]
+        else [any_scheduler.run_until_quiet]  # type: ignore[attr-defined]
     )
 
-    _, error = call_on_thread(drive)
+    for drive in drives:
+        _, error = call_on_thread(drive)
 
-    assert isinstance(error, CordisError)
-    assert str(error) == "WRONG_THREAD"
+        assert isinstance(error, CordisError)
+        assert str(error) == "WRONG_THREAD"
 
 
 @pytest.mark.divergence("owner-thread")
