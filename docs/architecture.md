@@ -67,6 +67,13 @@ the core, and no core module imports it.
 | `config/entry.ts`, `config/utils.ts` (`validateOptions`, `EntryValidationError`) | `_entry.py` |
 | `internal.ts`, `resolve.ts` (Node module resolution) | Not ported |
 
+The upstream package `timer` maps to the public module `pycordis.timer`. It is not part of
+the core, and no core module imports it.
+
+| Upstream (`packages/timer/src`) | pycordis (`src/pycordis/`) |
+|---|---|
+| `index.ts` | `timer.py` |
+
 ## Semantic Contract
 
 Each row is a guarantee that pycordis keeps. The ID is stable: tests refer to it with
@@ -170,7 +177,9 @@ change removes the reason for a divergence, remove the divergence and its row.
 | `owner-thread` | improvement | A single-threaded runtime with no thread check | Every `Context`, `Fiber`, and core-service method raises `CordisError("WRONG_THREAD")` when another thread calls it; `Scheduler.submit` and `Deferred` completion are allowed from any thread | `REG-WELLFORMED` | A Python host has worker threads. A call from the wrong thread fails at once and does not corrupt the registry. Test: `divergence("owner-thread")` in `tests/test_threading.py` |
 | `host-introspection` | improvement | `state`, `uid`, `parent`, and `getEffects()` are public; the children of a fiber are in `runtime.fibers` | `fiber.error` and `fiber.children` are also public | `LIFE-FAILURE` | A host status view reads the failure cause and the fiber tree without the internals of the registry. Test: `divergence("host-introspection")` in `tests/test_fiber.py` |
 | `error-code` | omission | `CordisError(code, message?)`: `code` keys a message table that has one entry, and the instance keeps `code` | `CordisError(message)`: the instance has no `code` | — | The message states the rule, and a Python caller catches `CordisError` and reads the message. No upstream case reads `code` |
-| `deprecated-aliases` | omission | `ctx.plugin` / `registry.plugin`, `events.dispatch` | Not ported | — | No vestigial API |
+| `deprecated-aliases` | omission | `ctx.plugin` / `registry.plugin`, `events.dispatch`, `TimerService.setTimeout` and `setInterval` | Not ported | — | No vestigial API |
+| `timer-api` | adaptation | Delays in milliseconds, with a delay below 1 ms clamped to 1 ms; `timeout(delay)` and `interval(delay)` overloads; `noTrailing`; a wrapper function with a `dispose` property; `return(value)` on the iterator; the global timers of the runtime | Delays in seconds; a negative delay, and a zero `interval` or `ticks` delay, raise `ValueError`; `sleep(delay)` and `ticks(delay)`; `trailing=True`; a `Scheduled` object; `aclose()` with no value; a `Clock` that the host provides as the service `clock` | — | Python time units, no overload on argument type, Python iterator protocol, and host neutrality: the library has no global clock. The upstream cases pass with `ManualClock` |
+| `timer-callback-errors` | improvement | An error from a timer callback is uncaught and goes to the runtime | The timer service logs it with the logger of the calling fiber, and the other timers continue | `EFF-ISOLATE` | A failed callback of one plugin does not stop `ManualClock.advance` or the scheduler drain for other plugins. Test: `divergence("timer-callback-errors")` in `tests/test_timer.py` |
 | `loader-expressions` | omission | JavaScript expressions in `disabled`, `config`, `inject`, and `intercept`, evaluated against the entry context | `disabled` is a `bool`; every option value is plain data | — | No `eval` of config data in a library; a host that needs a condition computes the tree before it calls the loader |
 | `loader-isolate-rebuild` | omission | A change of `isolate`, or a move into a group with a different isolation, moves the live provider to the new realm and notifies both sides; a change that no service of the entry uses reloads nothing | A change of `isolate`, or a move that changes the isolation, intercepts, or `meta` of the entry context, rebuilds the entry | — | The in-place move needs a core API that only the loader uses; a rebuild keeps `LIFE-ORDER` with no new core state |
 | `loader-tree-owner` | adaptation | An entry fiber is a child of its group's fiber; a move swaps the parent of the entry context, and the disposal stays with the old group fiber | An entry fiber is a child of its tree's fiber; a group stops its members explicitly | — | A pycordis context cannot change its parent, and a fiber cannot change its owner; the move cases pass with no new core operation |

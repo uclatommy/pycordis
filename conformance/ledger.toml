@@ -14,7 +14,7 @@
 # after the review of the upstream item.
 
 [inventory]
-packages = ["loader"]
+packages = ["loader", "timer"]
 
 [contract]
 pending = []
@@ -3811,3 +3811,160 @@ hash = "5c148867f9e5d65c3f84209a940ac9b5935764406c917d8c83160327f6c7fd8a"
 status = "ported"
 hash = "6cf781558ffe95c9924a13b28f03793c336269789fd43fa069a34b46e3cb994d"
 
+[items."timer/index.spec.ts::ctx.timer::ctx.debounce()::basic support"]
+status = "ported"
+hash = "2d78ffb242c98f89b07d7a2e97116f846e5b9a428628541cdc77acf9fa2fbca0"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.debounce()::context dispose"]
+status = "ported"
+hash = "7f27453aefbf7306508b474dd16006fd92aaf16c519660d0b0f13ac1543e3a04"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.debounce()::disposed"]
+status = "ported"
+hash = "c0cc9fdc8aaf6763d68f3fb98ea49972a10f2542f4ecc6724d748a0e9ebebe0f"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break return)"]
+status = "pending"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break throw)"]
+status = "pending"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (concurrent reads)"]
+status = "pending"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (context dispose with concurrent reads)"]
+status = "pending"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (context dispose)"]
+status = "pending"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual return)"]
+status = "pending"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual throw)"]
+status = "pending"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (return with concurrent reads)"]
+status = "pending"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (throw with concurrent reads)"]
+status = "pending"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.interval()::basic support"]
+status = "ported"
+hash = "a21a4e0731e58ba3d731af77bb0241b64180e1146e74d75a7d9656a1b20bc847"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::basic support"]
+status = "ported"
+hash = "2851412e82c430ee5ea6740868fc2d0f8f5de4efc62165ff1d511c66f8d99535"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::context dispose"]
+status = "ported"
+hash = "fea1d4f269955acfaf6f646f8b8f1f90d657136d950a1e6d18ce00c61e899ca7"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::disposed"]
+status = "ported"
+hash = "30269bc9be63d27e43b3160a0aaade59499b0d13180c059a09a7e6f6f1455278"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::disposed with noTrailing"]
+status = "ported"
+hash = "4f337b1cacb90f64b0ad85f1d6089533ee5fa86ba2bfe06c161acdc04fa2e91f"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::no trailing mode"]
+status = "ported"
+hash = "c94cbc15a7dd2fda4721f121fa07fc42c6d35d4f3ce72eb2753b09bd5b072175"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.throttle()::trailing mode"]
+status = "ported"
+hash = "51ed1bd0e135828db6ff3be7c93a89bc965e62d7531891f83f0c68688f8f196b"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.timeout()::basic support"]
+status = "ported"
+hash = "705a1a29b3c906516ff57b03dcf5973a7601aa753653b0147be4591cd4259a7d"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.timeout()::dispose"]
+status = "ported"
+hash = "b9aad8871db8f21c2434e41f80252a087cf9d575ae6c39d09e8a2ea383afe2f8"
+
+[items."timer/index.spec.ts::ctx.timer::ctx.timeout()::promise"]
+status = "pending"
+
+[items."timer/message:Context has been disposed"]
+status = "pending"
+
+[items."timer/src/index.ts:<rest>"]
+status = "not-applicable"
+hash = "15746436e2882752fcec186f0b0612b7a152f6aeeba03696812eb6bfb23903ec"
+note = "Imports of the TypeScript module."
+
+[items."timer/src/index.ts:Scheduled"]
+status = "adapted"
+target = "pycordis.timer.Scheduled"
+hash = "7850a23fcd866a4e0dec9d4ae35d129f58a2e146c2e9c546560406bf542cb88d"
+divergence = "timer-api"
+note = "`Scheduled` is a class with a `dispose` method, not a function with a property."
+
+[items."timer/src/index.ts:TimerService"]
+status = "ported"
+target = "pycordis.timer.TimerService"
+hash = "b95e62120c09bf5acd572f601379e506c236d72fd79b359b3bfad9c2ba40586e"
+
+[items."timer/src/index.ts:TimerService._schedule"]
+status = "adapted"
+target = "pycordis.timer.Scheduled"
+hash = "8d5445efb4b0cad5ac749406faf6d0e2cae2a2e72f3313ea54de2cc93cf2d70f"
+divergence = "timer-api"
+note = "`Scheduled` registers its own effect and keeps the pending call."
+
+[items."timer/src/index.ts:TimerService.constructor"]
+status = "ported"
+target = "pycordis.timer.TimerService.__init__"
+hash = "1aec62bdbb0ea619f830c3ede3e1251a0f9a2ebfdf0876a7b870783dd7e207b1"
+
+[items."timer/src/index.ts:TimerService.debounce"]
+status = "adapted"
+target = "pycordis.timer.TimerService.debounce"
+hash = "431634c9ac3edaf8240cc3d99dd886e955cf3037112ad37e65a36735657f543c"
+divergence = "timer-api"
+
+[items."timer/src/index.ts:TimerService.interval"]
+status = "pending"
+
+[items."timer/src/index.ts:TimerService.setInterval"]
+status = "diverged"
+hash = "303217153bcc7e0d5a04dd20d4a8266cf41a32e8e5d869f46a3ee3526d7d2c28"
+divergence = "deprecated-aliases"
+
+[items."timer/src/index.ts:TimerService.setTimeout"]
+status = "diverged"
+hash = "da695e5a5af82ba133a1569a1588675c932ea5c6e01ad2852b73e197bf6aa41a"
+divergence = "deprecated-aliases"
+
+[items."timer/src/index.ts:TimerService.throttle"]
+status = "adapted"
+target = "pycordis.timer.TimerService.throttle"
+hash = "6bb005458b183d9c6151f76527bb6b00aaa4d67f81b8b6b965157b0bdc84d097"
+divergence = "timer-api"
+
+[items."timer/src/index.ts:TimerService.timeout"]
+status = "pending"
+
+[items."timer/src/index.ts:default"]
+status = "not-applicable"
+hash = "684bf8100cfc5ef6c188103fe5a8383164e006fa11f1b7cbb23bee4e765e4e65"
+note = "`pycordis.timer` exports `TimerService` by name."
+
+[items."timer/src/index.ts:module cordis"]
+status = "not-applicable"
+hash = "b8a20a36fa57e6a3dea1dbbfa40157b36a7564e844c26a957dc0f1c4a8c634d7"
+note = "The interface that types the context properties. `TimerService` registers them with `Context.mixin`, and a plugin reads `ctx[\"timeout\"]`."
+
+[items."timer/tests/index.spec.ts:<rest>"]
+status = "not-applicable"
+hash = "567fde2ce927dbc81b043184c7534dd11000fe5f9b12911557b197ce85350a16"
+note = "Imports of the TypeScript test module."
+
+[items."timer/tests/index.spec.ts:withContext"]
+status = "not-applicable"
+hash = "4deba2d9f7f64a04e49285624e84cf9825f872be16fda6937b736fb72335616e"
+note = "The fixtures `manual` and `plugin` of `tests/test_timer.py` provide a `ManualClock`, the timer service, and a plugin fiber."

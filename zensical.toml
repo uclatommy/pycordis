@@ -42,6 +42,7 @@ nav = [
     { "Registry" = "api/registry.md" },
     { "Scheduler" = "api/scheduler.md" },
     { "Service" = "api/service.md" },
+    { "Timer" = "api/timer.md" },
     { "Traceable" = "api/traceable.md" },
   ]},
   # API_NAV_END

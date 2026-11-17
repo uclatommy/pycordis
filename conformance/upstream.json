@@ -3094,6 +3094,159 @@
       "hash": "cc2c4beb5197400b8acf80ca82b81d818e1b60f0760552d0c81274dfe7b8b339",
       "kind": "symbol"
     },
+    "timer/index.spec.ts::ctx.timer::ctx.debounce()::basic support": {
+      "hash": "2d78ffb242c98f89b07d7a2e97116f846e5b9a428628541cdc77acf9fa2fbca0",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.debounce()::context dispose": {
+      "hash": "7f27453aefbf7306508b474dd16006fd92aaf16c519660d0b0f13ac1543e3a04",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.debounce()::disposed": {
+      "hash": "c0cc9fdc8aaf6763d68f3fb98ea49972a10f2542f4ecc6724d748a0e9ebebe0f",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break return)": {
+      "hash": "934ae374675620fb3a0363fe5cb4bda70ae6db6b62b9765e89951dda9bb39e1b",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (break throw)": {
+      "hash": "da69dc8954f18bbcf48047fd853d1860d8cd1bc69bdb0c673f300515526dec18",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (concurrent reads)": {
+      "hash": "b438573abcde1808cad99d27651da3e311876c977d2150c25b3381f4c3a9411e",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (context dispose with concurrent reads)": {
+      "hash": "0ed957c83623f5723ea741545f7f290ec544320180e6cc948c002f7aa45a52df",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (context dispose)": {
+      "hash": "2a7d5d9bdf55c4401f290f1a16f97afdcd0256324052fc547864f9e415f1964e",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual return)": {
+      "hash": "e99e5b7c5ad475fa3f9dab20df0a0a2bf483edd287b6a576b38265efa2b9b384",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (manual throw)": {
+      "hash": "c4a04299c9f271cfdb389f577413d073f7b73a95290254f7fd6dac325a17f619",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (return with concurrent reads)": {
+      "hash": "86479f641e69632f2c17045f902f1da077d9a6ff8f0b906dc4dc4f64ea6a6af7",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::async iterator (throw with concurrent reads)": {
+      "hash": "3d9900eb1fb687ca2cc86f5f2ac0b8dd9ea71abd38007ebaf25c47ebeb8437d7",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.interval()::basic support": {
+      "hash": "a21a4e0731e58ba3d731af77bb0241b64180e1146e74d75a7d9656a1b20bc847",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.throttle()::basic support": {
+      "hash": "2851412e82c430ee5ea6740868fc2d0f8f5de4efc62165ff1d511c66f8d99535",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.throttle()::context dispose": {
+      "hash": "fea1d4f269955acfaf6f646f8b8f1f90d657136d950a1e6d18ce00c61e899ca7",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.throttle()::disposed": {
+      "hash": "30269bc9be63d27e43b3160a0aaade59499b0d13180c059a09a7e6f6f1455278",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.throttle()::disposed with noTrailing": {
+      "hash": "4f337b1cacb90f64b0ad85f1d6089533ee5fa86ba2bfe06c161acdc04fa2e91f",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.throttle()::no trailing mode": {
+      "hash": "c94cbc15a7dd2fda4721f121fa07fc42c6d35d4f3ce72eb2753b09bd5b072175",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.throttle()::trailing mode": {
+      "hash": "51ed1bd0e135828db6ff3be7c93a89bc965e62d7531891f83f0c68688f8f196b",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.timeout()::basic support": {
+      "hash": "705a1a29b3c906516ff57b03dcf5973a7601aa753653b0147be4591cd4259a7d",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.timeout()::dispose": {
+      "hash": "b9aad8871db8f21c2434e41f80252a087cf9d575ae6c39d09e8a2ea383afe2f8",
+      "kind": "case"
+    },
+    "timer/index.spec.ts::ctx.timer::ctx.timeout()::promise": {
+      "hash": "7f0f55dec8527f52384366f90a2bd8b85fb4a9ae525f9108394104bc53c37334",
+      "kind": "case"
+    },
+    "timer/message:Context has been disposed": {
+      "hash": "3c3c082f462c725ecadef9f38673dee8fdbf1f029d73fc78b28726a1e84f478c",
+      "kind": "message",
+      "text": "Context has been disposed"
+    },
+    "timer/src/index.ts:<rest>": {
+      "hash": "15746436e2882752fcec186f0b0612b7a152f6aeeba03696812eb6bfb23903ec",
+      "kind": "rest"
+    },
+    "timer/src/index.ts:Scheduled": {
+      "hash": "7850a23fcd866a4e0dec9d4ae35d129f58a2e146c2e9c546560406bf542cb88d",
+      "kind": "symbol"
+    },
+    "timer/src/index.ts:TimerService": {
+      "hash": "b95e62120c09bf5acd572f601379e506c236d72fd79b359b3bfad9c2ba40586e",
+      "kind": "symbol"
+    },
+    "timer/src/index.ts:TimerService._schedule": {
+      "hash": "8d5445efb4b0cad5ac749406faf6d0e2cae2a2e72f3313ea54de2cc93cf2d70f",
+      "kind": "member"
+    },
+    "timer/src/index.ts:TimerService.constructor": {
+      "hash": "1aec62bdbb0ea619f830c3ede3e1251a0f9a2ebfdf0876a7b870783dd7e207b1",
+      "kind": "member"
+    },
+    "timer/src/index.ts:TimerService.debounce": {
+      "hash": "431634c9ac3edaf8240cc3d99dd886e955cf3037112ad37e65a36735657f543c",
+      "kind": "member"
+    },
+    "timer/src/index.ts:TimerService.interval": {
+      "hash": "c6119046c27a030cd8d1b14e551f7847e9c12a70c00c688bd75492c2c49e0d76",
+      "kind": "member"
+    },
+    "timer/src/index.ts:TimerService.setInterval": {
+      "hash": "303217153bcc7e0d5a04dd20d4a8266cf41a32e8e5d869f46a3ee3526d7d2c28",
+      "kind": "member"
+    },
+    "timer/src/index.ts:TimerService.setTimeout": {
+      "hash": "da695e5a5af82ba133a1569a1588675c932ea5c6e01ad2852b73e197bf6aa41a",
+      "kind": "member"
+    },
+    "timer/src/index.ts:TimerService.throttle": {
+      "hash": "6bb005458b183d9c6151f76527bb6b00aaa4d67f81b8b6b965157b0bdc84d097",
+      "kind": "member"
+    },
+    "timer/src/index.ts:TimerService.timeout": {
+      "hash": "cce6be5a5863cfb478d75a76e0361f12920eaa34934a806859cce345fc906de9",
+      "kind": "member"
+    },
+    "timer/src/index.ts:default": {
+      "hash": "684bf8100cfc5ef6c188103fe5a8383164e006fa11f1b7cbb23bee4e765e4e65",
+      "kind": "symbol"
+    },
+    "timer/src/index.ts:module cordis": {
+      "hash": "b8a20a36fa57e6a3dea1dbbfa40157b36a7564e844c26a957dc0f1c4a8c634d7",
+      "kind": "symbol"
+    },
+    "timer/tests/index.spec.ts:<rest>": {
+      "hash": "567fde2ce927dbc81b043184c7534dd11000fe5f9b12911557b197ce85350a16",
+      "kind": "rest"
+    },
+    "timer/tests/index.spec.ts:withContext": {
+      "hash": "4deba2d9f7f64a04e49285624e84cf9825f872be16fda6937b736fb72335616e",
+      "kind": "symbol"
+    },
     "update.spec.ts::Fiber: concurrent updates::cleans up a superseded failure without failing the latest update": {
       "hash": "35b4db94c86d8b7d535505a6c45ea59c40f4cc379dda99ef9cb67ad3b6105aad",
       "kind": "case"
