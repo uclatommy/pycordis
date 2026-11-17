@@ -162,3 +162,19 @@ def test_a_hook_called_on_a_view_reads_the_use_site(root: Context) -> None:
 
     assert view.ctx.shadow is None
     assert view.cordis_resolve_intercept() == {"a": 1}
+
+
+def test_an_intercept_layer_is_read_each_time_the_service_resolves(
+    root: Context,
+) -> None:
+    Foo(root)
+    layer: dict[str, object] = {"foo": {"a": 1}}
+
+    ctx = root.intercept_layer(layer)
+    assert ctx["foo"].config() == {"a": 1}
+
+    layer["foo"] = {"a": 2}
+    assert ctx["foo"].config() == {"a": 2}
+    layer.clear()
+    assert ctx["foo"].config() == {}
+    assert root["foo"].config() == {}

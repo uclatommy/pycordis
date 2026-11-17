@@ -1,6 +1,6 @@
 # Build Spec: Declarative Loader
 
-**Status**: 🚧 In progress (Increment 3 of 5 done); spec 1 of 3 (see [Dependencies](#dependencies))
+**Status**: 🚧 In progress (Increment 4 of 5 done); spec 1 of 3 (see [Dependencies](#dependencies))
 
 ## Goal
 
@@ -503,7 +503,27 @@ move into a group with a different context rebuilds the entry in its new realm.
 method)
 **Validation**: `uv run pytest tests/test_loader*.py tests/test_intercept.py tests/test_isolate.py`
 **Docs**: `loader-isolate-rebuild` row; docstring of the new `Context` method
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+
+**Changed**:
+- `context.py`: `Context.intercept_layer(layer)` returns a child context whose intercept chain holds `layer` itself, so a change to `layer` reaches every reader
+- `loader/_entry.py`: `Entry._isolate` derives the entry context with one `Context.isolate` call for each `isolate` name (`True` is a realm of the entry, a label is an interned string); `Entry._apply_intercept` replaces the content of the live layer in `update`; `_start` adds the layer for the component only; a change of `isolate` rebuilds the entry
+- `docs/architecture.md`: the `loader-isolate-rebuild` divergence row
+- `conformance/ledger.toml`: 19 cases and 3 symbols `ported`, 19 cases, 1 message, and 5 symbols `diverged`, 3 symbols `not-applicable` (`isolate.ts`, `swap`)
+
+**Tests**:
+- `test_loader_isolate.py` (19), `test_loader_evaluate.py` (+4), `test_intercept.py` (+1)
+- `uv run pytest tests/test_loader*.py tests/test_intercept.py tests/test_isolate.py tests/test_conformance.py tests/test_inventory.py tests/test_docstrings.py`: 271 passed
+- `uv run pytest`: 983 passed
+- `uv run ruff check .` and `uv run ruff format --check .` are clean
+
+**Deviations**:
+- The three `patch` cases are `diverged` with `loader-isolate-rebuild`: pycordis has no context patch step, so the window that they test does not exist. The `import` cases hold the same rule
+- `special case: change provider` and `special case: change injector` are `diverged`, not `ported`: they assert on the old fiber object, which a rebuild replaces
+- `remove isolate on injector (irrelevant)` and `remove isolate on provider (irrelevant)` are `diverged`: the entry loads again although no service changes
+- `keeps the entry isolate without an inject` is `diverged` with `loader-expressions`: its `disabled` value is an expression
+- An isolate change of a nested group rebuilds an injector in the same realm in another group (for example `special case: nested realms`): the nested provider loads again, so its injectors load again
+- Not done in this increment: the other `<rest>` and message entries of the loader ledger stay `pending` for Increment 5
 
 ### Increment 5: Contract schedules and close-out
 **Goal**: The `LIFE-CONFLUENT` schedule test covers the loader, and the guides describe it.

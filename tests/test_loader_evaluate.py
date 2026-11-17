@@ -411,3 +411,82 @@ def test_a_move_to_a_group_with_the_same_scope_keeps_both_fibers(
     assert entry.parent is loader.resolve("g").subgroup
     assert (entry.outer_fiber, entry.inner_fiber) == (outer, inner)
     assert len(worker.calls) == 1
+
+
+@pytest.mark.upstream(
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates intercept with the entry inject, for the component only"  # noqa: E501
+)
+def test_the_intercept_reaches_the_component_and_not_the_outer_fiber(
+    loader: RecordingLoader,
+) -> None:
+    seen: list[Context] = []
+    loader.mock("worker", lambda ctx, config: seen.append(ctx))
+    loader.mock("settings", provide_settings)
+
+    loader.read(
+        [
+            {**SETTINGS, "config": {"proxy": "p1"}},
+            worker_entry(inject=["settings"], intercept={"http": {"proxy": "p1"}}),
+        ]
+    ).result()
+
+    entry = loader.resolve("worker")
+    assert seen[0].intercept_layers("http") == [{"proxy": "p1"}]
+    assert entry.outer_fiber is not None
+    assert entry.outer_fiber.ctx.intercept_layers("http") == []
+    assert entry.options["intercept"] == {"http": {"proxy": "p1"}}
+
+
+@pytest.mark.upstream(
+    "loader/evaluate.spec.ts::Loader: entry evaluation context::updates intercept in place"  # noqa: E501
+)
+def test_an_intercept_update_changes_the_running_component_without_a_reload(
+    loader: RecordingLoader,
+) -> None:
+    seen: list[Context] = []
+    component = loader.mock("worker", lambda ctx, config: seen.append(ctx))
+
+    loader.read([worker_entry(intercept={"http": {"proxy": "p1"}})]).result()
+    fiber = loader.fiber("worker")
+
+    loader.update("worker", {"intercept": {"http": {"proxy": "p2"}}}).result()
+    assert seen[0].intercept_layers("http") == [{"proxy": "p2"}]
+    loader.update("worker", {"intercept": None}).result()
+    assert seen[0].intercept_layers("http") == []
+    assert len(component.calls) == 1
+    assert loader.fiber("worker") is fiber
+
+
+@pytest.mark.upstream("loader/group.spec.ts::Group: intercept::initialize")
+def test_groups_and_their_members_add_one_intercept_layer_each(
+    loader: RecordingLoader,
+) -> None:
+    seen: list[Context] = []
+    loader.mock("foo", lambda ctx, config: seen.append(ctx))
+    outer = loader.create(
+        {"name": GROUP, "group": True, "intercept": {"foo": {"a": 1}}, "config": []}
+    ).result()
+    inner = loader.create(
+        {"name": GROUP, "group": True, "intercept": {"foo": {"b": 2}}, "config": []},
+        outer,
+    ).result()
+    loader.create({"name": "foo", "intercept": {"foo": {"c": 3}}}, inner).result()
+
+    assert len(seen) == 1
+    assert seen[0].intercept_layers("foo") == [{"a": 1}, {"b": 2}, {"c": 3}]
+
+
+def test_a_rebuilt_component_gets_the_current_intercept(
+    loader: RecordingLoader,
+) -> None:
+    seen: list[Context] = []
+    loader.mock("a", lambda ctx, config: seen.append(ctx))
+    loader.mock("b", lambda ctx, config: seen.append(ctx))
+    loader.read(
+        [{"id": "x", "name": "a", "intercept": {"http": {"proxy": "p1"}}}]
+    ).result()
+
+    loader.update("x", {"name": "b", "intercept": {"http": {"proxy": "p2"}}}).result()
+
+    assert len(seen) == 2
+    assert seen[1].intercept_layers("http") == [{"proxy": "p2"}]

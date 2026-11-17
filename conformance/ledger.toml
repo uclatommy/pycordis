@@ -2332,7 +2332,10 @@ status = "ported"
 hash = "0446209e3df2b92e79b5f10e8113fd5b3de670d31131d8bd1b29af6c75c6ba27"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::drops entries removed or disabled during patch"]
-status = "pending"
+status = "diverged"
+hash = "0446209e3df2b92e79b5f10e8113fd5b3de670d31131d8bd1b29af6c75c6ba27"
+divergence = "loader-isolate-rebuild"
+note = "There is no context patch step: the isolation is bound when the fiber is created. The case for the import window holds the same rule."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates a changed disabled expression once in either direction"]
 status = "diverged"
@@ -2353,7 +2356,8 @@ divergence = "loader-expressions"
 note = "It evaluates expressions in `inject` values."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::evaluates intercept with the entry inject, for the component only"]
-status = "pending"
+status = "ported"
+hash = "da64fc97b7c62977b67aebbccefc8bf8d55927e3c2379aed6f5add4193ce82fa"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::invalidates the verdict before an asynchronous dependency unload"]
 status = "ported"
@@ -2376,7 +2380,10 @@ status = "ported"
 hash = "d2e96d152eaa0a79e1a1ebdc26492bc6c6d1ace68c5dd3728e781f8fc22e79cc"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the entry isolate without an inject"]
-status = "pending"
+status = "diverged"
+hash = "adfe13f899fbe91e96bec418533edf34141d30378dabd569e2a5524d88760d88"
+divergence = "loader-expressions"
+note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::keeps the options when a dependency is lost and recovered"]
 status = "ported"
@@ -2432,7 +2439,8 @@ divergence = "loader-expressions"
 note = "It evaluates a `disabled` expression."
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::updates intercept in place"]
-status = "pending"
+status = "ported"
+hash = "30ad0cdc5a1f1c988b2ca6e562a075dd825e8757e93c7ed6d542a53cade24933"
 
 [items."loader/evaluate.spec.ts::Loader: entry evaluation context::waits for the entry inject while it is missing"]
 status = "ported"
@@ -2468,7 +2476,8 @@ status = "ported"
 hash = "d7941348fba206b56ac1bd1d525b28f13c3767ab83603f0a193877deff0d5bea"
 
 [items."loader/group.spec.ts::Group: intercept::initialize"]
-status = "pending"
+status = "ported"
+hash = "03e2a1585fa3c3ef8a84a008e82921f90ffec001bd430b77b299b5c9f3485534"
 
 [items."loader/group.spec.ts::Group: transfer::disabled -> disabled"]
 status = "ported"
@@ -2593,97 +2602,158 @@ status = "ported"
 hash = "48b4cfeffeb9ee67f15b02772f16060058d6dfc0b779f01db1bf0a83d3f72075"
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::does not delete another realm when one impl moves"]
-status = "pending"
+status = "diverged"
+hash = "8123c0748be2b1f237539ece8f16468a304ce755968dcbee64fdbd9576837669"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps a provider pinned by an isolated context when its entry moves"]
-status = "pending"
+status = "diverged"
+hash = "f9f1191a610f510aa2a8e5adbf21099bddde593658913d9422cb183fe031fd7c"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps an impl that reused the abandoned symbol"]
-status = "pending"
+status = "diverged"
+hash = "394efcebe2de5c4ee3a8e0eb89de6d4f7068402fedf9d592e7d5ef8dafd05233"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps impls on intermediate symbols across repeated moves"]
-status = "pending"
+status = "diverged"
+hash = "4719fcfd12d4434bc4229b0afeb8f3127c4b3167f29c8c5a5524bcf039519b33"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::keeps self access while the provision context changes realms"]
-status = "pending"
+status = "diverged"
+hash = "4ff384cb5891ebe6498e3e0fe2a9c4f183eb4870356aa9baf5bf175ddd863763"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::notifies the retained realm on fiber disposal after a blocked move"]
-status = "pending"
+status = "diverged"
+hash = "750da8e08bb9fed6e4030e6c1cd996e274c1e814a78333c9deb1ac885f769457"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::notifies the retained realm on provide disposal after a blocked move"]
-status = "pending"
+status = "diverged"
+hash = "750da8e08bb9fed6e4030e6c1cd996e274c1e814a78333c9deb1ac885f769457"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::reloads a self-provider after an isolate-only move"]
-status = "pending"
+status = "diverged"
+hash = "d4d777b0c1c61aff53b4ec593919eaa1140e48444bb636c448f1edef5ac02512"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::reports the service of each realm when a provider moves"]
-status = "pending"
+status = "diverged"
+hash = "170ad3b48f8a14c502633abeee8a222a4d91bc7c883a3c6a9e9c06668142be7e"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate-provide.spec.ts::Service Isolation: provide migration::retains a moved provider until its consumers finish cleanup"]
-status = "pending"
+status = "diverged"
+hash = "6b5e0258678acc1e7fa4da9526cd2eaec6b3e226456efabc2f09539ec15da7eb"
+divergence = "loader-isolate-rebuild"
+note = "The provider loads again in the new realm, with no in-place move of its provision: the test asserts the rebuild."
 
 [items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on injector (irrelevant)"]
-status = "pending"
+status = "ported"
+hash = "432edb8172d3afe294827431e0e53d8bfa3f216d3c4ad6cc0f653204f1658428"
 
 [items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on injector (relevant)"]
-status = "pending"
+status = "ported"
+hash = "36802636c98b93445ec327fd899b74d9935ef2d67d2f862f4611f4c7d7929725"
 
 [items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on provider (irrelevant)"]
-status = "pending"
+status = "ported"
+hash = "df135171012216c37781d91446b59522e2ccd3f7902f472240e2955a2b143e2c"
 
 [items."loader/isolate.spec.ts::Service Isolation: basic::add isolate on provider (relevant)"]
-status = "pending"
+status = "ported"
+hash = "4acf8f275c54b495d323c442a551f475b88292d5eb1166030a7a6dee20a8b7f6"
 
 [items."loader/isolate.spec.ts::Service Isolation: basic::initiate"]
-status = "pending"
+status = "ported"
+hash = "3b78d2b0371e88a39bf8ef6d6c0bb4584f3740e8f587c03d25bcc5df47688437"
 
 [items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on injector (irrelevant)"]
-status = "pending"
+status = "diverged"
+hash = "95b09e78155e88063aac7e4576fe929b19886bc877cab76dca9a5c9fd23421d9"
+divergence = "loader-isolate-rebuild"
+note = "The entry loads again although no service of it changes: the test asserts the reload."
 
 [items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on injector (relevant)"]
-status = "pending"
+status = "ported"
+hash = "352320973838eef899a0ccdeb184263651b32aa8e7a1bdd55184c996c4dd0f98"
 
 [items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on provider (irrelevant)"]
-status = "pending"
+status = "diverged"
+hash = "819dcf6e5ff6b7b3348ba692d84489c8dba16a4f35795528bc3218d8ae886c82"
+divergence = "loader-isolate-rebuild"
+note = "The entry loads again although no service of it changes: the test asserts the reload."
 
 [items."loader/isolate.spec.ts::Service Isolation: basic::remove isolate on provider (relevant)"]
-status = "pending"
+status = "ported"
+hash = "c46b3440b8e4b9e5ae6a689ada1e5c51564770f805d717b6a368bd04f548165e"
 
 [items."loader/isolate.spec.ts::Service Isolation: migration::keeps the committed views of a parent and a pinned child across a realm move"]
-status = "pending"
+status = "ported"
+hash = "6a65d0c33d9b2a31b10295bdb88d283527aa55936f8fbbea953f2f894d2edb6d"
 
 [items."loader/isolate.spec.ts::Service Isolation: realm::add isolate group"]
-status = "pending"
+status = "ported"
+hash = "3aca8c6babbbb01c6599df3b3e68d955653cad64b6a1c9dfb006e489c8642660"
 
 [items."loader/isolate.spec.ts::Service Isolation: realm::realm reference"]
-status = "pending"
+status = "ported"
+hash = "a4cff737e287fd729efad9b62fc6b7f0466da9a268df4917e4ef39af22e2e682"
 
 [items."loader/isolate.spec.ts::Service Isolation: realm::special case: change injector"]
-status = "pending"
+status = "diverged"
+hash = "7d4ddf3ea91cb119bf5357121b97c28cc5e28693b38d981cca28416c052d4dab"
+divergence = "loader-isolate-rebuild"
+note = "A group whose isolate changes loads its members again, so the counts and the fiber objects differ: the test asserts the rebuild."
 
 [items."loader/isolate.spec.ts::Service Isolation: realm::special case: change provider"]
-status = "pending"
+status = "diverged"
+hash = "7bb3588472bb6e26036410571ade046384f2b09cad2437075a962d0f50508198"
+divergence = "loader-isolate-rebuild"
+note = "A group whose isolate changes loads its members again, so the counts and the fiber objects differ: the test asserts the rebuild."
 
 [items."loader/isolate.spec.ts::Service Isolation: realm::special case: nested realms"]
-status = "pending"
+status = "diverged"
+hash = "5856e2199205d1567893413edb43551bf6b51ca4b10da80c6cb875194b197a01"
+divergence = "loader-isolate-rebuild"
+note = "A group whose isolate changes loads its members again, so the counts and the fiber objects differ: the test asserts the rebuild."
 
 [items."loader/isolate.spec.ts::Service Isolation: realm::update isolate group (no change)"]
-status = "pending"
+status = "ported"
+hash = "73b957996d2f8ef4ce36e224a2e4e87e8e4b420ffa1343aa3827aad112ea4084"
 
 [items."loader/isolate.spec.ts::Service Isolation: transfer::initiate"]
-status = "pending"
+status = "ported"
+hash = "0607136e41a0610ba739db7a3fbae16ff83b7c5b680e35a19f447da9a511da76"
 
 [items."loader/isolate.spec.ts::Service Isolation: transfer::transfer injector into group"]
-status = "pending"
+status = "ported"
+hash = "25a1caf1a7150116e17b8326e8937888f9af963a3ae38fdf7adabd22289f27d6"
 
 [items."loader/isolate.spec.ts::Service Isolation: transfer::transfer injector out of group"]
-status = "pending"
+status = "ported"
+hash = "b201a3d66e76757a39f3141c5cd38d311185a00938b08736af6b9ad2980f6b90"
 
 [items."loader/isolate.spec.ts::Service Isolation: transfer::transfer provider into group"]
-status = "pending"
+status = "ported"
+hash = "23b8d6a5fd50c3cb50f00f42e896e68e20c9516f3d642fe5dbf490d13aa7b512"
 
 [items."loader/isolate.spec.ts::Service Isolation: transfer::transfer provider out of group"]
-status = "pending"
+status = "ported"
+hash = "2d4b5958526c19a4154b4a9c86bfe7b78ab134540ed418d69d0fe3813c24e359"
 
 [items."loader/message:cannot resolve entry {}"]
 status = "pending"
@@ -2701,7 +2771,10 @@ divergence = "loader-expressions"
 note = "The message belongs to the evaluation of an expression."
 
 [items."loader/message:expected service {} to be implemented"]
-status = "pending"
+status = "diverged"
+hash = "0843f13e185e194553ab26f61ef20ab470b6c6a6715ff037a327d639976ec397"
+divergence = "loader-isolate-rebuild"
+note = "The warning belongs to the move of a provider between realms, which pycordis does not do."
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::does not apply a fiber removed while rebuild is disposing"]
 status = "ported"
@@ -2728,7 +2801,10 @@ status = "ported"
 hash = "ae492e99d47fc88ab7d28ba4d1b547dc04d4ccd97830248f7efc7a384a4e07ac"
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending context patch"]
-status = "pending"
+status = "diverged"
+hash = "1303acce7046d9f55bb13bc4d6ecb7b4f3913ee74008a6d207c990e2caedc5d9"
+divergence = "loader-isolate-rebuild"
+note = "There is no context patch step: the isolation is bound when the fiber is created. The case for the import window holds the same rule."
 
 [items."loader/rebuild.spec.ts::Loader: active entry rebuild (#218)::uses the latest name during a pending failed import"]
 status = "ported"
@@ -2767,7 +2843,10 @@ status = "ported"
 hash = "ace9bda900ad4dea461ef7098a4859ff1c238a3a2d5339338c10823be011731a"
 
 [items."loader/rebuild.spec.ts::Loader: entry rebuild::uses the new name when it changes during the patch"]
-status = "pending"
+status = "diverged"
+hash = "ace9bda900ad4dea461ef7098a4859ff1c238a3a2d5339338c10823be011731a"
+divergence = "loader-isolate-rebuild"
+note = "There is no context patch step: the isolation is bound when the fiber is created. The case for the import window holds the same rule."
 
 [items."loader/resolve.spec.ts::EntryTree.import without internals::accepts a drive-letter path"]
 status = "not-applicable"
@@ -2853,7 +2932,9 @@ target = "pycordis.loader.Entry"
 hash = "89dc9b564f9b4e29330a2fc85f35aba2edebd9a8c4a52ad534fdf849589e1a83"
 
 [items."loader/src/config/entry.ts:Entry._applyIntercept"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._apply_intercept"
+hash = "659a58efc69f6494bf1c82aeb8cfb0b4706207e747c2cf19c80347a5cdb80847"
 
 [items."loader/src/config/entry.ts:Entry._blocked"]
 status = "ported"
@@ -2893,7 +2974,10 @@ target = "pycordis.loader.Entry._parent_disabled"
 hash = "80a26fecd8f18e072fd9be52d26e03bdf0247ff0de73c120749c82ea00bfe7ef"
 
 [items."loader/src/config/entry.ts:Entry._patchContext"]
-status = "pending"
+status = "diverged"
+hash = "8fc8c613d581071ba99ca88aa4a8878873888664d7a58c8411f0ceed1a35c225"
+divergence = "loader-isolate-rebuild"
+note = "The isolation is bound when the fiber is created, and a change rebuilds the entry."
 
 [items."loader/src/config/entry.ts:Entry._reconcile"]
 status = "ported"
@@ -3095,31 +3179,51 @@ target = "pycordis.loader.Group.__init__"
 hash = "905c1880cfd126ca450cda6ffa5618c2df7e3bb4a9a0c6cc23e900bdaaf30f49"
 
 [items."loader/src/config/isolate.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "828571beb32a484bf24c3a2135b747d169f91c80324b14e7578ca2b4d070b927"
+note = "It is a type augmentation of `EntryOptions`: `EntryOptions` has the `isolate` field."
 
 [items."loader/src/config/isolate.ts:LocalRealm"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._isolate"
+hash = "ba4ef4429dd4b12f11acaf01f5fcd1ec8f4b1e3067975492a4c0256ed0fef424"
 
 [items."loader/src/config/isolate.ts:LocalRealm.access"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._isolate"
+hash = "f7c43d660c4d7916abbdf6eb48cd430ae5e03e7de594167d11e260ff3bee2e98"
 
 [items."loader/src/config/isolate.ts:LocalRealm.constructor"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._isolate"
+hash = "02e37c2dae57ccf0c20f940daff8102ef79e8b1cb9a2fbf6e874a8ebe71bd99a"
 
 [items."loader/src/config/isolate.ts:accessGlobal"]
-status = "pending"
+status = "ported"
+target = "pycordis.loader.Entry._isolate"
+hash = "659e75f359bc598e327b3b8b985fc5cb922da59e44a05a2725ce48c945e29f20"
 
 [items."loader/src/config/isolate.ts:module ./entry.ts"]
-status = "pending"
+status = "not-applicable"
+hash = "3337fba5ba03f948171c360a9b298b7d9d430c056f733fda563072dbaaa3e27c"
+note = "It is a type augmentation of `Entry`."
 
 [items."loader/src/config/isolate.ts:patchIsolate"]
-status = "pending"
+status = "diverged"
+hash = "d5b69c152f82378234004a3ae85c8fdcfe4fe8d4bd181ef33bac8f3968f45afb"
+divergence = "loader-isolate-rebuild"
+note = "The isolation is bound when the fiber is created, and a change rebuilds the entry: no provider moves between realms."
 
 [items."loader/src/config/isolate.ts:quote"]
-status = "pending"
+status = "not-applicable"
+hash = "d655bac515e9c6ae3bc5640432583b1520c22e5231cfb45cb19b68177952e4dd"
+note = "It builds the symbol name of a realm: a label is the realm itself."
 
 [items."loader/src/config/isolate.ts:within"]
-status = "pending"
+status = "diverged"
+hash = "77b0dd8c1bc64cdf49670e1ff9ed08bf436b5a4bc7b2cd4a94c7889458dfe355"
+divergence = "loader-isolate-rebuild"
+note = "It decides which providers move with the entry: a rebuild moves none."
 
 [items."loader/src/config/tree.ts:<rest>"]
 status = "pending"
@@ -3360,7 +3464,9 @@ divergence = "loader-locations"
 note = "It formats source locations of the config file."
 
 [items."loader/src/config/utils.ts:swap"]
-status = "pending"
+status = "not-applicable"
+hash = "e77c45ac97259afe6d95f29ccc5ae0d13e8223d03fcc6d103f1093a6e32458b1"
+note = "`dict.clear` and `dict.update` replace the content of the intercept layer in place."
 
 [items."loader/src/config/utils.ts:toOffset"]
 status = "diverged"

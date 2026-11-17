@@ -6,6 +6,7 @@ and `EntryValidationError` reports options that are not valid.
 """
 
 import random
+import sys
 from collections.abc import AsyncIterator, Callable, Coroutine, Mapping
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, TypedDict
@@ -243,9 +244,12 @@ class Entry:
     `meta` of the context of its group. When the entry has an `inject` option, an outer
     fiber injects those services and runs the fiber of the component as its child, so
     the component loads only when the services exist, also when the component does
-    not declare them. A change of `name` or `inject`, or a move that changes the
-    context of the entry or its tree, loads the component again in a new fiber. Any
-    other change keeps the fiber.
+    not declare them. The `isolate` option gives the entry a realm for each service
+    that it names. The `intercept` option is a layer of the component context, and the
+    outer fiber does not see it. A change of `name`, `inject`, or `isolate`, or a move
+    that changes the context of the entry or its tree, loads the component again in a
+    new fiber. Any other change keeps the fiber, and a change of `intercept` reaches
+    the running component.
 
     Attributes:
         loader: The loader that owns the tree.
@@ -274,6 +278,10 @@ class Entry:
         self._disposing = False
         self._verdict: bool | None = None
         self._home: tuple[EntryTree, Context] | None = None
+        # the `intercept` layer of the component context: `_apply_intercept` changes it
+        # in place, so a running component reads the new configuration
+        self._intercept: dict[str, object] = {}
+        self._realms: dict[str, object] = {}
 
     @property
     def id(self) -> str:
@@ -375,14 +383,17 @@ class Entry:
         else:
             merge_options(self.options, options)
         changed = self._resolve_inject()
+        self._apply_intercept()
         if self._blocked():
             self.dispose()
             return
         active = self._active()
-        # the component and the outer fiber are bound when they are created
+        # the component, the outer fiber, and the isolation are bound when they are
+        # created
         rebuild = (
             changed
             or self.options.get("name") != legacy.get("name")
+            or self.options.get("isolate") != legacy.get("isolate")
             or (active and self._moved())
         )
         if rebuild or not active:
@@ -473,7 +484,7 @@ class Entry:
         self._init_task = None
         tree = self.parent.tree
         group_ctx = self.parent.ctx
-        ctx = group_ctx.bind_fiber(tree.ctx.fiber)
+        ctx = self._isolate(group_ctx.bind_fiber(tree.ctx.fiber))
         self._home = (tree, group_ctx)
         if not self.inject:
             self._start(ctx, component)
@@ -483,6 +494,26 @@ class Entry:
         )
         with self._scheduler.call():
             self.outer_fiber = ctx.use(outer, self)
+
+    def _isolate(self, ctx: Context) -> Context:
+        """Return `ctx` with the realm that each `isolate` option names.
+
+        `True` is a realm of this entry. A label is a realm that every entry with the
+        same label shares.
+        """
+        for name, label in (self.options.get("isolate") or {}).items():
+            if label is True:
+                realm = self._realms.setdefault(name, object())
+            else:
+                # contexts compare realms by identity, so equal labels need one object
+                realm = sys.intern(label)  # type: ignore[arg-type]
+            ctx = ctx.isolate(name, realm)
+        return ctx
+
+    def _apply_intercept(self) -> None:
+        """Make the intercept layer of the component match the `intercept` option."""
+        self._intercept.clear()
+        self._intercept.update(self.options.get("intercept") or {})
 
     async def _import(self) -> object | None:
         """Import the component of the entry. Log the failure and give `None`."""
@@ -513,5 +544,6 @@ class Entry:
         self.loader._show_log(self, "apply")
         # the fiber is linked before its component can run
         with self._scheduler.call():
-            self.inner_fiber = ctx.use(component, self.options.get("config"))
+            inner = ctx.intercept_layer(self._intercept)
+            self.inner_fiber = inner.use(component, self.options.get("config"))
             self.loader._link(self.inner_fiber, self)

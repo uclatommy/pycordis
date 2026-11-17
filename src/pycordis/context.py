@@ -247,6 +247,35 @@ class Context:
         )
 
     @owner_thread("scheduler")
+    def intercept_layer(self, layer: Mapping[str, object]) -> Self:
+        """Return a child context that passes the configurations in `layer` to services.
+
+        `layer` is a mapping from a service name to its configuration, and it is not
+        copied. The child context reads it each time a service resolves its intercept
+        configuration, so a change to `layer` is visible to every component that runs
+        in this context or in a context that derives from it. Use `intercept` when the
+        configuration of one service does not change.
+
+        Args:
+            layer: The configurations by service name. The caller owns the mapping and
+                changes it on the owner thread.
+
+        Examples:
+            ```python
+            >>> layer = {"http": {"proxy": "a"}}
+            >>> inner = ctx.intercept_layer(layer)
+            >>> layer["http"] = {"proxy": "b"}
+            >>> inner.intercept_layers("http")
+            [{'proxy': 'b'}]
+            ```
+        """
+        return self._derive(
+            self._isolates,
+            self._intercepts.new_child(layer),
+            self._meta,  # type: ignore[arg-type]
+        )
+
+    @owner_thread("scheduler")
     def effect(
         self, execute: Callable[[], EffectForm], label: str = "anonymous"
     ) -> EffectHandle:
