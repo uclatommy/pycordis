@@ -158,10 +158,12 @@ def resolve_intercept[T](
 ) -> T:
     """Return the configuration of `service` for the fiber that reads it.
 
-    A service whose own context is not the use site calls this function from its
-    `cordis_resolve_intercept`. The result merges, from the outermost to the innermost,
-    the `inject` configuration of the fiber that admits the access, and each
-    `Context.intercept` configuration of `use_site`.
+    Only the loader service uses this function: its own context is not the use site, so
+    its `cordis_resolve_intercept` calls it. The function is not a public API.
+
+    The result merges, from the outermost to the innermost, the `inject` configuration
+    of the fiber that admits the access, and each `Context.intercept` configuration of
+    `use_site`.
 
     Args:
         service: The service.

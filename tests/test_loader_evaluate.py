@@ -476,6 +476,32 @@ def test_groups_and_their_members_add_one_intercept_layer_each(
     assert seen[0].intercept_layers("foo") == [{"a": 1}, {"b": 2}, {"c": 3}]
 
 
+@pytest.mark.contract("LOAD-OPTIONS")
+@pytest.mark.parametrize("target", ["b", None])
+def test_a_moved_component_reads_the_intercept_of_the_group_that_holds_it(
+    loader: RecordingLoader, target: str | None
+) -> None:
+    seen: list[Context] = []
+    loader.mock("foo", lambda ctx, config: seen.append(ctx))
+    member = {"id": "x", "name": "foo"}
+    loader.read(
+        [
+            {"id": "a", "name": GROUP, "group": True, "config": [member]},
+            {"id": "b", "name": GROUP, "group": True, "config": []},
+        ]
+    ).result()
+    fiber = loader.fiber("x")
+
+    loader.update("x", {}, target).result()
+    loader.update("a", {"intercept": {"foo": {"from": "a"}}}).result()
+    assert seen[0].intercept_layers("foo") == []
+    loader.update("b", {"intercept": {"foo": {"from": "b"}}}).result()
+
+    assert seen[0].intercept_layers("foo") == ([{"from": "b"}] if target else [])
+    assert len(seen) == 1
+    assert loader.fiber("x") is fiber
+
+
 def test_a_rebuilt_component_gets_the_current_intercept(
     loader: RecordingLoader,
 ) -> None:

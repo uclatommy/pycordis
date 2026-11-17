@@ -11,7 +11,7 @@ from collections.abc import AsyncIterator, Callable, Coroutine, Mapping
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from pycordis.context import Context
+from pycordis.context import Context, InterceptLink
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError, Issue, ValidationError
 from pycordis.fiber import Fiber, FiberState
@@ -249,7 +249,8 @@ class Entry:
     outer fiber does not see it. A change of `name`, `inject`, or `isolate`, or a move
     that changes the context of the entry or its tree, loads the component again in a
     new fiber. Any other change keeps the fiber, and a change of `intercept` reaches
-    the running component.
+    the running component. A move that keeps the fiber gives the component the
+    intercept layers of its new group.
 
     Attributes:
         loader: The loader that owns the tree.
@@ -278,6 +279,8 @@ class Entry:
         self._disposing = False
         self._verdict: bool | None = None
         self._home: tuple[EntryTree, Context] | None = None
+        # the source of the group intercept layers of the component context
+        self._group_layers: InterceptLink | None = None
         # the `intercept` layer of the component context: `_apply_intercept` changes it
         # in place, so a running component reads the new configuration
         self._intercept: dict[str, object] = {}
@@ -365,6 +368,18 @@ class Entry:
         tree, ctx = self._home
         return tree is not self.parent.tree or not _same_scope(ctx, self.parent.ctx)
 
+    def _follow_group(self) -> None:
+        """Make the live component read the intercept layers of the group that holds it.
+
+        A move that keeps the fiber changes the group. The group has the same
+        isolation, intercepts, and `meta` as the old one, so the fiber stays, and its
+        context reads the intercept layers of the new group from now on.
+        """
+        assert self._home is not None and self._group_layers is not None
+        group_ctx = self.parent.ctx
+        self._home = (self.parent.tree, group_ctx)
+        self._group_layers.target = group_ctx
+
     async def update(
         self, options: Mapping[str, Any], create: bool = False, force: bool = False
     ) -> None:
@@ -400,6 +415,7 @@ class Entry:
             # the disposal is part of the init task, so a concurrent update joins it
             await self.init(self.dispose() if active else None)
             return
+        self._follow_group()
         keys = self.options.keys() | legacy.keys()
         diff = [key for key in keys if self.options.get(key) != legacy.get(key)]  # type: ignore[misc]
         if diff or force:
@@ -484,7 +500,10 @@ class Entry:
         self._init_task = None
         tree = self.parent.tree
         group_ctx = self.parent.ctx
-        ctx = self._isolate(group_ctx.bind_fiber(tree.ctx.fiber))
+        link = self._group_layers = InterceptLink(group_ctx)
+        ctx = self._isolate(
+            group_ctx.bind_fiber(tree.ctx.fiber).intercept_through(link)
+        )
         self._home = (tree, group_ctx)
         if not self.inject:
             self._start(ctx, component)
