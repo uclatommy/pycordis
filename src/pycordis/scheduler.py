@@ -138,6 +138,54 @@ class ImmediateScheduler(Scheduler):
             TimeoutError: If a task is still parked after `timeout` seconds.
             CordisError: If another thread calls (`WRONG_THREAD`).
         """
+        self._serve(
+            lambda: not self._parked,
+            timeout,
+            lambda: f"{len(self._parked)} task(s) still wait for a Deferred",
+        )
+
+    def serve(self, until: Callable[[], bool], timeout: float | None = None) -> None:
+        """Run submitted work on the owner thread until `until()` is true.
+
+        A headless host calls `serve` to run the work that other threads submit, such as
+        the callbacks of a `ThreadingClock`. The method runs the ready work, checks
+        `until`, and then waits for more submitted work. It checks `until` again after
+        each batch of work, so a condition that no submitted work changes is never
+        seen. `until` runs on the owner thread and must not block.
+
+        Args:
+            until: The stop condition. The method returns when it gives `True`.
+            timeout: The longest wait, in seconds. `None` waits without limit.
+
+        Raises:
+            TimeoutError: If `until` is still false after `timeout` seconds.
+            CordisError: If another thread calls (`WRONG_THREAD`).
+
+        Examples:
+            ```python
+            >>> scheduler = ImmediateScheduler()
+            >>> clock = ThreadingClock(scheduler)
+            >>> ticks: list[int] = []
+            >>> clock.call_later(0.1, lambda: ticks.append(1))
+            >>> scheduler.serve(lambda: bool(ticks), timeout=5)
+            >>> clock.close()
+            ```
+        """
+        self._serve(
+            until, timeout, lambda: "serve stopped before its condition was true"
+        )
+
+    def _serve(
+        self,
+        finished: Callable[[], bool],
+        timeout: float | None,
+        expired: Callable[[], str],
+    ) -> None:
+        """Drain, and wait for submitted work, until `finished()` is true.
+
+        The caller holds no lock. `finished` runs with no queued work, and
+        `expired()` gives the message of the `TimeoutError`.
+        """
         self.assert_owner()
         deadline = None if timeout is None else time.monotonic() + timeout
         while True:
@@ -145,13 +193,11 @@ class ImmediateScheduler(Scheduler):
             with self._ready:
                 if self._queue:
                     continue
-                if not self._parked:
+                if finished():
                     return
                 remaining = None if deadline is None else deadline - time.monotonic()
                 if remaining is not None and remaining <= 0:
-                    raise TimeoutError(
-                        f"{len(self._parked)} task(s) still wait for a Deferred"
-                    )
+                    raise TimeoutError(expired())
                 self._ready.wait(remaining)
 
     def _drain(self) -> None:

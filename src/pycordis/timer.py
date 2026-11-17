@@ -182,6 +182,10 @@ class ThreadingClock:
     `Scheduler.submit`, so the callback runs on the owner thread of the root context. A
     cancel on the owner thread stops a call that the thread has already submitted.
 
+    `ImmediateScheduler` runs work that another thread submits only when the owner
+    thread drains. A headless host that waits for timer callbacks calls
+    `ImmediateScheduler.serve` on the owner thread, with a stop condition.
+
     Call `close` after the root context is disposed. The disposal of the root already
     cancels every timer of the timer service.
 
@@ -549,8 +553,8 @@ class TimerService(Service):
     def interval(self, callback: Callable[[], object], delay: float) -> "EffectHandle":
         """Call `callback` every `delay` seconds until the handle or the fiber stops it.
 
-        Each tick is due at the deadline of the tick before it plus `delay`, so a late
-        tick does not move the later ticks.
+        Each tick is due `delay` seconds after the previous tick runs. When the host
+        is late, `callback` runs once, and the next call is one `delay` later.
 
         Args:
             callback: The function to call.
@@ -574,7 +578,8 @@ class TimerService(Service):
         """Return an async iterator that gives one item every `delay` seconds.
 
         The timer is an effect of the plugin's fiber with the label `ctx.interval()`.
-        Each tick is due at the deadline of the tick before it plus `delay`.
+        Each tick is due `delay` seconds after the previous tick runs, so a late host
+        gets one tick, not one for each missed period.
 
         Args:
             delay: The time between two ticks in seconds.
@@ -673,21 +678,20 @@ class TimerService(Service):
         label: str,
         unload: Callable[[], None] = lambda: None,
     ) -> "EffectHandle":
-        """Register an effect that calls `tick` at each multiple of `delay`.
+        """Register an effect that calls `tick` every `delay` seconds.
 
-        The effect schedules the next tick before it runs `tick`, so a `tick` that
+        The effect schedules each tick `delay` seconds after the previous tick runs, so
+        a stalled host gets one tick after the stall, not one for each missed period.
+        It schedules the next tick before it runs `tick`, so a `tick` that
         reverts the effect also cancels the next tick. The revert calls `unload`
         after it cancels the timer.
         """
         clock = self._clock
 
         def start() -> Cancel:
-            deadline = clock.now() + delay
-
             def fire() -> None:
-                nonlocal deadline, cancel
-                deadline += delay
-                cancel = clock.call_later(deadline - clock.now(), fire)
+                nonlocal cancel
+                cancel = clock.call_later(delay, fire)
                 tick()
 
             cancel = clock.call_later(delay, fire)

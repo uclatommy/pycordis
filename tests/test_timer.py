@@ -262,6 +262,61 @@ def test_interval_ticks_at_multiples_of_the_delay_whatever_the_step(
     assert times == [0.5, 1.0, 1.5, 2.0, 2.5]
 
 
+class JumpClock:
+    """A clock whose time moves in jumps, as the clock of a host that stalls."""
+
+    def __init__(self) -> None:
+        self.time = 0.0
+        self.pending: list[tuple[float, Callable[[], None]]] = []
+
+    def now(self) -> float:
+        return self.time
+
+    def call_later(
+        self, delay: float, callback: Callable[[], None]
+    ) -> Callable[[], None]:
+        entry = (self.time + max(delay, 0.0), callback)
+        self.pending.append(entry)
+        return lambda: self.pending.remove(entry) if entry in self.pending else None
+
+    def jump(self, seconds: float) -> None:
+        """Move the time, then run each call that is due at the new time, once."""
+        self.time += seconds
+        due = [entry for entry in self.pending if entry[0] <= self.time]
+        for entry in due:
+            self.pending.remove(entry)
+            entry[1]()
+
+
+@pytest.mark.parametrize("method", ["interval", "ticks"])
+def test_a_stall_gives_one_tick_and_the_next_is_one_delay_later(
+    root: Context, method: str
+) -> None:
+    clock = JumpClock()
+    root.provide(CLOCK, clock)
+    root.use(TimerService)
+    ctx = root.use(idle).ctx
+    count: list[int] = []
+    if method == "interval":
+        ctx["interval"](lambda: count.append(1), 1.0)
+    else:
+        ticks = ctx["ticks"](1.0)
+        scheduler = root.scheduler
+        assert isinstance(scheduler, ImmediateScheduler)
+
+        async def read() -> None:
+            async for _ in ticks:
+                count.append(1)
+
+        spawn(scheduler, read())
+    clock.jump(10.0)
+    assert len(count) == 1
+    clock.jump(0.5)
+    assert len(count) == 1
+    clock.jump(0.5)
+    assert len(count) == 2
+
+
 def test_a_callback_can_stop_its_own_interval(
     plugin: Fiber, manual: ManualClock
 ) -> None:
@@ -592,6 +647,21 @@ def test_a_threading_clock_drives_the_timer_service(
     scheduler.run_until_quiet(timeout=5)
     assert done.done()
     assert fiber.get_effects() == []
+
+
+def test_serve_runs_the_interval_callbacks_of_a_threading_clock(
+    root: Context,
+    scheduler: ImmediateScheduler,
+    threading_clock: Callable[..., ThreadingClock],
+) -> None:
+    root.provide(CLOCK, threading_clock(scheduler))
+    root.use(TimerService)
+    ticks: list[int] = []
+    root.use(idle).ctx["interval"](lambda: ticks.append(1), 0.01)
+
+    scheduler.serve(lambda: len(ticks) >= 3, timeout=5)
+
+    assert len(ticks) >= 3
 
 
 # -- wait forms ------------------------------------------------------------------------

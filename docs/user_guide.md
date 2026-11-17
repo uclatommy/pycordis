@@ -289,7 +289,32 @@ Choose the clock for the host:
   in tests, and in a host with a frame loop: call `advance` each frame with the elapsed time.
 - `ThreadingClock(scheduler)` uses one worker thread, and the scheduler runs each callback on
   the owner thread. Use it in a headless host. Call `close()` after the root context is
-  disposed.
+  disposed. With `ImmediateScheduler`, the callbacks of `timeout`, `interval`, `throttle`,
+  and `debounce` run only while the owner thread serves submitted work: call
+  `scheduler.serve(until, timeout)`, which runs that work until `until()` gives `True`.
+
+```python
+from pycordis import Context, ImmediateScheduler
+from pycordis.timer import CLOCK, ThreadingClock, TimerService
+
+scheduler = ImmediateScheduler()
+root = Context(scheduler)
+clock = ThreadingClock(scheduler)
+root.provide(CLOCK, clock)
+root.use(TimerService)
+ticks: list[int] = []
+
+
+def poller(ctx, config=None):
+    ctx["interval"](lambda: ticks.append(1), 0.01)
+
+
+poller.inject = ["timer"]
+root.use(poller)
+scheduler.serve(lambda: len(ticks) >= 3, timeout=10)
+root.fiber.dispose()
+clock.close()
+```
 
 ## Reload modules
 

@@ -306,6 +306,33 @@ def test_run_until_quiet_raises_when_a_task_stays_parked(
         scheduler.run_until_quiet(timeout=0.01)
 
 
+def test_serve_raises_when_its_condition_stays_false(
+    scheduler: ImmediateScheduler,
+) -> None:
+    with pytest.raises(TimeoutError, match="condition"):
+        scheduler.serve(lambda: False, timeout=0.01)
+
+
+def test_serve_returns_at_once_when_its_condition_is_true(
+    scheduler: ImmediateScheduler,
+) -> None:
+    scheduler.serve(lambda: True)
+
+
+def test_serve_checks_its_condition_after_work_that_another_thread_submits(
+    scheduler: ImmediateScheduler,
+) -> None:
+    done: list[int] = []
+    worker = threading.Timer(0.01, lambda: scheduler.submit(lambda: done.append(1)))
+    worker.start()
+
+    scheduler.serve(lambda: bool(done), timeout=5)
+
+    worker.join(timeout=5)
+    assert not worker.is_alive()
+    assert done == [1]
+
+
 def test_a_failing_submitted_function_leaves_later_work_queued(
     scheduler: ImmediateScheduler,
 ) -> None:
