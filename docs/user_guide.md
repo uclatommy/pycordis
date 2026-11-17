@@ -157,6 +157,78 @@ class Settings(Service):
 
 Here `update` changes the value in place and sends an event. No dependent reloads.
 
+## Load Plugins from Data
+
+A host whose plugin set comes from data (a list of dicts that it parsed from a file, for
+example) can give the data to the loader. The loader makes the `use`, `dispose`, and `update`
+calls. `pycordis.loader` is a public module that `import pycordis` does not import.
+
+Each entry is a dict. These fields are the options of an entry:
+
+| Field | Meaning |
+|---|---|
+| `id` | The name of the entry in its tree. It cannot contain `:`. The loader gives a random `id` to an entry that has none. |
+| `name` | The component: `"package.module"` or `"package.module:attribute"`. |
+| `config` | The config that the component receives. For a group, the list of child entries. |
+| `group` | `True` for a structure. A group is always enabled, and its `disabled` value applies to its children. Its `name` is `"pycordis.loader:Group"`. |
+| `disabled` | `True` keeps the component unloaded. It is a `bool`: the loader does not evaluate expressions. |
+| `inject` | The services that must exist before the component loads. |
+| `intercept` | The intercept configuration by service name. A change reaches the running component with no reload. |
+| `isolate` | A realm for each service name: `True` for a realm of the entry, or a label that entries share. |
+
+```python
+from pycordis.loader import Group, Loader
+
+
+def hello(ctx, config):
+    def start():
+        print("hello", config["who"])
+        return lambda: print("bye", config["who"])
+
+    ctx.effect(start)
+
+
+components = {"hello": hello, "pycordis.loader:Group": Group}
+loader = Loader(Context(ImmediateScheduler()), import_function=components.__getitem__)
+loader.read(
+    [
+        {"id": "a", "name": "hello", "config": {"who": "a"}},
+        {
+            "id": "box",
+            "name": "pycordis.loader:Group",
+            "group": True,
+            "config": [{"id": "b", "name": "hello", "config": {"who": "b"}}],
+        },
+    ]
+)
+loader.update("a", {"disabled": True})
+loader.remove("box")
+print(loader.root.data)
+```
+
+The loader follows these rules:
+
+- **Import**: by default, the loader resolves `name` with `importlib`. A host can give its own
+  function with the `import_function` argument. A missing module of the entry and a missing
+  module that the component imports are different errors.
+- **Ownership**: the loader copies the dicts that the host gives, and it owns the fibers that
+  it creates. A later change to a host dict has no effect. Use `read`, `create`, `update`, and
+  `remove` to change the tree.
+- **Options**: the loader changes the options of an entry only for a host call, or when the
+  component of the entry disposes its own fiber (the loader then sets `disabled: True`). The
+  loss of a group or of a dependency never changes them.
+- **Saving**: a host that saves changes overrides `EntryTree.commit`. It receives an
+  `EntryChange` after each change, with copies of the new and the previous options.
+- **Moves**: `update(id, {}, parent)` moves an entry. The component keeps running when the new
+  group has the same isolation, intercepts, and `meta` as the old one. Otherwise, and for a
+  move to another tree, the loader loads the component again. A change of `isolate`, `name`,
+  or `inject` also loads it again.
+- **Groups**: a group takes members after its own component has started. With a
+  `FramePumpScheduler`, pump the scheduler after you create a group and before you move an
+  entry into it.
+- **Waiting**: `loader.wait()` returns a `Deferred` that completes when no entry loads or
+  unloads. An entry that waits for a service is not busy.
+
 ## Where to Go Next
 
 - The [API Reference](api/index.md) has the full contract of every public name.

@@ -188,7 +188,7 @@ docs/
 ## Integration
 
 - `pycordis.timer` is a public module (the public-module rule is set by Increment 1 of the
-  [Declarative Loader](declarative_loader.md) spec). It exports `TimerService`, `Clock`,
+  [Declarative Loader](completed/declarative_loader.md) spec). It exports `TimerService`, `Clock`,
   `CLOCK`, `ManualClock`, `ThreadingClock`, `Scheduled`, and `Ticks`.
 - `pycordis/__init__.py` does not change.
 - `conformance/ledger.toml`: `timer` in the package list, and every timer item reviewed. IDs
@@ -239,10 +239,10 @@ docs/
 ## Dependencies
 
 - **Sequence**: spec 2 of 3. The specs are done one at a time, in this order:
-  [Declarative Loader](declarative_loader.md), Timer Service, [Module Reload](module_reload.md).
+  [Declarative Loader](completed/declarative_loader.md), Timer Service, [Module Reload](module_reload.md).
   Each spec changes `conformance/ledger.toml` and regenerates `conformance/upstream.json`, so two
   specs on separate feature branches at the same time conflict in those files.
-- **Prerequisite**: Increment 1 of the [Declarative Loader](declarative_loader.md) spec (the
+- **Prerequisite**: Increment 1 of the [Declarative Loader](completed/declarative_loader.md) spec (the
   package list in the inventory, the prefixed IDs, the public-module rule, and the scanner
   support for `export default <name>`: the scanner at the tracked revision rejects
   `timer/src/index.ts` with "unnamed default export"). No code in this spec uses the rest of

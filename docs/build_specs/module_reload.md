@@ -230,7 +230,7 @@ API:
 ## Integration
 
 - `pycordis.hmr` is a public module (the public-module rule is set by Increment 1 of the
-  [Declarative Loader](declarative_loader.md) spec). It exports `Hmr`, `HmrConfig`,
+  [Declarative Loader](completed/declarative_loader.md) spec). It exports `Hmr`, `HmrConfig`,
   `ReloadResult`, `Abort`, `Skip`, `SkipReason`, `ModuleGraph`, and `source_graph`.
 - `pycordis.hmr` does not import `pycordis.loader`. The `index.spec.ts` tests use both.
 - `conformance/ledger.toml`: `hmr` in the package list, and every hmr item reviewed. IDs have
@@ -292,10 +292,10 @@ API:
 ## Dependencies
 
 - **Sequence**: spec 3 of 3. The specs are done one at a time, in this order:
-  [Declarative Loader](declarative_loader.md), [Timer Service](timer_service.md), Module Reload.
+  [Declarative Loader](completed/declarative_loader.md), [Timer Service](timer_service.md), Module Reload.
   Each spec changes `conformance/ledger.toml` and regenerates `conformance/upstream.json`, so two
   specs on separate feature branches at the same time conflict in those files.
-- **Prerequisite**: the [Declarative Loader](declarative_loader.md) spec is complete (Increment 1
+- **Prerequisite**: the [Declarative Loader](completed/declarative_loader.md) spec is complete (Increment 1
   for the package list and the public-module rule; the loader for the `index.spec.ts` cases).
   This spec does not use the [Timer Service](timer_service.md); only the sequence puts it first.
 - **Runtime**: none (standard library: `ast`, `importlib`, `sys`, `sysconfig`).

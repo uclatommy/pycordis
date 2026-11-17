@@ -1,6 +1,6 @@
 # Build Spec: Declarative Loader
 
-**Status**: 🚧 In progress (Increment 4 of 5 done); spec 1 of 3 (see [Dependencies](#dependencies))
+**Status**: ✅ Completed (5 of 5 increments done); spec 1 of 3 (see [Dependencies](#dependencies))
 
 ## Goal
 
@@ -15,7 +15,7 @@ short reconciler is easy to write, but the upstream loader exists because of the
 misses: an entry whose component disposes itself, an entry that moves between groups, an entry
 that waits for a service before it loads, a rename while the old fiber unloads, and a partial
 failure. The cost and benefit of this item are in the
-[core port follow-ups](completed/core_port.md#follow-ups) (item 2).
+[core port follow-ups](core_port.md#follow-ups) (item 2).
 
 ## Architecture
 
@@ -361,7 +361,7 @@ has no running test.
 ## Dependencies
 
 - **Sequence**: spec 1 of 3. The specs are done one at a time, in this order: Declarative
-  Loader, [Timer Service](timer_service.md), [Module Reload](module_reload.md). Each spec changes
+  Loader, [Timer Service](../timer_service.md), [Module Reload](../module_reload.md). Each spec changes
   `conformance/ledger.toml` and regenerates `conformance/upstream.json`, so two specs on
   separate feature branches at the same time conflict in those files.
 - **Prerequisite** (before Increment 2): the upstream check of the move scenario is done. At the
@@ -532,15 +532,33 @@ method)
 `pending` loader entries in the ledger
 **Docs**: `docs/user_guide.md` section; review of every `pycordis.loader` docstring; check of
 `docs/architecture.md` against the code
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+
+**Changed**:
+- `tests/test_loader_contract.py`: seeded schedules of `create`, `update`, move, `remove`, disable, rename, `inject` change, and self-dispose on a `FramePumpScheduler`, with a random number of pump steps between the calls
+- `conformance/ledger.toml`: the 36 `pending` loader entries are reviewed (3 messages `ported`; 33 `not-applicable`: imports, `describe` wrappers, module augmentations, test helpers, and the Node resolution helpers); no loader entry is `pending`
+- `docs/user_guide.md`: the section "Load Plugins from Data" (entry fields, a runnable example, import, ownership, options, `commit`, moves, groups, `wait`)
+- `tests/test_conformance.py`: `test_checks_pass_on_committed_data` is marked `slow` (0.10 s with the larger ledger)
+
+**Tests**:
+- `test_loader_contract.py` (90): `LIFE-CONFLUENT` with a static load of the final data, `LIFE-CONFLUENT` with three pump schedules for the same calls, and `LOAD-OPTIONS` against the host data; 30 seeds each
+- `uv run pytest`: 1073 passed; the unmarked slow tests section is empty; coverage of `pycordis.loader` is 99.63%
+- `uv run ruff check .` and `uv run ruff format --check .` are clean
+
+**Deviations**:
+- The contract tests use `RecordingLoader` on a `FramePumpScheduler` and create the two groups first and let them start: a group takes members only after its component has started, so a move into a group that has not started raises `entry … is not a group`. The user guide states this rule
+- A self-dispose in a schedule first lets the scheduler settle, so that the result does not depend on whether the fiber is live at that step
+- Groups are created at the start and are not moved; a group can be disabled or removed
+- No change to `docs/architecture.md`: its rows, module map, and divergence table already match the code
+- The `pycordis.loader` docstrings are unchanged after review; `tests/test_docstrings.py` passes
 
 ## Code Standards
 
-- [Contributing](../contributing.md): the test and docstring standards, with the pull request
+- [Contributing](../../contributing.md): the test and docstring standards, with the pull request
   checklist
-- [Developer Guide](../developer_guide.md): the upstream review procedure, slow tests, and
+- [Developer Guide](../../developer_guide.md): the upstream review procedure, slow tests, and
   release rules
-- [Architecture](../architecture.md): the semantic contract, conformance, and the divergence
+- [Architecture](../../architecture.md): the semantic contract, conformance, and the divergence
   table
 - The instruction files in `.github/instructions/`: Python Coding Standards, Docstrings &
   Markdown Style, Testing Standards, and Upstream Porting

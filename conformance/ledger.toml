@@ -2756,13 +2756,16 @@ status = "ported"
 hash = "2d4b5958526c19a4154b4a9c86bfe7b78ab134540ed418d69d0fe3813c24e359"
 
 [items."loader/message:cannot resolve entry {}"]
-status = "pending"
+status = "ported"
+hash = "09947aede842815efea3f4815c4bda89afa6fe9d067e3ce4cb9c07c51fc1f8d0"
 
 [items."loader/message:entry {} already exists in the target tree"]
-status = "pending"
+status = "ported"
+hash = "d107bf0c082014ae87cb536ecbaa3b99051e98a79a2e1bce84f1c321c7bd8815"
 
 [items."loader/message:entry {} is not a group"]
-status = "pending"
+status = "ported"
+hash = "1071c0c2903019b9ca35ef528eb2b491adc03421075d5acce455038d4a98e5ec"
 
 [items."loader/message:entry {} is waiting for its dependencies"]
 status = "diverged"
@@ -2924,7 +2927,9 @@ hash = "157539e5f88805e292e134e0a88e91565aa346020024b7162de2b909a99101f7"
 note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/src/config/entry.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "1aaec72ae06f8ecbec80ecf47bb955c42f85eb36431aa0b69b088ee4175137b3"
+note = "Imports and the `outer` component object. The Python names are in the entries of the other items of the file."
 
 [items."loader/src/config/entry.ts:Entry"]
 status = "ported"
@@ -3109,7 +3114,9 @@ hash = "dc6b9831fe342a0041036135e1f6708a542402e0f3584bc0afb4653348a33c8f"
 note = "A helper of `sortKeys`."
 
 [items."loader/src/config/group.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "2bd4251be8aafce8964edba16d8717a7613eb4bad1592b8c357e43002c88df39"
+note = "Imports of the TypeScript module."
 
 [items."loader/src/config/group.ts:EntryGroup"]
 status = "ported"
@@ -3226,7 +3233,9 @@ divergence = "loader-isolate-rebuild"
 note = "It decides which providers move with the entry: a rebuild moves none."
 
 [items."loader/src/config/tree.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "69d9893bdb0e70e5cd9cf1b80a17e3148f66fb3c3e5dedabd0c26a0fcb1a75cd"
+note = "Imports and the helpers of the Node resolution and of the source locations, which pycordis does not port (`loader-import`, `loader-locations`)."
 
 [items."loader/src/config/tree.ts:EntryChange"]
 status = "ported"
@@ -3351,7 +3360,9 @@ hash = "120b125329ed7616ec0e31c61a5a4c3e0d4b4d170ac51a2608d20e715ed186eb"
 note = "It converts a Node module path or message. A Python name needs neither."
 
 [items."loader/src/config/utils.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "9ea8675b8a67a1e7f2c20a1a404a88aed2e59f565d2be14e5fdfef68b885bf5a"
+note = "Imports and the TypeScript interface and type declarations. The Python names are in the entries of the other items of the file."
 
 [items."loader/src/config/utils.ts:EntryValidationError"]
 status = "ported"
@@ -3625,46 +3636,74 @@ hash = "1df10c00f11763289f0ee00f3528705811de1c1a7e6c0de2f9589e7888724c75"
 note = "The Node module resolution helper has no Python equivalent: the import function resolves names."
 
 [items."loader/tests/commit.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "de8f86008397b32c438a39eb27d7a916041b48332ba5b9cf2bc1cc53b0dc4b94"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
 
 [items."loader/tests/evaluate.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "93a7bd6715e0c4352a0702c3c3a5aad8673b9e4f689a1817752c097405f7eaa3"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
 
 [items."loader/tests/group.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "6d0208f69a811ac1ec51bad2088a8b01f10fd10d3bb8664024e810978c5bd2fe"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
 
 [items."loader/tests/import.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "abf6999543e370fe4e05c8c33c5cd56ca09cc510599667b699e9eb42df555eed"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
 
 [items."loader/tests/index.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "b56e2f589a57d4acbc18b16cf78d969f7e174829d3f91aae03279fb7a3b233b3"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
 
 [items."loader/tests/isolate-provide.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "7e960bfa20971ab7de57a68fd828b22aa8b096086de95a39a5e03a79a28be35b"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
 
 [items."loader/tests/isolate-provide.spec.ts:Slot"]
-status = "pending"
+status = "not-applicable"
+hash = "ce72601aea57dca5015ac0fc5e790b54677870b43d69cb6b8c2e37f78bf737d4"
+note = "A helper of the cases of this file. Each case is `diverged` with `loader-isolate-rebuild`, and the replacement tests build their own components."
 
 [items."loader/tests/isolate-provide.spec.ts:boot"]
-status = "pending"
+status = "not-applicable"
+hash = "7a30c510f425b96037965f3fc928754ba1c77e7d3c6ac619d5fd4da73ddf02ff"
+note = "A helper of the cases of this file. Each case is `diverged` with `loader-isolate-rebuild`, and the replacement tests build their own components."
 
 [items."loader/tests/isolate-provide.spec.ts:module cordis"]
-status = "pending"
+status = "not-applicable"
+hash = "c7823f62086221bbc9eed1efedb63aee3acd4927c7d4022e07e27e968c848993"
+note = "A TypeScript module augmentation that types the services of the test."
 
 [items."loader/tests/isolate-provide.spec.ts:slots"]
-status = "pending"
+status = "not-applicable"
+hash = "929aeac75bc1ce075d43abe6c5925762057cc2f92f5f32c506912c44508c5c2d"
+note = "A helper of the cases of this file. Each case is `diverged` with `loader-isolate-rebuild`, and the replacement tests build their own components."
 
 [items."loader/tests/isolate-provide.spec.ts:started"]
-status = "pending"
+status = "not-applicable"
+hash = "3eea309de1e9a49da02c147d56c52373774df8b0ed03d06033fd5496e35809fa"
+note = "A helper of the cases of this file. Each case is `diverged` with `loader-isolate-rebuild`, and the replacement tests build their own components."
 
 [items."loader/tests/isolate.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "288fc38161b185c0bb78c378978aa8e47f93dc2e665902b2e5396043309838b3"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
 
 [items."loader/tests/rebuild.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "f423f6b6c4015e1478a5c002ae2932c005ff0bbc07847ef136c8e1a96ea0b318"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
 
 [items."loader/tests/rebuild.spec.ts:module cordis"]
-status = "pending"
+status = "not-applicable"
+hash = "b65711448db2469a86ab2ac07aa82532e8d8f85b446f9566727ccb93a0c26195"
+note = "A TypeScript module augmentation that types the services of the test."
 
 [items."loader/tests/resolve.spec.ts:<rest>"]
 status = "not-applicable"
@@ -3672,49 +3711,79 @@ hash = "a921b4fca0a623d145491ce3a3f53a54d38a7326375b31710c20afe8f64d2298"
 note = "It tests the Node module resolution helper, which pycordis does not port."
 
 [items."loader/tests/resolve.spec.ts:fixture"]
-status = "pending"
+status = "not-applicable"
+hash = "09c1e05b201e0473c3038b16490dd15bf57e602d8fe9bd86a6427e066b1fe255"
+note = "A helper of the Node module resolution tests, which pycordis does not port."
 
 [items."loader/tests/resolve.spec.ts:roots"]
-status = "pending"
+status = "not-applicable"
+hash = "b6b0819ad0d7c45b0d2d219e732848869a4e0a314847434d41cac34ac6f0598e"
+note = "A helper of the Node module resolution tests, which pycordis does not port."
 
 [items."loader/tests/utils.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "148f4146139738e79a4b8b6e4f08c812265ca9ad97293acda705d5f5ef61850d"
+note = "Imports of the test helper module."
 
 [items."loader/tests/utils.ts:MockLoader"]
-status = "pending"
+status = "not-applicable"
+hash = "150fc8800fd8a360e28e984c48c8502d9b3ae123d863a7aea741e36c056b25ad"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
 
 [items."loader/tests/utils.ts:MockLoader.commit"]
-status = "pending"
+status = "not-applicable"
+hash = "6680a14b9e868e8ab0213472e08d16f7a7c6d956f47ee8c6713a06b8b9417d46"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
 
 [items."loader/tests/utils.ts:MockLoader.constructor"]
-status = "pending"
+status = "not-applicable"
+hash = "41833881373ded118ac151d85ca490716e1a5ae3d70c4550bd4971094f53c328"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
 
 [items."loader/tests/utils.ts:MockLoader.expectDisable"]
-status = "pending"
+status = "not-applicable"
+hash = "e9df228291171a284eb3f7e71cc2c891062e1802a9782ba134c06c7aea3988c9"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
 
 [items."loader/tests/utils.ts:MockLoader.expectEnable"]
-status = "pending"
+status = "not-applicable"
+hash = "69ba7caa259666d0117b9353797e02b68f84e0dcca561b4ce9ecba8d25c166aa"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
 
 [items."loader/tests/utils.ts:MockLoader.expectFiber"]
-status = "pending"
+status = "not-applicable"
+hash = "647eb8bc7977b975b64b20b327fce1135a724baead19ea60dea25e5466bf2bcd"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
 
 [items."loader/tests/utils.ts:MockLoader.import"]
-status = "pending"
+status = "not-applicable"
+hash = "fd5f73940452b3ad2b3893d5bba8cc847362e650e5e752fefa3768ad3a0cdde0"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
 
 [items."loader/tests/utils.ts:MockLoader.mock"]
-status = "pending"
+status = "not-applicable"
+hash = "5e653ce22e81d84605de6c1f3bc3229ef2118a91dbf9d5bf20d335182e400141"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
 
 [items."loader/tests/utils.ts:MockLoader.read"]
-status = "pending"
+status = "not-applicable"
+hash = "914a13faf68a91da3ffba3bd58fa6abf2620b653a4b5363e95930bba502835ba"
+note = "A helper of the upstream tests. `tests/loader_fakes.py` (`RecordingLoader`) has the Python equivalent."
 
 [items."loader/tests/utils.ts:module ../src/index.ts"]
-status = "pending"
+status = "not-applicable"
+hash = "c333738e9d12e4ed0890a43d8033c5a6aedb6c38fe6a394dc78c41bc162f2316"
+note = "A TypeScript module augmentation that types the `mock` helper."
 
 [items."loader/tests/utils.ts:sleep"]
-status = "pending"
+status = "not-applicable"
+hash = "6d2eb332f7d7de94e32f9466e350c0372479f8cdc26875eca4d1898ad04a754b"
+note = "A timer helper. The tests drive the scheduler with `FramePumpScheduler.pump` or `ImmediateScheduler` and never wait for time."
 
 [items."loader/tests/validate.spec.ts:<rest>"]
-status = "pending"
+status = "not-applicable"
+hash = "f068c5ca9c2981491e87ee72d83484e52a431671261bd1a6b55cbd7e328c5ff6"
+note = "Imports and the `describe` wrappers of the cases. The cases have their own entries."
 
 [items."loader/validate.spec.ts::Loader: entry options validation::accept an expression only for disabled"]
 status = "diverged"
