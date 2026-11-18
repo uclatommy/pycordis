@@ -5,6 +5,7 @@ from collections.abc import Callable
 import pytest
 
 from pycordis.context import Context, Rule, restrict
+from pycordis.errors import CordisError
 from pycordis.fiber import Fiber, FiberState
 from pycordis.registry import inject as inject_method
 
@@ -43,11 +44,20 @@ class TestArguments:
         with pytest.raises(TypeError, match="not a bare str"):
             restrict(root, **kwargs)
 
-    def test_a_dimension_with_no_rule_admits_every_key(self, root: Context) -> None:
+    def test_a_provide_dimension_with_no_rule_admits_every_provided_key(
+        self, root: Context
+    ) -> None:
         restricted = restrict(root, inject=["other"])
         # the provide dimension has no rule: any name can be provided
         restricted.provide("anything", 1)
-        assert restricted.get("anything") == 1
+
+    def test_an_inject_dimension_with_no_rule_admits_every_read(
+        self, root: Context
+    ) -> None:
+        restricted = restrict(root, provide=["allowed"])
+        restricted.provide("allowed", 1)
+        # the inject dimension has no rule: any name can be read
+        assert restricted.get("allowed") == 1
 
     @pytest.mark.parametrize(
         "rule, name, admitted",
@@ -173,3 +183,117 @@ def test_a_nested_restrict_admits_only_the_intersection(root: Context) -> None:
     _needs_other.inject = ["other"]
     narrowed = restrict(restricted, inject=[])
     assert narrowed.use(_needs_other).state == FiberState.FAILED
+
+
+class TestReads:
+    """A read, a write, or an accessor outside the rule raises `CordisError`."""
+
+    @pytest.mark.parametrize(
+        "access", [lambda ctx: ctx["db"], lambda ctx: ctx.get("db")], ids=["[]", "get"]
+    )
+    def test_a_read_outside_the_rule_raises(
+        self, root: Context, access: Callable[[Context], object]
+    ) -> None:
+        root.provide("db", 1)
+        restricted = restrict(root, inject=["other"])
+
+        with pytest.raises(CordisError, match='"db"') as excinfo:
+            access(restricted)
+        assert "other" in str(excinfo.value)
+
+    def test_a_restricted_components_own_context_checks_its_reads(
+        self, root: Context
+    ) -> None:
+        restricted = restrict(root, inject=["other"])
+        captured: dict[str, Context] = {}
+
+        def component(ctx: Context, config: object) -> None:
+            captured["ctx"] = ctx
+
+        fiber = restricted.use(component)
+        assert fiber.state == FiberState.ACTIVE
+
+        with pytest.raises(CordisError, match='"db"'):
+            captured["ctx"]["db"]
+
+    def test_a_shadowed_read_is_checked_at_the_def_site_not_the_use_site(
+        self, root: Context
+    ) -> None:
+        root.provide("db", 1)
+        unrestricted_service = root.inject(["db"], lambda ctx: None).ctx
+        restricted_caller = restrict(root, inject=["other"])
+
+        # the def site (the service's own context) admits "db": the caller's
+        # restriction, which rejects it, does not apply
+        shadowed = restricted_caller.with_shadow(unrestricted_service)
+        assert shadowed["db"] == 1
+
+        restricted_service = (
+            restrict(root, inject=["other"]).inject(["other"], lambda ctx: None).ctx
+        )
+
+        # the def site rejects "db" even though the caller (root) has no restriction
+        with pytest.raises(CordisError, match='"db"'):
+            root.with_shadow(restricted_service)["db"]
+
+    @pytest.mark.parametrize(
+        "declare, key, checked_name",
+        [
+            (
+                lambda root: root.accessor(
+                    "gauge", lambda ctx, r: 1, lambda ctx, v, r: None
+                ),
+                "gauge",
+                "gauge",
+            ),
+            (
+                lambda root: (
+                    root.provide("timer", object()),
+                    root.mixin("timer", ["sleep"]),
+                ),
+                "sleep",
+                "timer",
+            ),
+        ],
+        ids=["plain accessor", "mixin accessor"],
+    )
+    def test_an_accessor_outside_the_rule_raises_by_the_checked_name(
+        self,
+        root: Context,
+        declare: Callable[[Context], object],
+        key: str,
+        checked_name: str,
+    ) -> None:
+        declare(root)
+        restricted = restrict(root, inject=["other"])
+
+        for access in (
+            lambda: restricted[key],
+            lambda: restricted.__setitem__(key, 2),
+        ):
+            with pytest.raises(CordisError, match=f'"{checked_name}"') as excinfo:
+                access()
+            if checked_name != key:
+                assert key not in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "register",
+    [
+        lambda ctx: ctx.provide("blocked", 1),
+        lambda ctx: ctx.accessor("blocked", lambda ctx, receiver: 1),
+        lambda ctx: ctx.mixin("db", ["blocked"]),
+    ],
+    ids=["provide", "accessor", "mixin"],
+)
+def test_provide_accessor_or_mixin_outside_the_rule_fails_the_fiber(
+    root: Context, register: Callable[[Context], object]
+) -> None:
+    restricted = restrict(root, provide=["allowed"])
+
+    fiber = restricted.use(lambda ctx, config: register(ctx))
+
+    assert fiber.state == FiberState.FAILED
+    assert '"blocked"' in str(fiber.error)
+    assert "allowed" in str(fiber.error)
+    assert fiber.get_effects() == []

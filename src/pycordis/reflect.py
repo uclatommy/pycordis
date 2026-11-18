@@ -37,10 +37,16 @@ class Accessor:
             came, or `None` for a plain `ctx[key]`.
         set: Called with the context, the new value, and the receiver, or `None` for a
             read-only property.
+        source: The service name that a mixin forwards, or `None` for a plain
+            accessor. A read of the accessor is checked against this name instead of
+            the accessor's own name, so a restriction that admits `"timer"` but not
+            `"sleep"` still rejects `ctx["sleep"]` when `"sleep"` is a mixin of
+            `"timer"`.
     """
 
     get: Callable[["Context", Any], Any]
     set: Callable[["Context", Any, Any], None] | None = None
+    source: str | None = None
 
 
 @dataclass(eq=False, slots=True)
@@ -124,6 +130,25 @@ def _already_declared(name: str, declared: str) -> CordisError:
     return CordisError(f'property "{name}" is already declared as {declared}')
 
 
+def _site(ctx: "Context") -> "Context":
+    """Return the context whose restriction chain decides a read of `ctx`."""
+    return ctx if ctx.shadow is None else ctx.shadow
+
+
+def _check_read(site: "Context", name: str) -> None:
+    """Raise if a restriction on `site` rejects a read of `name`."""
+    rule = site._rejecting(name)
+    if rule is not None:
+        raise CordisError(f'cannot get property "{name}": {rule}')
+
+
+def _check_provide(ctx: "Context", name: str) -> None:
+    """Raise if a restriction on `ctx` rejects registering `name`."""
+    rule = ctx._rejecting(name, provide=True)
+    if rule is not None:
+        raise CordisError(f'cannot provide "{name}": {rule}')
+
+
 class _Filter:
     """The `this` object of an `internal/service` event.
 
@@ -169,10 +194,12 @@ class ReflectService:
         """Return `ctx[key]`: an accessor's value, or the value of a provider.
 
         A read of a service from a component's context must be admitted (see
-        `def_site` and `admit`); a root context reads without this check. The
-        `internal/get` listeners run before the admission, so they also see a read
-        that no fiber admits. A service that has a `Tracker` is returned as a view for
-        `ctx`.
+        `def_site` and `admit`); a root context reads without this check. A
+        restriction on the def site (see `def_site`) is checked before either: a
+        plain accessor is checked by its own name, and a mixin accessor by the
+        service name it forwards (see `Accessor.source`). The `internal/get`
+        listeners run before the admission, so they also see a read that no fiber
+        admits. A service that has a `Tracker` is returned as a view for `ctx`.
 
         Args:
             ctx: The context that reads.
@@ -181,15 +208,17 @@ class ReflectService:
                 accessor.
 
         Raises:
-            CordisError: If no fiber admits the read, or the fiber that admits it is
-                not loaded.
+            CordisError: If a restriction rejects the read, if no fiber admits the
+                read, or if the fiber that admits it is not loaded.
         """
         name = key_name(key)
+        site = _site(ctx)
         accessor = self._accessors.get(name)
         if accessor is not None:
+            _check_read(site, accessor.source or name)
             return accessor.get(ctx, receiver)
-        site = self.def_site(ctx)
-        if site is None:
+        _check_read(site, name)
+        if site.fiber.runtime is None:
             return self.get(ctx, name, False)
         return ctx.waterfall(
             "internal/get", ctx, name, lambda: self._checked(ctx, site, name)
@@ -207,7 +236,7 @@ class ReflectService:
             The def site, or `None` when its fiber is the fiber of a root context
             (`root`, `root.isolate(...)`): a read from it is not checked.
         """
-        site = ctx if ctx.shadow is None else ctx.shadow
+        site = _site(ctx)
         return None if site.fiber.runtime is None else site
 
     @owner_thread("scheduler")
@@ -268,6 +297,7 @@ class ReflectService:
         elif accessor.set is None:
             raise CordisError(f'property "{name}" is read-only')
         else:
+            _check_read(_site(ctx), accessor.source or name)
             accessor.set(ctx, value, receiver)
 
     @owner_thread("scheduler")
@@ -277,10 +307,11 @@ class ReflectService:
         """Return `ctx.get(key, strict)`: the value of an admitted read, or `None`.
 
         A read from a component's context must be admitted (see `def_site` and
-        `admit`). It gives the provider that the admitting fiber committed, not the
+        `admit`), and a restriction on the def site is checked first, as for `ctx[key]`
+        (see `read`). It gives the provider that the admitting fiber committed, not the
         provider that the store holds now, so it agrees with `ctx[key]`. A root context
-        reads without the check, as `get` does. A service that has a `Tracker` is
-        returned as a view for the use site of `ctx`.
+        reads without the admission check, as `get` does. A service that has a
+        `Tracker` is returned as a view for the use site of `ctx`.
 
         Returns:
             The value, or `None` when the fiber that declares `key` is not loaded, when
@@ -288,12 +319,14 @@ class ReflectService:
             visible.
 
         Raises:
-            CordisError: If no fiber admits the read.
+            CordisError: If a restriction rejects the read, or no fiber admits it.
         """
-        site = self.def_site(ctx)
-        if site is None:
+        name = key_name(key)
+        site = _site(ctx)
+        _check_read(site, name)
+        if site.fiber.runtime is None:
             return self.get(ctx, key, strict)
-        impl = _visible(self.admit(site, key_name(key)).impl, strict)
+        impl = _visible(self.admit(site, name).impl, strict)
         return None if impl is None else get_traceable(ctx.use_site, impl.value)
 
     @owner_thread("scheduler")
@@ -344,7 +377,8 @@ class ReflectService:
             service has left.
 
         Raises:
-            CordisError: If the realm already has a provider, or `key` is an accessor.
+            CordisError: If a restriction on `ctx` rejects `key`, the realm already
+                has a provider, or `key` is an accessor.
         """
         name = key_name(key)
         fiber = ctx.fiber
@@ -352,6 +386,7 @@ class ReflectService:
         def setup() -> Callable[[], Deferred[None]]:
             if name in self._accessors:
                 raise _already_declared(name, "accessor")
+            _check_provide(ctx, name)
             self._services.add(name)
             ctx.declare_realm(name)
             realm = ctx.isolates[name]
@@ -418,7 +453,8 @@ class ReflectService:
         """Register `accessor` as the property `key` on the fiber of `ctx`.
 
         Raises:
-            CordisError: If `key` is already declared as a service or an accessor.
+            CordisError: If a restriction on `ctx` rejects `key`, or `key` is already
+                declared as a service or an accessor.
         """
         name = key_name(key)
 
@@ -427,6 +463,7 @@ class ReflectService:
                 raise _already_declared(name, "service")
             if name in self._accessors:
                 raise _already_declared(name, "accessor")
+            _check_provide(ctx, name)
             self._accessors[name] = accessor
 
             def remove() -> None:
@@ -446,7 +483,9 @@ class ReflectService:
         """Register an accessor for each attribute of the service `source`.
 
         An accessor reads or sets the attribute on the service value that the reading
-        context sees. It gives `None` while no provider is visible.
+        context sees. It gives `None` while no provider is visible. A restriction on
+        `ctx` checks each attribute name against its provide rule, and each read or
+        write of the accessor against `source`'s read rule (see `Accessor.source`).
         """
         source_name = key_name(source)
         entries = (
@@ -520,4 +559,4 @@ class ReflectService:
                 value,
             )
 
-        return Accessor(get, set_)
+        return Accessor(get, set_, source=source)

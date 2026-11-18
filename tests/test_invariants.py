@@ -17,8 +17,9 @@ from typing import Any
 import pytest
 from conftest import check_well_formed, hook_snapshot
 
-from pycordis.context import Context
+from pycordis.context import Context, restrict
 from pycordis.deferred import Deferred
+from pycordis.errors import CordisError
 from pycordis.fiber import Fiber, FiberState
 from pycordis.scheduler import FramePumpScheduler
 
@@ -105,6 +106,15 @@ def dependent(
             await Deferred.resolved(None)
 
     return SimpleNamespace(name=name, inject=list(deps), apply=apply)
+
+
+def restricted_provide_violator(name: str) -> SimpleNamespace:
+    """A component whose own restriction forbids the service it tries to provide."""
+
+    def apply(ctx: Context, config: object) -> None:
+        restrict(ctx, provide=["allowed"]).provide("blocked", 1)
+
+    return SimpleNamespace(name=name, inject=[], apply=apply)
 
 
 def plain(name: str, child: Any = None) -> SimpleNamespace:
@@ -447,35 +457,46 @@ def test_a_failed_fiber_leaves_its_siblings_unchanged_and_update_recovers_it(
     slots = build_pool(probe)
     failing = Slot("failing", [dependent(probe, "failing", ("a",), fail_on="fail")])
     failing.config = {"fail": True}
-    ops = random_ops(rng, slots + [failing], OPS)
+    restricted_failing = Slot(
+        "restricted_failing", [restricted_provide_violator("restricted_failing")]
+    )
+    extras = [failing, restricted_failing]
+    ops = random_ops(rng, slots + extras, OPS)
 
-    def run(with_failing: bool) -> tuple[Context, FramePumpScheduler, list[Slot]]:
+    def run(with_extras: bool) -> tuple[Context, FramePumpScheduler, list[Slot]]:
         root, pump, _ = new_root()
-        pool = [*build_pool(probe), failing] if with_failing else build_pool(probe)
-        failing.live = failing.replaced = False
-        failing.fiber = None
+        pool = [*build_pool(probe), *extras] if with_extras else build_pool(probe)
+        for extra in extras:
+            extra.live = extra.replaced = False
+            extra.fiber = None
         run_schedule(
             root,
             pump,
             pool,
-            [op for op in ops if with_failing or op[1] < len(slots)],
+            [op for op in ops if with_extras or op[1] < len(slots)],
             random.Random(seed),
             seed,
         )
         return root, pump, pool
 
     root, pump, _ = run(True)
-    failed = failing.live and root.get("a", strict=False) is not None
-    if failed:
+    if failing.live and root.get("a", strict=False) is not None:
         assert failing.fiber is not None
         assert failing.fiber.state == FiberState.FAILED, f"seed {seed}"
         assert isinstance(failing.fiber.error, ValueError), f"seed {seed}"
         assert failing.fiber.get_effects() == [], f"seed {seed}"
+    if restricted_failing.live:
+        assert restricted_failing.fiber is not None
+        assert restricted_failing.fiber.state == FiberState.FAILED, f"seed {seed}"
+        assert isinstance(restricted_failing.fiber.error, CordisError), f"seed {seed}"
+        assert restricted_failing.fiber.get_effects() == [], f"seed {seed}"
     with_failure = structure(root, keys_of())
-    # the failed fiber is outside the comparison: remove it, then compare the rest
-    if failing.live:
-        assert failing.fiber is not None
-        failing.fiber.dispose()
+    # the failed fibers are outside the comparison: remove them, then compare the rest
+    for extra in extras:
+        if extra.live:
+            assert extra.fiber is not None
+            extra.fiber.dispose()
+    if any(extra.live for extra in extras):
         settle(pump, seed)
     after_removal = structure(root, keys_of())
     reference_root, _, _ = run(False)

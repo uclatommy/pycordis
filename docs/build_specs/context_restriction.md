@@ -1,6 +1,6 @@
 # Build Spec: Context Restriction
 
-**Status**: 🚧 In progress — Increment 2 of 5 complete; spec 4 of 4 (see [Dependencies](#dependencies))
+**Status**: 🚧 In progress — Increment 3 of 5 complete; spec 4 of 4 (see [Dependencies](#dependencies))
 
 **Reference**: [#8 Feature request: context view that restricts which keys a component can inject and provide](https://github.com/uclatommy/pycordis/issues/8)
 
@@ -323,7 +323,42 @@ manual: in `uv run python`, restrict the root to `inject={"db"}`, use a componen
 manual: in `uv run python`, a restricted plugin without `timer` in its rule calls `ctx["sleep"]`,
 and the error names `timer`
 **Docs**: the `restrict` docstring (each enforcement point)
-**Status**: ⏳ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `reflect.py`: `Accessor.source` (the service name a mixin forwards, `None` for a
+  plain accessor), module-level `_site`, `_check_read`, and `_check_provide`;
+  `def_site` now builds its site through `_site`; `read` and `checked_get` call
+  `_check_read` on the def site before the root shortcut, with a mixin accessor
+  checked by `accessor.source` instead of its own name; `write` calls `_check_read`
+  for an accessor setter; `provide` and `accessor` call `_check_provide` on the use
+  site before registering; `_forward` passes `source` to the `Accessor` it builds
+- `context.py`: the `restrict` docstring states the read and provide-call
+  enforcement points, alongside the inject one from the previous increment
+- `test_restrict.py`: `TestReads` (a parametrized read/`ctx.get` case; a restricted
+  root-fiber context and a restricted component's own context checking their reads;
+  a shadowed read checked at the def site, not the use site, in both directions; a
+  parametrized plain/mixin accessor case covering both the read and the write path)
+  and a parametrized test that `provide`, `accessor`, and `mixin` outside the rule
+  fail the fiber with no installed effects; the no-rule-admits-every-key case is now
+  two tests, one per dimension, since a read now follows the inject rule
+- `test_invariants.py`: `restricted_provide_violator`, a component whose own
+  restriction forbids the service it provides; the `LIFE-FAILURE` schedule seeds a
+  pool that includes it alongside the existing `ValueError`-raising `failing`
+  component, and asserts both fail with no installed effects
+**Tests**:
+- `test_restrict.py` (10 new cases): reads, writes, and accessors outside the rule,
+  across a root-fiber context, a component's own context, and a shadowed def site;
+  `provide`, `accessor`, and `mixin` outside the rule fail the fiber with no
+  installed effects (one parametrized test)
+- `uv run pytest tests/test_restrict.py tests/test_reflect.py tests/test_invariants.py tests/test_timer.py`:
+  474 passed
+- Regression: `uv run pytest` (full suite): 1463 passed; no unmarked slow tests
+**Deviations**:
+- None
+**Manual validation**:
+- `uv run python -c`: `root.provide("timer", object()); root.mixin("timer", ["sleep"]);
+  restricted = restrict(root, inject=["other"]); restricted["sleep"]` raises
+  `CordisError: cannot get property "timer": names: other`, naming `timer`, not `sleep`
 
 ### Increment 4: Guarded attributes
 **Goal**: `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise in a restricted

@@ -813,7 +813,12 @@ def restrict(
 
     A fiber that a derived context creates fails to load when one of its `inject` keys
     is outside the inject rule: it goes to `FAILED`, and `fiber.error` names the key
-    and the rejecting `Rule`.
+    and the rejecting `Rule`. A read (`ctx[key]`, `ctx.get`) outside the inject rule
+    raises `CordisError` the same way, checked at the def site of the read (see
+    `Context.shadow`): a mixin accessor is checked by the service name it forwards,
+    not by its own name. A `ctx.provide`, `ctx.accessor`, or `ctx.mixin` call outside
+    the provide rule raises from the call itself, so a component that makes the call
+    in its own setup fails to load with no effect installed.
 
     Args:
         ctx: The context to restrict.
