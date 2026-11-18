@@ -1038,8 +1038,10 @@ from hmr_fixtures import STATS
 
 {keyword}def apply(ctx, config=None):
     {gate}
-    STATS['nested'] = ctx.get('hmr').reconcile(lambda: [])
+    STATS['nested'] = ctx['hmr'].reconcile(lambda: [])
     STATS['ctx'] = ctx
+
+inject = ['hmr']
 """
 
 
@@ -1055,7 +1057,8 @@ def test_a_moved_fiber_cannot_start_a_transaction_until_the_transaction_ends(
         gate="await STATS['gate']" if asynchronous else "pass",
     )
     stats["gate"] = Deferred.resolved(None)
-    env.load("nested", source)
+    env.write("nested", source)
+    env.ctx.use(__import__("nested"))
     assert stats["nested"].result() == ReloadResult()  # no transaction runs yet
 
     gate = stats["gate"] = Deferred[None]()
@@ -1069,7 +1072,7 @@ def test_a_moved_fiber_cannot_start_a_transaction_until_the_transaction_ends(
     ):
         stats["nested"].result()
     # the transaction is over, so the same call from the same fiber runs
-    later = stats["ctx"].get("hmr").reconcile(lambda: [])
+    later = stats["ctx"]["hmr"].reconcile(lambda: [])
     assert later.result() == ReloadResult()
 
 
@@ -1078,7 +1081,9 @@ from hmr_fixtures import STATS
 
 async def child(ctx, config=None):
     await STATS['gate']
-    STATS['nested'] = ctx.get('hmr').reconcile(lambda: [])
+    STATS['nested'] = ctx['hmr'].reconcile(lambda: [])
+
+child.inject = ['hmr']
 
 async def apply(ctx, config=None):
     ctx.use(child)

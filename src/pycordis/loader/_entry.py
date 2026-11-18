@@ -173,12 +173,12 @@ def merge_options(target: EntryOptions, options: Mapping[str, Any]) -> EntryOpti
 
 
 def find_loader(ctx: Context) -> "Loader":
-    """Return the loader service that `ctx` sees.
+    """Return the loader service that `ctx` sees, whether or not `ctx` injects it.
 
     Raises:
         CordisError: If no loader is provided.
     """
-    loader = ctx.get("loader", strict=False)
+    loader = ctx.reflect.get(ctx, "loader", strict=False)
     if loader is None:
         raise CordisError("the loader service is not provided")
     return loader

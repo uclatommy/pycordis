@@ -112,6 +112,13 @@ def locate(ctx: "Context", name: str) -> Located | None:
         fiber = fiber.parent.fiber
 
 
+def _visible(impl: Impl | None, strict: bool) -> Impl | None:
+    """Return `impl`, or `None` when `strict` hides it: its fiber is not `ACTIVE`."""
+    if impl is None or (strict and impl.ctx.fiber.state != FiberState.ACTIVE):
+        return None
+    return impl
+
+
 def _already_declared(name: str, declared: str) -> CordisError:
     """Return the error for a `name` that is already declared as `declared`."""
     return CordisError(f'property "{name}" is already declared as {declared}')
@@ -264,10 +271,40 @@ class ReflectService:
             accessor.set(ctx, value, receiver)
 
     @owner_thread("scheduler")
+    def checked_get(
+        self, ctx: "Context", key: Keyable[Any], strict: bool = True
+    ) -> Any:
+        """Return `ctx.get(key, strict)`: the value of an admitted read, or `None`.
+
+        A read from a component's context must be admitted (see `def_site` and
+        `admit`). It gives the provider that the admitting fiber committed, not the
+        provider that the store holds now, so it agrees with `ctx[key]`. A root context
+        reads without the check, as `get` does. A service that has a `Tracker` is
+        returned as a view for the use site of `ctx`.
+
+        Returns:
+            The value, or `None` when the fiber that declares `key` is not loaded, when
+            `strict` hides the provider, or, at a root context, when no provider is
+            visible.
+
+        Raises:
+            CordisError: If no fiber admits the read.
+        """
+        site = self.def_site(ctx)
+        if site is None:
+            return self.get(ctx, key, strict)
+        impl = _visible(self.admit(site, key_name(key)).impl, strict)
+        return None if impl is None else get_traceable(ctx.use_site, impl.value)
+
+    @owner_thread("scheduler")
     def get(self, ctx: "Context", key: Keyable[Any], strict: bool = True) -> Any:
         """Return the value of the service `key` that `ctx` sees, or `None`.
 
-        A service that has a `Tracker` is returned as a view for the use site of `ctx`.
+        This lookup is not checked: it reads the provider that the realm of `ctx` holds
+        now, whether or not a fiber declares the read. A host uses it to see which
+        provider a component's context resolves; a component reads with
+        `Context.get` or `ctx[key]`. A service that has a `Tracker` is returned as a
+        view for the use site of `ctx`.
         """
         impl = self.find(ctx, key_name(key), strict)
         return None if impl is None else get_traceable(ctx.use_site, impl.value)
@@ -444,12 +481,7 @@ class ReflectService:
         With `strict`, a provider whose fiber is not `ACTIVE` gives `None`.
         """
         realm = ctx.isolates.get(name)
-        impl = None if realm is None else self._store.get(realm)
-        if impl is None:
-            return None
-        if strict and impl.ctx.fiber.state != FiberState.ACTIVE:
-            return None
-        return impl
+        return _visible(None if realm is None else self._store.get(realm), strict)
 
     def _remove(self, impl: Impl) -> Deferred[None]:
         """Unpublish `impl`, then wait until its dependents leave."""

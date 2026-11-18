@@ -211,9 +211,10 @@ class Hmr(Service):
         - The old imports of a module that was imported after the last transaction, and
           that changed before the next one, come from its new source.
         - `reconcile` finds a nested call only through a view of the service, which
-          `ctx.get("hmr")` returns. A call through a reference that the host keeps
-          outside a context is not found. If a moved fiber waits for such a call, the
-          transaction does not end.
+          `ctx["hmr"]` returns. A component that calls `reconcile` reads it this way,
+          so the component, or an ancestor, must inject `hmr`. A call through a
+          reference that the host keeps outside a context is not found. If a moved
+          fiber waits for such a call, the transaction does not end.
 
     Call every method on the owner thread.
 
@@ -228,8 +229,8 @@ class Hmr(Service):
 
     Examples:
         ```python
-        >>> fiber = ctx.use(Hmr)
-        >>> result = ctx.get("hmr").reconcile(lambda: ["/app/plugins/greet.py"])
+        >>> fiber = root.use(Hmr)
+        >>> result = root.get("hmr").reconcile(lambda: ["/app/plugins/greet.py"])
         >>> result.done()
         True
         ```
@@ -317,7 +318,7 @@ class Hmr(Service):
 
         Examples:
             ```python
-            >>> hmr = ctx.get("hmr")
+            >>> hmr = root.get("hmr")
             >>> result = hmr.reconcile(lambda: ["/app/plugins/greet.py"]).result()
             >>> [fiber.uid is not None for fiber in result.settled]
             [True]

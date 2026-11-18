@@ -459,8 +459,10 @@ status = "ported"
 hash = "9fa35a6049053a57d40071435576de4963f64f2ef90192ca488d054710aa54c6"
 
 [items."intercept.spec.ts::Intercept::stop looking for injected config at an isolation boundary"]
-status = "ported"
+status = "diverged"
 hash = "ae1f121917b78d71a8027ba39c30c5cab8111801bd8cd61895bb4bf4fdfb676f"
+divergence = "checked-get"
+note = "No fiber admits the read from `ctx.isolate(\"foo\", label)`, because an ancestor's `inject` does not reach across the isolate, so `ctx.get` raises there. The test reads through the unchecked `ctx.reflect.get` and gives the upstream result."
 
 [items."intercept.spec.ts::Intercept::take injected config from the declaring fiber"]
 status = "ported"
@@ -1436,10 +1438,11 @@ target = "pycordis.reflect.ReflectService.__init__"
 hash = "e35d51ce532b738420d725f5ae3ea5af47be257c655266dbec4d591db0e82049"
 
 [items."src/reflect.ts:ReflectService.get"]
-status = "adapted"
-target = "pycordis.reflect.ReflectService.get"
+status = "diverged"
+target = "pycordis.context.Context.get"
 hash = "f226026815e02bced613ea2e9cb998cb6719a228e2b61cf26247901b13b0cf58"
-divergence = "service-access"
+divergence = "checked-get"
+note = "In a component's context, `Context.get` admits the read as `ctx[key]` does. `ReflectService.get` is the unchecked lookup that the upstream method gives."
 
 [items."src/reflect.ts:ReflectService.mixin"]
 status = "adapted"

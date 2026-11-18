@@ -217,7 +217,7 @@ docs/
 ## Dependencies
 
 - **Sequence**: spec 2 of 4. The order is [Pump Budget](pump_budget.md), Step Reports,
-  [Checked Get](../checked_get.md), [Context Restriction](../context_restriction.md).
+  [Checked Get](checked_get.md), [Context Restriction](../context_restriction.md).
 - **Prerequisite**: [Pump Budget](pump_budget.md) (the scheduler clock in the base class).
 - **Required by**: none.
 - **Runtime**: none (standard library: `dataclasses`, `enum`, `logging`).

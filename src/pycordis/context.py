@@ -416,7 +416,7 @@ class Context:
         the provider's fiber, or `None` when no provider is visible.
 
         A context that belongs to a component's fiber reads only the services that the
-        fiber or one of its ancestors injects or provides.
+        fiber or one of its ancestors injects or provides. `get` checks the same rule.
 
         Raises:
             CordisError: In a component's context, if no fiber injects the service, or
@@ -439,15 +439,44 @@ class Context:
     def get[T](self, key: Keyable[T], strict: bool = True) -> T | None:
         """Return the value of the service `key`, or `None`.
 
+        A context that belongs to a component's fiber reads only the services that
+        the fiber or one of its ancestors injects or provides, as `ctx[key]` does. The
+        read gives the provider that the declaring fiber loaded against: after a
+        change of provider, it gives the old provider until the fiber loads again.
+        Where `ctx[key]` raises because the declaring fiber is not loaded, `get`
+        returns `None`. Accessors are not read. At the root (`root`,
+        `root.isolate(...)`), the read is not checked.
+
+        For an optional service, read it in a child fiber that injects it:
+        `ctx.inject([key], callback)` runs `callback` when a provider is visible, and
+        the component itself does not wait for the service. For a service in another
+        realm, use `ctx.isolate(key, label).inject([key], callback)`: an ancestor's
+        `inject` does not admit a read across the isolate. A host that wants to see
+        which provider a context resolves, without the check, calls
+        `ctx.reflect.get(ctx, key, strict)`.
+
         Args:
             key: The service key.
             strict: When true, a provider whose fiber is not `ACTIVE` gives `None`.
 
         Returns:
-            The value that the provider holds. `None` when no provider is visible from
-            this context, or when `strict` hides the provider.
+            The value that the provider holds. `None` when the declaring fiber is not
+            loaded, when `strict` hides the provider, or, at the root, when no
+            provider is visible.
+
+        Raises:
+            CordisError: In a component's context, if no fiber injects or provides the
+                service. A note on the error names the two ways to declare the read.
+            TypeError: If `key` is neither a `Key` nor a `str`.
+
+        Examples:
+            ```python
+            >>> def apply(ctx, config):
+            ...     ctx.inject(["metrics"], lambda inner: print(inner.get("metrics")))
+            >>> fiber = root.use(apply)  # loads with no "metrics" provider
+            ```
         """
-        return self.reflect.get(self, key, strict)
+        return self.reflect.checked_get(self, key, strict)
 
     @owner_thread("scheduler")
     def set[T](self, key: Keyable[T], value: T) -> None:
@@ -487,8 +516,8 @@ class Context:
 
         Examples:
             ```python
-            >>> remove = ctx.provide("db", {"rows": 0})
-            >>> ctx.get("db")
+            >>> remove = root.provide("db", {"rows": 0})
+            >>> root.get("db")
             {'rows': 0}
             >>> remove()
             ```

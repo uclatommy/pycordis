@@ -1,6 +1,6 @@
 # Build Spec: Checked Get
 
-**Status**: 🚧 In progress — Increment 1 complete; spec 3 of 4 (see [Dependencies](#dependencies))
+**Status**: ✅ Completed — spec 3 of 4 (see [Dependencies](#dependencies))
 
 **Reference**: [#11 Make ctx.get check inject in a component's context](https://github.com/uclatommy/pycordis/issues/11)
 
@@ -51,7 +51,7 @@ flowchart LR
     H["host: ctx.reflect.get(ctx, key)"] --> L1
 ```
 
-[Context Restriction](context_restriction.md) adds its read rule to `admit`, so the restriction
+[Context Restriction](../context_restriction.md) adds its read rule to `admit`, so the restriction
 has one enforcement point for reads.
 
 ### Results
@@ -221,15 +221,15 @@ docs/
 
 ## Dependencies
 
-- **Sequence**: spec 3 of 4. The order is [Pump Budget](completed/pump_budget.md),
-  [Step Reports](completed/step_reports.md), Checked Get, [Context Restriction](context_restriction.md).
+- **Sequence**: spec 3 of 4. The order is [Pump Budget](pump_budget.md),
+  [Step Reports](step_reports.md), Checked Get, [Context Restriction](../context_restriction.md).
   `0.1.3` (specs 1 and 2) is released first, so that a host can take those without this
   breaking change.
-- **In parallel**: Increment 1 of [Context Restriction](context_restriction.md) (the audit) is
+- **In parallel**: Increment 1 of [Context Restriction](../context_restriction.md) (the audit) is
   read-only and runs during this spec. If the audit finds a path that needs a breaking change,
   that change joins `0.2.0` with this spec.
 - **Prerequisite**: none in code.
-- **Required by**: [Context Restriction](context_restriction.md) (the read rule attaches to
+- **Required by**: [Context Restriction](../context_restriction.md) (the read rule attaches to
   `admit`).
 - **Runtime**: none.
 - **Dev**: none new.
@@ -269,15 +269,46 @@ divergence, ledger, and user guide are in place.
 change the component to use `ctx.inject` and check that it loads with no provider
 **Docs**: `Context.get`, `Service`, and `Hmr` docstrings; `docs/user_guide.md`;
 `docs/architecture.md` rows; review of every docstring that names `ctx.get`
-**Status**: ⏳ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `reflect.py`: `ReflectService.checked_get` admits a read from a component's context and returns the committed provider, or `None` where `ctx[key]` raises or `strict` hides it; a root context uses `get`
+- `reflect.py`: `_visible` holds the `strict` rule for `find` and `checked_get`; the `get` docstring names it as the unchecked host lookup
+- `context.py`: `Context.get` calls `checked_get`; its docstring gives the admission rule, the error and note, the optional-service and other-realm forms, and `ctx.reflect.get`; the `__getitem__` and `provide` docstrings agree
+- `loader/_entry.py`: `find_loader` reads the loader with the unchecked `ctx.reflect.get`
+- `service.py`, `hmr/_service.py`, `loader/_service.py`: the examples read from `root`; the `Hmr` limit says that a component that calls `reconcile` reads `ctx["hmr"]` and injects `hmr`
+- `ledger.toml`: `src/reflect.ts:ReflectService.get` targets `Context.get` with `divergence = "checked-get"` and a note; the intercept isolation-boundary case has `divergence = "checked-get"` and a note; no hash changes
+- `architecture.md`: the `checked-get` row; the `service-access` row names `ctx.get(key)` as checked
+- `user_guide.md`: "Services and dependencies" states the shared admission rule and the host lookup; new subsection "Optional services"; the hmr limit names `ctx["hmr"]`
+- `tests/conformance_checks.py`: the Contract cell of a divergence row can name more than one ID in backticks
+**Tests**:
+- `test_reflect.py`: `test_only_an_undeclared_access_names_both_declarations` has a `ctx.get` case (`divergence("checked-get")`, `contract("LIFE-ORDER")`); added `test_get_admits_a_read_as_an_item_access_does_and_returns_none_where_it_raises` (9 cases: the results-table rows, a fiber's own provision while it loads, and the isolate case; the `changed` case has `contract("LIFE-COHERENT")`) and `test_a_child_fiber_reads_an_optional_service_without_holding_its_parent` (same realm, other realm)
+- `test_reflect.py`: `test_a_key_must_be_a_str_or_a_key` covers `ctx[key]` and `ctx.get` from the root and from a component (4 cases)
+- `test_shadow.py`: `test_a_service_reads_what_it_injects_whatever_its_caller_injects` replaces the no-inject test (4 cases: `ctx[key]` and `ctx.get`, with and without inject)
+- `test_intercept.py`: the isolation-boundary case reads with `ctx.reflect.get` and has `divergence("checked-get")`
+- `test_hmr_reconcile.py`: the nested-call components inject `hmr` and read `ctx["hmr"]`
+- `test_loader_isolate.py`: the realm-change case reads with `ctx.reflect.get`
+- `test_conformance.py`: the unknown-contract-ID case uses a cell with inner backticks; it fails against the old split
+- A `checked_get` that reads the current store in place of `Located.impl` fails the `unloaded` and `changed` cases
+- Full suite: 1433 passed; `ruff check` and `ruff format --check` clean; the unmarked slow tests section is empty
+**Deviations**:
+- Both ledger entries have the status `diverged`, not `adapted`: the conformance checks accept an `improvement` divergence only on a `diverged` entry
+- The conformance checker split the Contract cell on commas and spaces only, so a row with two IDs in backticks failed; the split also removes backticks
+- The `LIFE-COHERENT` marker is on the `changed` case, not on the seeded test in `test_invariants.py`: in those schedules a provider removal always unloads the dependents first, so a `ctx.get` assertion there did not fail against a store lookup
+- The undeclared cases use a sibling provider: a provision of the root fiber admits a read from every component below it
+- The nested-call hmr test uses its module as the component, with a module-level `inject`: with `apply.inject`, `Hmr` replaced the component with the module, and the moved fiber lost its `inject`
+- The shadow case is in `test_shadow.py`, as a parametrization of the existing upstream test
+- `test_loader.py` needed no change: `find_loader` no longer calls `Context.get`
+- The work is on `feature/checked-get` from Increment 2; the Increment 1 commit is on `develop`
+**Manual validation**:
+- Confirmed in `uv run python`: an undeclared `ctx.get("metrics")` in `apply` sets `fiber.error` to the upstream message with the note, and a component that reads `metrics` through `ctx.inject` is `ACTIVE` with no provider and its child reads the value when `metrics` is provided
 
 ## Code Standards
 
-- [Contributing](../contributing.md): the test and docstring standards, with the pull request
+- [Contributing](../../contributing.md): the test and docstring standards, with the pull request
   checklist
-- [Developer Guide](../developer_guide.md): the upstream review procedure, branches, and release
+- [Developer Guide](../../developer_guide.md): the upstream review procedure, branches, and release
   rules (breaking change)
-- [Architecture](../architecture.md): the semantic contract (`LIFE-ORDER`, `LIFE-COHERENT`) and
+- [Architecture](../../architecture.md): the semantic contract (`LIFE-ORDER`, `LIFE-COHERENT`) and
   the divergence table
 - The instruction files in `.github/instructions/`: Python Coding Standards (one owner for a
   rule), Docstrings & Markdown Style, Testing Standards, and Upstream Porting (message text,

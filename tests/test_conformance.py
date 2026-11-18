@@ -323,7 +323,8 @@ def _bad_cases() -> list[tuple[str, Callable[[], list[str]], str]]:
         ),
         (
             "improvement names one unknown contract ID among known ones",
-            lambda: _evidence(_row("improvement", "EFF-REVERT, NO-ID")),
+            # the table parser strips the backticks at the two ends of a cell only
+            lambda: _evidence(_row("improvement", "EFF-REVERT`, `NO-ID")),
             "not ['NO-ID']",
         ),
         (

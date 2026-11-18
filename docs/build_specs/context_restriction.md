@@ -58,7 +58,7 @@ flowchart TD
 | Operation | Enforcement point | Result outside the rule |
 |---|---|---|
 | A declared inject key | The one helper that every path that sets `Fiber.inject` calls: fiber attach and `Fiber._replace` | The fiber goes to `FAILED` before `apply`; `fiber.error` names the key and the rule |
-| A read (`ctx[key]`, `ctx.get`, a mixin accessor) | `ReflectService.admit` from [Checked Get](checked_get.md), at the def site, before the root shortcut | `CordisError` that names the service key and the rule; a mixin accessor names its source service (`timer`), not the accessor (`sleep`) |
+| A read (`ctx[key]`, `ctx.get`, a mixin accessor) | `ReflectService.admit` from [Checked Get](completed/checked_get.md), at the def site, before the root shortcut | `CordisError` that names the service key and the rule; a mixin accessor names its source service (`timer`), not the accessor (`sleep`) |
 | `provide`, `accessor`, `mixin` | The effect setup in `ReflectService.provide`, `accessor`, and `mixin` | The effect raises; in `apply` the fiber fails and reverts, as `LIFE-FAILURE` requires |
 | `ctx.root`, `ctx.reflect`, `ctx.registry`, `ctx.events` | Properties on `Context` | `CordisError` in a restricted context; no change in other contexts |
 | Paths that the audit finds | Per the audit (Appendix B) | Per the audit |
@@ -87,7 +87,7 @@ docs/
 
 - **This repository**: `Context._derive` and the `_isolates` chain (how a table reaches every
   derived context); `Context.with_shadow`, `shadow`, and `use_site`, and the def-site rule in
-  `ReflectService.read`; `ReflectService.admit` from [Checked Get](checked_get.md);
+  `ReflectService.read`; `ReflectService.admit` from [Checked Get](completed/checked_get.md);
   `ReflectService.provide`, `accessor`, `mixin`, and `_forward`; `Fiber._attach` (its `except`
   that records the error and leaves the fiber `FAILED`); `Fiber._replace` (it sets `inject`
   again); `RegistryService.inject` and `run_inject_methods` (the paths that create fibers with
@@ -136,7 +136,7 @@ docs/
   module.
 - The guarded attributes change only in a restricted context, which only the flagged API can
   create, so the change is not breaking. Release: a patch increment in `0.2.x`, after
-  [Checked Get](checked_get.md). If the audit needs a breaking change, that change goes in
+  [Checked Get](completed/checked_get.md). If the audit needs a breaking change, that change goes in
   `0.2.0` with Checked Get, or this spec waits for the next minor release.
 - Promotion (an export, `Context.restrict` as a method, and a user guide section) is a separate
   change. A loader entry option for the restriction is a second divergence from the upstream
@@ -186,10 +186,10 @@ docs/
 ## Dependencies
 
 - **Sequence**: spec 4 of 4. The order is [Pump Budget](completed/pump_budget.md),
-  [Step Reports](completed/step_reports.md), [Checked Get](checked_get.md), Context Restriction.
+  [Step Reports](completed/step_reports.md), [Checked Get](completed/checked_get.md), Context Restriction.
 - **In parallel**: Increment 1 (the audit) is read-only and runs during
-  [Checked Get](checked_get.md), so that a breaking change it finds can join `0.2.0`.
-- **Prerequisite**: [Checked Get](checked_get.md) (`ReflectService.admit` and the checked
+  [Checked Get](completed/checked_get.md), so that a breaking change it finds can join `0.2.0`.
+- **Prerequisite**: [Checked Get](completed/checked_get.md) (`ReflectService.admit` and the checked
   `ctx.get`). Increments 2 to 4 start after Checked Get merges.
 - **Required by**: the later loader entry option.
 - **Runtime**: none.

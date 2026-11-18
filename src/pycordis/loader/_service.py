@@ -62,8 +62,8 @@ class Loader(EntryTree, Service):
 
     Examples:
         ```python
-        >>> fiber = ctx.use(Loader)
-        >>> ctx.get("loader").read([{"id": "a", "name": "app.plugins:greet"}])
+        >>> fiber = root.use(Loader)
+        >>> root.get("loader").read([{"id": "a", "name": "app.plugins:greet"}])
         ```
 
     Attributes:
