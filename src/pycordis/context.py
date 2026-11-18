@@ -859,9 +859,27 @@ def restrict(
     """Return a context that admits only the given inject, read, and provide keys.
 
     !!! warning "Guard, not sandbox"
-        This restriction stops accidental and undeclared access, and fails fast. It
-        does not stop hostile code, which can reach other objects through `gc`,
-        `sys._getframe`, or module globals. Run untrusted code in another process.
+        pycordis trusts every plugin that it loads; the host decides which plugins to
+        load. This restriction stops accidental and undeclared access by trusted code,
+        and fails fast. It is not a security boundary: hostile code can reach other
+        objects through `gc`, `sys._getframe`, module globals, or
+        `pycordis.traceable.get_original`, and pycordis does not run plugins in another
+        process.
+
+        A `Fiber` gives its context, its parent, and its lifecycle methods with no
+        check, so these paths stay open to a restricted component:
+
+        - `fiber.committed[name].ctx`: the context of the provider of an injected
+          service, which is the root when the host provides it.
+        - `fiber.runtime.fibers`: the other fibers of the same component, which can
+          belong to an unrestricted context.
+        - The `Fiber` argument of the `internal/plugin`, `internal/status`, and
+          `internal/replace` events, which can be a host fiber.
+        - `dispose`, `restart`, and `update` on a fiber that the component does not
+          own.
+
+        A host service that returns fibers or contexts, such as `Loader.resolve`, gives
+        a restricted caller the same authority as those objects.
 
     !!! warning "Experimental"
         This API can change before `pycordis` exports it.

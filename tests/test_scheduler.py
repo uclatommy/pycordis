@@ -671,6 +671,13 @@ def test_a_callback_can_submit_and_read_but_not_call_pycordis(
     scheduler = stepper.scheduler
     outcome: list[str] = []
     later: list[str] = []
+    worker_errors: list[str] = []
+
+    def call_from_worker() -> None:
+        try:
+            scheduler.assert_owner()
+        except CordisError as error:
+            worker_errors.append(str(error))
 
     def observer(report: StepReport) -> None:
         if outcome:
@@ -681,6 +688,11 @@ def test_a_callback_can_submit_and_read_but_not_call_pycordis(
             observe_steps(scheduler, lambda r: None)
         with pytest.raises(CordisError, match="step observer cannot call"):
             scheduler.assert_owner()
+        # another thread gets the thread error, not the observer error
+        worker = threading.Thread(target=call_from_worker)
+        worker.start()
+        worker.join(timeout=5)
+        assert not worker.is_alive()
 
     observe_steps(scheduler, observer)
     scheduler.submit(lambda: None)
@@ -688,6 +700,7 @@ def test_a_callback_can_submit_and_read_but_not_call_pycordis(
     stepper.run()
 
     assert later == ["ran"]
+    assert worker_errors == ["WRONG_THREAD"]
     scheduler.assert_owner()  # the owner is restored
 
 

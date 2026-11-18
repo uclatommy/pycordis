@@ -331,6 +331,13 @@ def test_a_guarded_attribute_is_checked_at_the_def_site(root: Context) -> None:
     shadowed = restricted_caller.with_shadow(unrestricted_service)
     assert shadowed.root is root
 
+    # `fiber` follows the caller, because the caller's fiber owns the effects of a
+    # service call: a bound caller reads its own fiber, and an unbound one raises
+    caller_fiber = restrict(root, inject=["other"]).use(_no_deps)
+    assert caller_fiber.ctx.with_shadow(unrestricted_service).fiber is caller_fiber
+    with pytest.raises(CordisError, match="restricted context"):
+        _ = shadowed.fiber
+
     restricted_service = (
         restrict(root, inject=["other"]).inject(["other"], lambda ctx: None).ctx
     )
@@ -360,8 +367,8 @@ def test_fiber_raises_when_restrict_has_not_bound_a_new_fiber(root: Context) -> 
 
 @pytest.mark.divergence("context-restriction")
 def test_fiber_closes_the_leak_to_an_unrestricted_ancestor(root: Context) -> None:
-    """A restricted component's own fiber is readable; `fiber.parent.fiber`, which
-    used to give the host's unrestricted fiber, now raises instead."""
+    """A restricted component reads its own fiber; `fiber.parent.fiber`, which would
+    give the host's unrestricted fiber, raises."""
     restricted = restrict(root, inject=["other"])
     fiber = restricted.use(_no_deps)
 

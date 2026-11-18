@@ -33,10 +33,6 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger(__name__)
 
-# The owner value while step observers run. No thread has this identifier, so every
-# owner check fails, and `assert_owner` tells the two failures apart by this value.
-_OBSERVING = -1
-
 
 class _Step:
     """The state of one running step: its kind, and the owner that it has so far."""
@@ -108,6 +104,7 @@ class Scheduler(ABC):
         self._clock = clock
         self._parked: set[_Task[Any]] = set()
         self._owner = threading.get_ident()
+        self._observing = False
         self._observers: dict[object, Callable[[StepReport], None]] = {}
         self._step: _Step | None = None
 
@@ -115,14 +112,14 @@ class Scheduler(ABC):
         """Check that the calling thread is the owner thread.
 
         Raises:
-            CordisError: With the message `WRONG_THREAD` when another thread calls, or
-                with a message that says that a step observer cannot call pycordis when
-                a step observer calls.
+            CordisError: With the message `WRONG_THREAD` when another thread calls, also
+                while step observers run, or with a message that says that a step
+                observer cannot call pycordis when a step observer calls.
         """
         if threading.get_ident() != self._owner:
-            if self._owner == _OBSERVING:
-                raise CordisError("a step observer cannot call pycordis")
             raise CordisError("WRONG_THREAD")
+        if self._observing:
+            raise CordisError("a step observer cannot call pycordis")
 
     def _run_step(self, fn: Callable[[], None]) -> None:
         """Run one queued callable, and report it when a callback is registered.
@@ -166,8 +163,8 @@ class Scheduler(ABC):
         A callback that raises an `Exception` is logged, and the others still run. While
         the callbacks run, every owner check fails.
         """
-        saved = self._owner
-        self._owner = _OBSERVING
+        saved = self._observing
+        self._observing = True
         try:
             for callback in tuple(self._observers.values()):
                 try:
@@ -175,7 +172,7 @@ class Scheduler(ABC):
                 except Exception:
                     _log.exception("a step observer raised")
         finally:
-            self._owner = saved
+            self._observing = saved
 
     @abstractmethod
     def submit(self, fn: Callable[[], None]) -> None:
@@ -499,7 +496,8 @@ def observe_steps(
     A step that raises sends its report, with `error` set, and then the exception
     propagates. A callback that raises an `Exception` is logged, and the other
     callbacks and later steps run. Callbacks run in registration order. A callback that
-    is added or removed during a report takes effect from the next step.
+    is removed during a report stops from the next step. A callback cannot add a
+    callback.
 
     A host subclass of `Scheduler` reports only the steps that it runs through the base
     class; a subclass that runs its own queue sends no reports.
