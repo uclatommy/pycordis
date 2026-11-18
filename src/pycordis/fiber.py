@@ -344,7 +344,7 @@ class Fiber:
         self.ctx.emit("internal/plugin", self)
         for name in self.inject:
             self._check_impl(name)
-        self._handle = parent.fiber.effect(
+        self._handle = parent._fiber.effect(
             self._attach, "ctx.use()", call_site=call_site
         )
 
@@ -383,7 +383,7 @@ class Fiber:
         while True:
             if fiber.runtime is not None and fiber.runtime.name:
                 return fiber.runtime.name
-            parent = fiber.parent.fiber
+            parent = fiber.parent._fiber
             if parent is fiber:
                 return "root"
             fiber = parent
@@ -691,7 +691,7 @@ class Fiber:
         """
         assert self.runtime is not None
         self.runtime.fibers.push(self)
-        self.parent.fiber._children[self] = None
+        self.parent._fiber._children[self] = None
         try:
             self._check_inject()
             self._refresh()
@@ -725,7 +725,7 @@ class Fiber:
         self._uid = None
         self.ctx.emit("internal/plugin", self)
         runtime = self.runtime
-        del self.parent.fiber._children[self]
+        del self.parent._fiber._children[self]
         runtime.fibers.delete(self)
         if not len(runtime.fibers):
             self.ctx._registry.unregister(runtime)
@@ -768,7 +768,7 @@ class Fiber:
             try:
                 accepted = impl.check(get_traceable(self.ctx, impl.value))
             except Exception as error:
-                impl.ctx.fiber.logger.error(
+                impl.ctx._fiber.logger.error(
                     "error while checking service %r", name, exc_info=error
                 )
                 accepted = False
@@ -839,7 +839,7 @@ class Fiber:
     async def _reload(self) -> None:
         self.committed = dict(self._store)
         for impl in self.committed.values():
-            if impl.ctx.fiber is self:
+            if impl.ctx._fiber is self:
                 continue
             impl.dependents.add(self)
         old_epoch = self._runner.epoch
@@ -911,7 +911,7 @@ class Fiber:
                 continue
             if impl.release is not None:
                 impl.release()
-            release = impl.ctx.fiber._release
+            release = impl.ctx._fiber._release
             if release is not None:
                 release()
         self.committed = None

@@ -280,7 +280,7 @@ class Entry:
         self.subgroup: EntryGroup | None = None
         self.subtree: EntryTree | None = None
         self._scheduler = loader.ctx.scheduler
-        self._owner = loader.ctx.fiber
+        self._owner = loader.ctx._fiber
         self._init_task: Deferred[None] | None = None
         self._disposing = False
         self._verdict: bool | None = None
@@ -510,7 +510,7 @@ class Entry:
         group_ctx = self.parent.ctx
         link = self._group_layers = InterceptLink(group_ctx)
         ctx = self._isolate(
-            group_ctx.bind_fiber(tree.ctx.fiber).intercept_through(link)
+            group_ctx.bind_fiber(tree.ctx._fiber).intercept_through(link)
         )
         self._home = (tree, group_ctx)
         if not self.inject:
@@ -555,7 +555,7 @@ class Entry:
                     'a class, or an object with an "apply" method'
                 )
         except Exception as error:
-            self.parent.tree.ctx.fiber.logger.error(error)
+            self.parent.tree.ctx._fiber.logger.error(error)
             return None
         return component
 

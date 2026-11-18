@@ -139,7 +139,6 @@ class Context:
 
     Attributes:
         scheduler: The scheduler that runs the work of the root context.
-        fiber: The fiber that owns the effects that this context registers.
     """
 
     def __init__(self, scheduler: Scheduler) -> None:
@@ -154,7 +153,7 @@ class Context:
         self._events = EventsService(scheduler)
         self._reflect = ReflectService(scheduler)
         self._registry = RegistryService(scheduler)
-        self.fiber = Fiber(self)
+        self._fiber = Fiber(self)
         self._logger = LoggerService(self)
         self._events.install(
             self,
@@ -165,7 +164,7 @@ class Context:
         self._events.install(self, "internal/update", _run_update_hooks, prepend=True)
 
     def __repr__(self) -> str:
-        return f"Context <{self.fiber.name}>"
+        return f"Context <{self._fiber.name}>"
 
     def _check_guarded(self, name: str) -> None:
         """Raise if a restriction on the def site makes `name` unreadable.
@@ -177,6 +176,20 @@ class Context:
         site = self if self._shadow is None else self._shadow
         if site._restrictions:
             raise CordisError(f'cannot read "{name}" in a restricted context')
+
+    @property
+    def fiber(self) -> Fiber:
+        """The fiber that owns the effects that this context registers.
+
+        Raises:
+            CordisError: If `restrict` added a restriction to this context without
+                binding it to a new fiber, so that this attribute would give the
+                fiber of a less-restricted ancestor. `use`, `inject`, and the other
+                methods that create a fiber do not trip this guard.
+        """
+        if self._restrictions is not self._fiber.ctx._restrictions:
+            raise CordisError('cannot read "fiber" in a restricted context')
+        return self._fiber
 
     @property
     def root(self) -> Self:
@@ -247,7 +260,7 @@ class Context:
             def guarded(fiber: Fiber, config: object, next_: Callable[[], Any]) -> Any:
                 return next_() if removed else listener(fiber, config, next_)
 
-            hooks = ctx.fiber.update_hooks
+            hooks = ctx._fiber.update_hooks
             remove = hooks.unshift(guarded) if options.prepend else hooks.push(guarded)
 
             def revert() -> None:
@@ -257,7 +270,7 @@ class Context:
 
             return revert
 
-        return ctx.fiber.effect(setup, 'ctx.on("internal/update")')
+        return ctx._fiber.effect(setup, 'ctx.on("internal/update")')
 
     @property
     def shadow(self) -> "Context | None":
@@ -455,7 +468,9 @@ class Context:
             TypeError: If `execute` returns an invalid effect.
         """
         with self.scheduler.call():
-            return self.fiber.effect(execute, label, call_site=CallSite.capture(skip=1))
+            return self._fiber.effect(
+                execute, label, call_site=CallSite.capture(skip=1)
+            )
 
     @owner_thread("scheduler")
     def use(self, component: Component, config: object = None) -> Fiber:
@@ -784,7 +799,7 @@ class Context:
         child = object.__new__(type(self))
         child.scheduler = self.scheduler
         child._root = self._root
-        child.fiber = self.fiber if fiber is None else fiber
+        child._fiber = self._fiber if fiber is None else fiber
         child._events = self._events
         child._reflect = self._reflect
         child._registry = self._registry
@@ -868,7 +883,12 @@ def restrict(
     `Context.shadow`): a mixin accessor is checked by the service name it forwards,
     not by its own name. A `ctx.provide`, `ctx.accessor`, or `ctx.mixin` call outside
     the provide rule raises from the call itself, so a component that makes the call
-    in its own setup fails to load with no effect installed.
+    in its own setup fails to load with no effect installed. `ctx.root`, `ctx.reflect`,
+    `ctx.registry`, and `ctx.events` raise `CordisError` on the result, and on every
+    context it derives, because each of them gives an unrestricted view of the whole
+    tree. `ctx.fiber` raises on the result itself, until a call such as `use` or
+    `inject` binds it to a fiber of its own: before that, the attribute would give the
+    fiber of the unrestricted or less-restricted context that `ctx` derives from.
 
     Args:
         ctx: The context to restrict.

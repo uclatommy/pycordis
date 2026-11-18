@@ -161,7 +161,7 @@ docs/
 ## Dependencies
 
 - **Sequence**: spec 1 of 4. The order is Pump Budget, [Step Reports](step_reports.md),
-  [Checked Get](checked_get.md), [Context Restriction](../context_restriction.md). Specs 1 and 2
+  [Checked Get](checked_get.md), [Context Restriction](context_restriction.md). Specs 1 and 2
   ship in `0.1.3`, before the breaking change of spec 3 in `0.2.0`, so that a host can adopt the
   budget and the step reports without the `ctx.get` change.
 - **Prerequisite**: none. The `0.1.3` release branch starts after `release/0.1.2` merges.

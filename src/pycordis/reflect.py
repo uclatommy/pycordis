@@ -103,7 +103,7 @@ def locate(ctx: "Context", name: str) -> Located | None:
         The provider, or `None` when no fiber admits the access.
     """
     realm = ctx.isolates.get(name)
-    fiber = ctx.fiber
+    fiber = ctx._fiber
     while True:
         for provision in fiber.provisions:
             if provision.name == name and provision.ctx.isolates.get(name) is realm:
@@ -115,12 +115,12 @@ def locate(ctx: "Context", name: str) -> Located | None:
             return Located(impl, fiber)
         if fiber.runtime is None:
             return None
-        fiber = fiber.parent.fiber
+        fiber = fiber.parent._fiber
 
 
 def _visible(impl: Impl | None, strict: bool) -> Impl | None:
     """Return `impl`, or `None` when `strict` hides it: its fiber is not `ACTIVE`."""
-    if impl is None or (strict and impl.ctx.fiber.state != FiberState.ACTIVE):
+    if impl is None or (strict and impl.ctx._fiber.state != FiberState.ACTIVE):
         return None
     return impl
 
@@ -218,7 +218,7 @@ class ReflectService:
             _check_read(site, accessor.source or name)
             return accessor.get(ctx, receiver)
         _check_read(site, name)
-        if site.fiber.runtime is None:
+        if site._fiber.runtime is None:
             return self.get(ctx, name, False)
         return ctx.waterfall(
             "internal/get", ctx, name, lambda: self._checked(ctx, site, name)
@@ -237,7 +237,7 @@ class ReflectService:
             (`root`, `root.isolate(...)`): a read from it is not checked.
         """
         site = _site(ctx)
-        return None if site.fiber.runtime is None else site
+        return None if site._fiber.runtime is None else site
 
     @owner_thread("scheduler")
     def admit(self, def_site: "Context", name: str) -> Located:
@@ -324,7 +324,7 @@ class ReflectService:
         name = key_name(key)
         site = _site(ctx)
         _check_read(site, name)
-        if site.fiber.runtime is None:
+        if site._fiber.runtime is None:
             return self.get(ctx, key, strict)
         impl = _visible(self.admit(site, name).impl, strict)
         return None if impl is None else get_traceable(ctx.use_site, impl.value)
@@ -354,7 +354,7 @@ class ReflectService:
         impl = self.find(ctx, name, False)
         if impl is None:
             raise CordisError(f'cannot set property "{name}" without provide')
-        if impl.ctx.fiber is not ctx.fiber:
+        if impl.ctx._fiber is not ctx._fiber:
             raise CordisError(f'cannot set property "{name}" in multiple fibers')
         impl.value = value
 
@@ -381,7 +381,7 @@ class ReflectService:
                 has a provider, or `key` is an accessor.
         """
         name = key_name(key)
-        fiber = ctx.fiber
+        fiber = ctx._fiber
 
         def setup() -> Callable[[], Deferred[None]]:
             if name in self._accessors:
@@ -393,7 +393,7 @@ class ReflectService:
             taken = self._store.get(realm)
             if taken is not None:
                 raise CordisError(
-                    f'service "{name}" has been registered at <{taken.ctx.fiber.name}>'
+                    f'service "{name}" has been registered at <{taken.ctx._fiber.name}>'
                 )
             self._impl_counter += 1
             impl = Impl(self._impl_counter, name, ctx, value, realm, check=check)
@@ -471,7 +471,7 @@ class ReflectService:
 
             return remove
 
-        return ctx.fiber.effect(setup, f"ctx.accessor({json.dumps(name)})")
+        return ctx._fiber.effect(setup, f"ctx.accessor({json.dumps(name)})")
 
     @owner_thread("scheduler")
     def mixin(
@@ -496,7 +496,7 @@ class ReflectService:
             for attribute, name in list(entries):
                 yield self.accessor(ctx, name, self._forward(source_name, attribute))
 
-        return ctx.fiber.effect(setup, f"ctx.mixin({json.dumps(source_name)})")
+        return ctx._fiber.effect(setup, f"ctx.mixin({json.dumps(source_name)})")
 
     @owner_thread("scheduler")
     def bind[**P, R](self, ctx: "Context", callback: Callable[P, R]) -> Callable[P, R]:
@@ -529,7 +529,7 @@ class ReflectService:
             del self._store[impl.isolate]
         self.notify(ctx.isolate(impl.name, impl.isolate), [impl.name])
         with self.scheduler.call():
-            return start(self.scheduler, self._release(impl), fiber=ctx.fiber)
+            return start(self.scheduler, self._release(impl), fiber=ctx._fiber)
 
     async def _release(self, impl: Impl) -> None:
         # Every removal waits at least one step, so that the unload of a child can still
@@ -540,7 +540,7 @@ class ReflectService:
             gate.resolve(None)
         await gate
         impl.release = None
-        impl.ctx.fiber.provisions.discard(impl)
+        impl.ctx._fiber.provisions.discard(impl)
 
     def _forward(self, source: str, attribute: str) -> Accessor:
         def get(ctx: "Context", receiver: object | None) -> Any:

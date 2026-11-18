@@ -291,7 +291,7 @@ class LoggerService(Service[LoggerIntercept]):
         """Return the logger for `name`, or for the caller when `name` is `None`."""
         if name is None:
             name = self.cordis_resolve_intercept().get("name")
-        fiber = self.cordis_caller.fiber if self.cordis_caller else self.ctx.fiber
+        fiber = self.cordis_caller._fiber if self.cordis_caller else self.ctx._fiber
         if name is None:
             name = fiber.name
         return Logger(logging.getLogger(f"pycordis.{name}"), fiber)

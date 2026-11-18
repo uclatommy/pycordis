@@ -1,6 +1,6 @@
 # Build Spec: Context Restriction
 
-**Status**: 🚧 In progress — Increment 4 of 5 complete; spec 4 of 4 (see [Dependencies](#dependencies))
+**Status**: ✅ Completed — spec 4 of 4 (see [Dependencies](#dependencies))
 
 **Reference**: [#8 Feature request: context view that restricts which keys a component can inject and provide](https://github.com/uclatommy/pycordis/issues/8)
 
@@ -106,7 +106,7 @@ docs/
 
 - **This repository**: `Context._derive` and the `_isolates` chain (how a table reaches every
   derived context); `Context.with_shadow`, `shadow`, and `use_site`, and the def-site rule in
-  `ReflectService.read`; `ReflectService.admit` from [Checked Get](completed/checked_get.md);
+  `ReflectService.read`; `ReflectService.admit` from [Checked Get](checked_get.md);
   `ReflectService.provide`, `accessor`, `mixin`, and `_forward`; `Fiber._attach` (its `except`
   that records the error and leaves the fiber `FAILED`); `Fiber._replace` (it sets `inject`
   again); `RegistryService.inject` and `run_inject_methods` (the paths that create fibers with
@@ -119,12 +119,12 @@ docs/
 - **Guard, not sandbox**: the `restrict` docstring has a `!!! warning` admonition that says the
   restriction does not stop hostile code, and that untrusted code must run in another process.
 - **No restriction, no change**: an unrestricted context keeps every result. The cost is one
-  empty check at each enforcement point (no allocation on the read path). The guarded attributes
-  are instance attributes today and become read-only properties; internal code reads private
-  names (`_root`, `_reflect`, `_registry`, `_events`), so the cost of a property is only on a
-  host or plugin read. The `Attributes:` entries in the `Context` docstring move to the property
-  docstrings. Assignment to these names was never documented, so a read-only property is not a
-  breaking change.
+  empty check at each enforcement point (no allocation on the read path). The guarded attributes,
+  and `fiber`, are instance attributes today and become read-only properties; internal code reads
+  private names (`_root`, `_reflect`, `_registry`, `_events`, `_fiber`), so the cost of a property
+  is only on a host or plugin read. The `Attributes:` entries in the `Context` docstring move to
+  the property docstrings. Assignment to these names was never documented, so a read-only
+  property is not a breaking change.
 - **Inject check, not a wait**: a fiber with an inject key outside the rule goes to `FAILED`. It
   does not stay `PENDING`, because a fiber that waits for a key it can never use would wait with
   no report. It loads again only through `update` or a replacement, as `LIFE-FAILURE` says. In
@@ -179,10 +179,15 @@ docs/
 
 - `pycordis/__init__.py` does not change (the feature flag). `pycordis.context` is not a public
   module.
-- The guarded attributes change only in a restricted context, which only the flagged API can
-  create, so the change is not breaking. Release: a patch increment in `0.2.x`, after
-  [Checked Get](completed/checked_get.md). If the audit needs a breaking change, that change goes in
-  `0.2.0` with Checked Get, or this spec waits for the next minor release.
+- The guarded attributes, and the `fiber` guard, change only in a restricted context, which
+  only the flagged API can create, so neither is breaking on its own.
+- **Breaking**: closing the `Loader` row of the audit (Increment 5) replaces
+  `Loader.cordis_tracker = Tracker(no_shadow=True)` with the default
+  `Tracker(property="ctx", associate="loader")` that every other `Service` already has. This
+  changes what a view gives for every caller, restricted or not: `root.get("loader").ctx` now
+  gives the reading context's use site, not the loader's own context object. `pycordis.loader`
+  is a public module, so this needs a minor increment: the release branch for this spec is
+  `release/0.2.0`, not a patch branch.
 - Promotion (an export, `Context.restrict` as a method, and a user guide section) is a separate
   change. A loader entry option for the restriction is a second divergence from the upstream
   loader schema and gets its own spec.
@@ -213,8 +218,9 @@ docs/
 - ✅ A method of an allowed service reads its own injected service and `self.ctx.registry` when
   the caller's rule does not list that service; its `self.ctx.provide` follows the caller's
   provide rule
-- ✅ `divergence("context-restriction")`: `ctx.root`, `ctx.reflect`, `ctx.registry`, and
-  `ctx.events` raise in a restricted context and work in an unrestricted one
+- ✅ `divergence("context-restriction")`: `ctx.root`, `ctx.reflect`, `ctx.registry`,
+  `ctx.events`, and `ctx.fiber` raise in a restricted context and work in an
+  unrestricted one
 - ✅ Each effect path that the audit closes has a test that the restricted component cannot
   register an effect that outlives it
 - ✅ An unrestricted context passes the full suite with no test change
@@ -236,12 +242,12 @@ docs/
 
 ## Dependencies
 
-- **Sequence**: spec 4 of 4. The order is [Pump Budget](completed/pump_budget.md),
-  [Step Reports](completed/step_reports.md), [Checked Get](completed/checked_get.md), Context Restriction.
+- **Sequence**: spec 4 of 4. The order is [Pump Budget](pump_budget.md),
+  [Step Reports](step_reports.md), [Checked Get](checked_get.md), Context Restriction.
 - **In parallel**: Increment 1 (the audit) is read-only. It runs while `feature/checked-get` is
   not merged to `develop`, and it is complete before `release/0.2.0` is cut, so that a breaking
   change it finds can join `0.2.0`.
-- **Prerequisite**: [Checked Get](completed/checked_get.md) (`ReflectService.admit` and the checked
+- **Prerequisite**: [Checked Get](checked_get.md) (`ReflectService.admit` and the checked
   `ctx.get`). Increments 2 to 5 start after Checked Get merges.
 - **Required by**: the later loader entry option.
 - **Runtime**: none.
@@ -422,14 +428,64 @@ names), `test_restrict.py` (~50)
 `uv run python`, each closed path in Appendix B gives `CordisError` from a restricted plugin
 **Docs**: `docs/architecture.md` row; review of every docstring in `context.py`, `reflect.py`,
 and `fiber.py`
-**Status**: ⏳ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `src/pycordis/loader/_service.py`: `Loader` no longer overrides `cordis_tracker` with
+  `Tracker(no_shadow=True)`; it keeps the `Tracker(property="ctx", associate="loader")`
+  that `Service.__init__` sets, so a read of `ctx["loader"].ctx` gives the use site, as
+  every other `Service` already gives
+- `src/pycordis/context.py`: `fiber` is a read-only property backed by the private
+  attribute `_fiber`; the property raises `CordisError` when this context's
+  restriction chain is not the one its own `_fiber`'s context carries, which happens
+  only when `restrict` added a restriction without binding a new fiber (`_derive` and
+  `bind_fiber` always resynchronize the two, so a component's own context, and
+  everything `extend`, `isolate`, `intercept`, or `with_shadow` derive from it, read
+  `fiber` with no change); `__init__`, `_derive`, `_route_update_listener`, and
+  `effect` read or set `_fiber` directly; the `restrict` docstring states the new
+  enforcement point
+- Internal reads of `ctx.fiber` move to `ctx._fiber` across `fiber.py`, `reflect.py`,
+  `registry.py`, `events.py`, `logger.py`, `timer.py`, `hmr/_service.py`, and
+  `loader/_entry.py`, `_service.py`, `_group.py`, `_tree.py`, so framework plumbing
+  that walks the fiber tree on behalf of a restricted context does not trip the guard
+- `docs/architecture.md`: the `context-restriction` divergence row, covering both the
+  guarded attributes from the previous increment and the `fiber` guard
+**Tests**:
+- `tests/test_restrict.py` (3 new cases): a bare `restrict` result raises on `fiber`;
+  a restricted component's own `fiber` is readable, but `fiber.parent.fiber` (the
+  audit's `fiber.parent.fiber.ctx` leak) raises; a restricted plugin's
+  `ctx["loader"].ctx` is the plugin's own context, not the loader's unrestricted one
+  (the audit's `Loader` row)
+- `test_a_guarded_attribute_raises_in_a_restricted_context_and_works_in_others` and the
+  two new fiber/loader tests carry `@pytest.mark.divergence("context-restriction")`,
+  which the row above now has evidence for
+- `uv run pytest tests/test_restrict.py tests/test_conformance.py`: 92 passed
+- Regression: `uv run pytest` (full suite): 1473 passed; no unmarked slow tests
+**Deviations**:
+- The `Loader` tracker fix changed what `loader.ctx` gives through an existing view in
+  two tests that were not in the spec's **Files** line:
+  `tests/test_loader_evaluate.py::test_a_new_inject_loads_the_component_again_with_a_new_outer_fiber`
+  and
+  `tests/test_loader_group.py::test_the_fiber_of_an_entry_is_a_child_of_the_fiber_of_its_tree`
+  asserted `... is loader.ctx.fiber` to mean the loader's own fiber; both now read
+  `loader.cordis_original.ctx.fiber` for that fiber, since `loader.ctx` is now the use
+  site, as every other `Service` already gives it. This is the same public-surface
+  change that Integration flags as needing `release/0.2.0`
+- The audit's "document" and "reject" rows (`get_original`, the internal event
+  listeners, `ctx.scheduler.submit`, the host-service def site, `runtime.fibers`,
+  `ctx.isolate` labels, `with_shadow`, the subject-fiber-only internal events) needed
+  no code change, as Appendix B already concluded
+**Manual validation**:
+- `uv run python -c`: a restricted plugin that injects `loader` and reads
+  `ctx["loader"].ctx` gets back its own context (`is ctx`), not the loader's; reading
+  `fiber.parent.fiber` on the plugin's own fiber raises `CordisError: cannot read
+  "fiber" in a restricted context`
 
 ## Code Standards
 
-- [Contributing](../contributing.md): the test and docstring standards, with the pull request
+- [Contributing](../../contributing.md): the test and docstring standards, with the pull request
   checklist
-- [Developer Guide](../developer_guide.md): branches, slow tests, and release rules
-- [Architecture](../architecture.md): the semantic contract (`LIFE-FAILURE`, `EFF-REVERT`,
+- [Developer Guide](../../developer_guide.md): branches, slow tests, and release rules
+- [Architecture](../../architecture.md): the semantic contract (`LIFE-FAILURE`, `EFF-REVERT`,
   `LIFE-CONFLUENT`) and the divergence table
 - The instruction files in `.github/instructions/`: Python Coding Standards (enforcement points,
   fail fast), Docstrings & Markdown Style, Testing Standards, and Upstream Porting (divergence
@@ -447,7 +503,7 @@ pycordis column, and #8 has a comment about it. The row goes to the divergence t
 
 | ID | Kind | Upstream | pycordis | Contract | Reason and evidence |
 |---|---|---|---|---|---|
-| `context-restriction` | improvement | No access rule; `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` are always public | `pycordis.context.restrict` gives a context whose inject keys, service and accessor reads and writes, and provide keys follow data rules, for every derived context; in a restricted context, `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise `CordisError` | `LIFE-FAILURE`, `EFF-REVERT` | A host states which services a plugin can use or replace. A restricted plugin cannot register an effect on the root, which would outlive the plugin. A guard, not a sandbox. Test: `divergence("context-restriction")` in `tests/test_restrict.py` |
+| `context-restriction` | improvement | No access rule; `ctx.root`, `ctx.reflect`, `ctx.registry`, `ctx.events`, and `ctx.fiber` are always public | `pycordis.context.restrict` gives a context whose inject keys, service and accessor reads and writes, and provide keys follow data rules, for every derived context; in a restricted context, `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise `CordisError`; `ctx.fiber` raises when `restrict` added a restriction without binding a new fiber, so that the attribute would otherwise give the fiber of a less-restricted ancestor | `LIFE-FAILURE`, `EFF-REVERT` | A host states which services a plugin can use or replace. A restricted plugin cannot register an effect on the root, or reach the root fiber through `fiber.parent.fiber`, which would outlive or exceed the plugin. A guard, not a sandbox. Test: `divergence("context-restriction")` in `tests/test_restrict.py` |
 
 ## Appendix B: Audit
 

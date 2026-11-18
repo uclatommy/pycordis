@@ -7,6 +7,7 @@ import pytest
 from pycordis.context import Context, Rule, restrict
 from pycordis.errors import CordisError
 from pycordis.fiber import Fiber, FiberState
+from pycordis.loader import Loader
 from pycordis.registry import inject as inject_method
 
 
@@ -309,6 +310,7 @@ def test_provide_accessor_or_mixin_outside_the_rule_fails_the_fiber(
     ],
     ids=["root", "reflect", "registry", "events"],
 )
+@pytest.mark.divergence("context-restriction")
 def test_a_guarded_attribute_raises_in_a_restricted_context_and_works_in_others(
     root: Context, read: Callable[[Context], object]
 ) -> None:
@@ -346,6 +348,47 @@ def test_on_and_emit_are_not_restricted(root: Context) -> None:
     restricted.emit("greet", "world")
 
     assert received == ["world"]
+
+
+def test_fiber_raises_when_restrict_has_not_bound_a_new_fiber(root: Context) -> None:
+    """`restrict` adds a restriction without creating a fiber of its own, so this
+    context's `fiber` would otherwise give the fiber of a less-restricted ancestor."""
+    restricted = restrict(root, inject=["other"])
+    with pytest.raises(CordisError, match="restricted context"):
+        _ = restricted.fiber
+
+
+@pytest.mark.divergence("context-restriction")
+def test_fiber_closes_the_leak_to_an_unrestricted_ancestor(root: Context) -> None:
+    """A restricted component's own fiber is readable; `fiber.parent.fiber`, which
+    used to give the host's unrestricted fiber, now raises instead."""
+    restricted = restrict(root, inject=["other"])
+    fiber = restricted.use(_no_deps)
+
+    assert fiber.ctx.fiber is fiber
+    with pytest.raises(CordisError, match="restricted context"):
+        _ = fiber.parent.fiber
+
+
+@pytest.mark.divergence("context-restriction")
+def test_a_restricted_plugin_reading_loader_ctx_gets_the_use_site(
+    root: Context,
+) -> None:
+    """Closes the `Loader` escape: `ctx['loader'].ctx` gives the use site, not the
+    loader's own unrestricted context."""
+    root.use(Loader)
+    restricted = restrict(root, inject=["loader"])
+    captured: dict[str, Context] = {}
+
+    def component(ctx: Context, config: object) -> None:
+        captured["own"] = ctx
+        captured["loader_ctx"] = ctx["loader"].ctx
+
+    component.inject = ["loader"]
+    fiber = restricted.use(component)
+
+    assert fiber.state == FiberState.ACTIVE
+    assert captured["loader_ctx"] is captured["own"]
 
 
 def test_a_restricted_fibers_provide_notifies_an_existing_dependent(

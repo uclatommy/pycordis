@@ -404,7 +404,7 @@ class RegistryService:
         forwarded = self._forward(component)
         if forwarded is None:
             raise _invalid(component)
-        ctx.fiber.assert_active()
+        ctx._fiber.assert_active()
         callback, target = forwarded
         runtime = self._internal.get(callback)
         if runtime is None:

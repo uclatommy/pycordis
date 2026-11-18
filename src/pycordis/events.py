@@ -178,7 +178,7 @@ class EventsService:
         """
         hooks = self._resolve("serial", name, args, this)
         with self.scheduler.call():
-            owner = hooks[0].ctx.fiber if hooks else None
+            owner = hooks[0].ctx._fiber if hooks else None
             return start(self.scheduler, self._serial(hooks, args), fiber=owner)
 
     @owner_thread("scheduler")
@@ -196,7 +196,7 @@ class EventsService:
         hooks = self._resolve("parallel", name, args, this)
         with self.scheduler.call():
             runs = [
-                start(self.scheduler, self._invoke(hook, args), fiber=hook.ctx.fiber)
+                start(self.scheduler, self._invoke(hook, args), fiber=hook.ctx._fiber)
                 for hook in hooks
             ]
             return start(self.scheduler, self._gather(runs, name))
@@ -271,7 +271,7 @@ class EventsService:
             if isinstance(options, EventOptions)
             else EventOptions(prepend=options)
         )
-        ctx.fiber.assert_active()
+        ctx._fiber.assert_active()
         listener = ctx._reflect.bind(ctx, listener)
         result = self.bail("internal/listener", ctx, name, listener, opts)
         if result:
@@ -378,7 +378,7 @@ class EventsService:
                 hooks.append(hook)
             return lambda: self._unregister(name, hook)
 
-        return ctx.fiber.effect(setup, label)
+        return ctx._fiber.effect(setup, label)
 
     def _unregister(self, name: EventName, hook: Hook) -> None:
         hook.removed = True

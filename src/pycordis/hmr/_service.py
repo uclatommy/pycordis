@@ -324,7 +324,7 @@ class Hmr(Service):
             [True]
             ```
         """
-        if self._is_nested(self.ctx.fiber):
+        if self._is_nested(self.ctx._fiber):
             nested = Deferred[ReloadResult]()
             nested.reject(
                 CordisError("cannot start a transaction inside another transaction")
@@ -337,7 +337,7 @@ class Hmr(Service):
             return start(
                 self.ctx.scheduler,
                 self._transaction(previous, done, changes),
-                fiber=self.ctx.fiber,
+                fiber=self.ctx._fiber,
             )
 
     def _is_nested(self, caller: Fiber) -> bool:
@@ -349,7 +349,7 @@ class Hmr(Service):
             return True
         fiber = caller
         while fiber not in running.moved:
-            parent = fiber.parent.fiber
+            parent = fiber.parent._fiber
             if parent is fiber:
                 return False
             fiber = parent
