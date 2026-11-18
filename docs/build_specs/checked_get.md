@@ -1,6 +1,6 @@
 # Build Spec: Checked Get
 
-**Status**: 📝 Draft — not started; spec 3 of 4 (see [Dependencies](#dependencies))
+**Status**: 🚧 In progress — Increment 1 complete; spec 3 of 4 (see [Dependencies](#dependencies))
 
 **Reference**: [#11 Make ctx.get check inject in a component's context](https://github.com/uclatommy/pycordis/issues/11)
 
@@ -15,21 +15,35 @@ tracks.
 ### One owner for admission
 
 `ctx[key]` admits a read through `locate` and the def-site rule in `ReflectService.read`.
-`ctx.get` has no check. After this spec, one `ReflectService` method owns the admission rule,
-and both reads call it.
+`ctx.get` has no check. After this spec, `ReflectService` owns the admission rule in two
+methods, and both reads call them.
 
 ```
-ReflectService.admit(ctx: Context, name: str) -> Located | None
-    # None: the def site has no fiber (a root context): the read is not checked
-    # Located: a fiber admits the read
-    # raises CordisError: no fiber admits the read
-Context.get(key, strict=True) -> T | None      # admit, then the lenient result of ReflectService.get
-ReflectService.get(ctx, key, strict=True)      # unchanged: the unchecked lookup
+ReflectService.def_site(ctx: Context) -> Context | None
+    # ctx.shadow or ctx; None when that context's fiber has no runtime (a root context)
+ReflectService.admit(def_site: Context, name: str) -> Located
+    # raises CordisError (upstream text + note): no fiber admits the read
+ReflectService.read(ctx, key, receiver=None)    # def_site; None -> unchecked get;
+    # else the internal/get waterfall, whose fallback calls admit
+ReflectService.checked_get(ctx, key, strict=True) -> Any
+    # def_site; None -> get; else admit, then Located.impl: None if missing,
+    # None if strict and its fiber is not ACTIVE, else the view for ctx.use_site
+Context.get(key, strict=True) -> T | None       # delegates to checked_get
+ReflectService.get(ctx, key, strict=True)       # unchanged: the unchecked store lookup
 ```
+
+The admission is split in two because `ctx[key]` decides the root shortcut before the
+`internal/get` waterfall and calls `locate` inside its fallback. A listener of `internal/get`
+sees an access that no fiber admits (`test_the_get_listener_sees_an_access_that_no_fiber_admits`
+in `tests/test_reflect.py`). `admit` must not move before the waterfall.
+
+After admission, `ctx.get` reads the provider that the admitting fiber committed
+(`Located.impl`), as `ctx[key]` does, not the current store. Between a provider change and the
+reload of the fiber, both reads give the committed provider (`LIFE-COHERENT`).
 
 ```mermaid
 flowchart LR
-    R["ctx[key]"] --> A["ReflectService.admit"]
+    R["ctx[key]"] --> A["def_site, then admit<br/>(ctx[key]: inside the internal/get fallback)"]
     G["ctx.get(key)"] --> A
     A -->|"root: no check"| L1["lookup"]
     A -->|"admitted"| L2["ctx[key]: value, or raise if not loaded<br/>ctx.get: value or None"]
@@ -46,24 +60,32 @@ has one enforcement point for reads.
 |---|---|---|---|
 | No fiber in the chain injects or provides `key` | raises | value or `None` | raises |
 | Admitted, and the provider is loaded | value | value | value |
-| Admitted, and the declaring fiber is not loaded | raises | `None` | `None` |
+| Admitted, and the declaring fiber is not loaded | raises | the visible provider, or `None` | `None` |
 | Admitted, and the provider is hidden by `strict` | value | `None` | `None` |
+| Admitted, and the visible provider changed before the fiber reloads | committed provider | new provider | committed provider (`None` if `strict` hides it) |
 | A root context (`root`, `root.isolate(...)`) | unchecked | unchecked | unchecked |
+
+A read from a context that isolates `key` again (`ctx.isolate(key, label).get(key)`) is not
+admitted by an ancestor's `inject`: `locate` stops at the isolate. Both reads raise.
 
 ## File Structure
 
 ```
 src/pycordis/
-├── reflect.py          # MODIFY: admit; read uses it
-├── context.py          # MODIFY: get uses admit; docstring
+├── reflect.py          # MODIFY: def_site, admit, checked_get; read uses them
+├── context.py          # MODIFY: get delegates to checked_get; docstrings (get, provide example)
 ├── service.py          # MODIFY: docstring that names ctx.get
 ├── loader/_entry.py    # MODIFY: find_loader uses the unchecked lookup
-└── hmr/_service.py     # MODIFY: docstring on the nested-call view
+├── loader/_service.py  # REVIEW: docstring example ctx.get("loader")
+└── hmr/_service.py     # MODIFY: docstrings on the nested-call view (Hmr, reconcile)
 tests/
-├── test_reflect.py     # MODIFY: admission cases for ctx.get; divergence test
-└── (callers)           # MODIFY: tests that read with ctx.get from an undeclared context
+├── test_reflect.py         # MODIFY: admission cases for ctx.get; divergence test
+├── test_intercept.py       # MODIFY: the isolation-boundary case reads with ctx.reflect.get
+├── test_hmr_reconcile.py   # MODIFY: components that read hmr inject it
+├── test_loader_isolate.py  # MODIFY: loader.ctx.get("svc") reads with ctx.reflect.get
+└── test_loader.py          # CHECK: a group without a loader keeps its error message
 conformance/
-└── ledger.toml         # MODIFY: ReflectService.get and the affected loader cases
+└── ledger.toml         # MODIFY: ReflectService.get and the intercept isolation-boundary case
 docs/
 ├── user_guide.md       # MODIFY: "Services and dependencies", optional services
 └── architecture.md     # MODIFY: checked-get row; service-access row
@@ -72,27 +94,44 @@ docs/
 ## Implementation References
 
 - **This repository**: `ReflectService.read` and `_checked` (the def-site rule and the two
-  upstream messages); `locate` and `Located`; `ReflectService.get` and `find` (the lenient
+  upstream messages); the `internal/get` tests in `tests/test_reflect.py`; `locate` and `Located`; `ReflectService.get` and `find` (the lenient
   lookup); `Context.inject(deps, callback)` (the child fiber for an optional service);
   `CallSite.annotate` and the `error-notes` row (notes on an error); `find_loader` in
   `loader/_entry.py`.
 - **Upstream**: `ReflectService.get` and `_getImpl` in `packages/core/src/reflect.ts` (no inject
-  check). Upstream test uses of `ctx.get` from a component: `replace.spec.ts` ("reloads a
-  consumer of a replaced service": the consumer injects) and `intercept.spec.ts` ("stop
-  looking for injected config at an isolation boundary": an ancestor injects) keep their
-  results. `loader/tests/isolate.spec.ts` reads `fiber.ctx.get('bar')` from the test, outside the
-  component, in about 10 assertions.
+  check); the `get` trap of `ReflectService.handler` (the root shortcut before the
+  `internal/get` waterfall, `locate` in its fallback). Upstream test uses of `ctx.get` from a
+  component:
+    - `replace.spec.ts` ("reloads a consumer of a replaced service"): the consumer injects, and
+      the read is in `apply`, where the committed and the current provider are the same. The
+      result does not change.
+    - `intercept.spec.ts` ("stop looking for injected config at an isolation boundary"): the
+      read is from `ctx.isolate('foo', label)`, which the ancestor's `inject` does not admit. The
+      read raises; the translated test reads with `ctx.reflect.get`.
+    - `loader/tests/isolate.spec.ts` reads `fiber.ctx.get('bar')` from the test in 11
+      assertions, but every `fiber` is a `foo` entry that injects `bar`, so the results do not
+      change. The translations read `ctx["bar"]` in the component.
 
 ## Key Constraints
 
-- **One rule**: `admit` holds the def-site rule (`ctx.shadow` decides, as in `read`) and the
-  root shortcut. `read` and `Context.get` call it. No second copy of the rule exists.
+- **One rule**: `def_site` holds the def-site rule (`ctx.shadow` decides) and the root
+  shortcut; `admit` holds the `locate` call and the error. `read` and `checked_get` call them.
+  No second copy of the rule exists.
+- **Waterfall order**: in `read`, `admit` runs inside the `internal/get` fallback, so a listener
+  still sees an access that no fiber admits, and the existing `internal/get` tests in
+  `tests/test_reflect.py` pass with no change.
 - **Messages**: the error keeps the upstream text `cannot get property "<name>" without inject`
   (Critical Rule 8). The hint from the #11 feedback goes in a note with `add_note`, for both
   `ctx[key]` and `ctx.get`: declare the service in `inject`, or use `ctx.inject([...], callback)`
-  for an optional service. A test that checks the message is not changed by the note.
-- **Lenient after admission**: when a fiber admits the read, `ctx.get` keeps its result: `None`
-  when no provider is visible or `strict` hides the provider. Only an undeclared read raises.
+  for an optional service. A test that checks the message is not changed by the note. The
+  `in inactive context` error of `ctx[key]` gets no note.
+- **Lenient after admission**: when a fiber admits the read, `ctx.get` returns `None` where
+  `ctx[key]` raises: `Located.impl` is `None` (the declaring fiber is not loaded), or `strict`
+  hides it (its fiber is not `ACTIVE`). Only an undeclared read raises.
+- **Committed provider**: `checked_get` returns `Located.impl`, never a second lookup through
+  `find`. A read cannot see a provider that the fiber did not load against.
+- **Views**: `ctx.get` returns the view for `ctx.use_site`, as `ReflectService.get` does today;
+  `ctx[key]` returns the view for `ctx`. Keep both.
 - **No events**: `ctx.get` does not run the `internal/get` waterfall. Only `ctx[key]` does, as
   today.
 - **Accessors**: `ctx.get` does not read accessors, as today. A mixin accessor already admits
@@ -100,9 +139,14 @@ docs/
 - **Host lookup**: `ctx.reflect.get(ctx, key, strict)` stays unchecked. It is the documented way
   for a host to see which provider a component's context resolves.
 - **Internal callers**: `find_loader` reads the loader service from an entry context that does
-  not inject it, so it uses `ctx.reflect.get`. Find other callers with the full suite: every
-  test failure with the upstream message from a library path is a caller to change, and every one
-  from a test is a test to review.
+  not inject it, so it uses `ctx.reflect.get`. A run of the suite with a temporary checked
+  `Context.get` fails 6 tests: `test_loader.py` (`find_loader`), 3 in `test_hmr_reconcile.py`
+  (components read `hmr` with no inject), `test_loader_isolate.py` (`loader.ctx.get("svc")`
+  from the loader's own context), and the `test_intercept.py` isolation-boundary case. Run the
+  full suite again after the change: every failure with the upstream message from a library path
+  is a caller to change, and every one from a test is a test to review. A component error that
+  goes to `fiber.error` does not fail a test by itself, so also search `tests/` for `.get(` in
+  `apply` bodies.
 - **hmr**: `reconcile` finds a nested call through the service view that a component reads. The
   docstring and the user guide name `ctx.get("hmr")`. After this spec, the component must inject
   `hmr` (or an ancestor must); the docs say `ctx["hmr"]` and state that rule.
@@ -113,15 +157,26 @@ docs/
 
 - **Breaking change**: `Context.get` is exported and its documented behavior changes. The
   release branch is `release/0.2.0`, never a `0.1.x` patch. The release notes state the change
-  and the migration.
+  and the migration:
+    - An undeclared read: add the key to `inject`.
+    - An optional read: `ctx.inject([key], callback)`, so that the component does not wait for
+      the service.
+    - A read in another realm: `ctx.isolate(key, label).get(key)` raises, because an ancestor's
+      `inject` does not admit a read across the isolate. Use
+      `ctx.isolate(key, label).inject([key], callback)`.
+    - An admitted read returns the committed provider: `None` while the declaring fiber is not
+      loaded, and the committed provider until the fiber reloads after a provider change.
+    - A host probe: `ctx.reflect.get(ctx, key, strict)`.
 - The work goes on `feature/checked-get` from `develop`, and merges through a pull request.
 - `conformance/ledger.toml`:
     - `src/reflect.ts:ReflectService.get`: `divergence = "checked-get"`; the target is
       `pycordis.context.Context.get`, with a note that `ReflectService.get` is the unchecked
       lookup.
-    - The `loader/isolate.spec.ts` cases that read a component's context from outside:
-      `adapted` with `divergence = "checked-get"` and a note: the probe reads through
-      `ctx.reflect.get` and gives the upstream result.
+    - `intercept.spec.ts::Intercept::stop looking for injected config at an isolation
+      boundary`: `adapted` with `divergence = "checked-get"` and a note: the reader is not
+      admitted at the isolate, so the test reads through `ctx.reflect.get` and gives the
+      upstream result.
+    - The `loader/isolate.spec.ts` cases do not change.
     - No hash changes.
 
 ## Testing
@@ -130,16 +185,20 @@ docs/
   in the chain injects or provides raises `CordisError` with the upstream message and the note,
   where upstream returns the value
 - ✅ The rows of the results table in [Architecture](#results): one parametrized test over
-  `ctx[key]` and `ctx.get` for each row
+  `ctx[key]` and `ctx.get` for each row, including the provider change before a reload
+  (`contract("LIFE-COHERENT")`: both reads give the committed provider)
+- ✅ The existing `internal/get` tests in `tests/test_reflect.py` pass with no change (the
+  listener runs before admission)
 - ✅ A shadow context of a service method admits by the def site: a service reads its own
   injected service with `self.ctx.get(...)` when the caller does not inject it
 - ✅ Optional service: a component that reads `metrics` through `ctx.inject(["metrics"], ...)`
   loads with no provider, and its child fiber loads when `metrics` is provided (this test is the
-  example of the user guide section)
+  example of the user guide section); a parametrized case reads a service in another realm
+  through `ctx.isolate(key, label).inject([key], ...)`
 - ✅ `find_loader` works from an entry context that does not inject `loader`
-- ✅ The translated `loader/isolate.spec.ts` cases pass with `ctx.reflect.get` and carry their
-  `upstream` markers and the divergence marker
-- ✅ `replace.spec.ts` and `intercept.spec.ts` cases that use `ctx.get` pass with no change
+- ✅ The translated `intercept.spec.ts` isolation-boundary case passes with `ctx.reflect.get`,
+  and carries its `upstream` marker and `divergence("checked-get")`
+- ✅ The `replace.spec.ts` case and the `loader/isolate.spec.ts` cases pass with no change
 - ✅ `uv run pytest`, `uv run ruff check .`, and `uv run ruff format --check .` pass; the
   unmarked slow tests section of the full suite is empty
 
@@ -147,10 +206,14 @@ docs/
 
 - Docstrings: `Context.get` (the admission rule, the lenient result, the error and its note,
   the optional-service pattern with an example, and `ctx.reflect.get` for a host);
-  `Context.__getitem__` (it shares the rule); `ReflectService.admit` and `ReflectService.get`
-  (checked and unchecked); the `Service` docstring; the `Hmr` docstring on the nested-call view.
+  `Context.__getitem__` (it shares the rule); `ReflectService.def_site`, `admit`,
+  `checked_get`, and `get` (checked and unchecked); the `Service` docstring; the `Hmr` and
+  `reconcile` docstrings on the nested-call view and their examples; the `Context.provide` and
+  `Loader` examples that call `ctx.get`.
 - `docs/user_guide.md`, "Services and dependencies": both reads raise for an undeclared service;
-  a short subsection "Optional services" with the `ctx.inject` pattern; the hmr section names
+  a short subsection "Optional services" with the `ctx.inject` pattern, and the
+  `ctx.isolate(key, label).inject([key], callback)` form for a service in another realm; the
+  `Context.get` docstring names the same two forms; the hmr section names
   `ctx["hmr"]`.
 - `docs/architecture.md`: the `checked-get` row (see [Appendix A](#appendix-a-divergences)), and
   the `service-access` row no longer describes `ctx.get` as lenient.
@@ -174,19 +237,32 @@ docs/
 ## Migration Strategy
 
 ### Increment 1: One admission owner
-**Goal**: `ReflectService.admit` holds the admission rule, `ctx[key]` uses it, and its error
-carries the note; no read gives a different result.
+**Goal**: `ReflectService.def_site` and `admit` hold the admission rule, `ctx[key]` uses them,
+and its error carries the note; no read gives a different result.
 **Files**: `reflect.py` (~30), `test_reflect.py` (~40)
 **Validation**: `uv run pytest tests/test_reflect.py tests/test_shadow.py tests/test_traceable.py`;
 the full suite passes with no other change
-**Docs**: the `ReflectService.admit` and `ReflectService.read` docstrings
-**Status**: ⏳ Not started
+**Docs**: the `ReflectService.def_site`, `admit`, and `read` docstrings
+**Status**: ✅ Completed
+**Changed**:
+- `reflect.py`: `ReflectService.def_site` gives the shadow or the context, or `None` for a root context
+- `reflect.py`: `ReflectService.admit` calls `locate` and raises the upstream error with a note that names `inject` and `ctx.inject([...], callback)`
+- `reflect.py`: `read` uses `def_site` before the `internal/get` waterfall; `_checked` calls `admit` in its fallback and keeps the `in inactive context` error without a note
+**Tests**:
+- `test_reflect.py`: added `test_only_an_undeclared_access_names_both_declarations` (2 cases: the note, and no note on the `in inactive context` error), `test_the_def_site_decides_which_reads_are_checked` (4 cases), `test_a_fiber_admits_what_it_injects_or_provides` (2 cases)
+- `tests/test_reflect.py`, `tests/test_shadow.py`, `tests/test_traceable.py`: 87 passed; the existing `internal/get` tests did not change
+- Full suite: 1414 passed; `ruff check` and `ruff format --check` clean
+**Deviations**:
+- None
+**Manual validation**:
+- Confirmed in `uv run python`: an undeclared `ctx["metrics"]` raises the upstream message with the note, and `def_site` and `admit` give the expected contexts and fiber
 
 ### Increment 2: `ctx.get` admits
 **Goal**: `Context.get` raises for an undeclared read, every caller and test is migrated, and the
 divergence, ledger, and user guide are in place.
-**Files**: `context.py` (~20), `loader/_entry.py` (~3), `hmr/_service.py` (docstring),
-`service.py` (docstring), `test_reflect.py` (~80), the affected tests, `ledger.toml`,
+**Files**: `reflect.py` (`checked_get`, ~15), `context.py` (~20), `loader/_entry.py` (~3),
+`hmr/_service.py` and `service.py` (docstrings), `test_reflect.py` (~80), `test_intercept.py`,
+`test_hmr_reconcile.py`, `test_loader_isolate.py` (~15 together), `ledger.toml`,
 `architecture.md`, `user_guide.md` (~30)
 **Validation**: `uv run pytest`; manual: in `uv run python`, read an undeclared service with
 `ctx.get` in `apply`, check that `fiber.error` has the upstream message and the note, then
@@ -218,5 +294,5 @@ The maintainer approved this row on #8 and #11. It goes to the divergence table 
 
 | ID | Kind | Upstream | pycordis | Contract | Reason and evidence |
 |---|---|---|---|---|---|
-| `checked-get` | improvement | `ctx.get(name)` returns the provider that the context sees, with no inject check | In a component's context, `ctx.get(key)` admits the read as `ctx[key]` does, and raises `CordisError` when no fiber in the chain injects or provides `key`; a root context is not checked; `ctx.reflect.get(ctx, key)` is the unchecked lookup | `LIFE-ORDER`, `LIFE-COHERENT` | A read that is not declared is outside the lifecycle: its provider can revert under it, and a change of provider does not reload it. Test: `divergence("checked-get")` in `tests/test_reflect.py` |
+| `checked-get` | improvement | `ctx.get(name)` returns the provider that the context sees, with no inject check | In a component's context, `ctx.get(key)` admits the read as `ctx[key]` does, raises `CordisError` when no fiber in the chain injects or provides `key`, and returns the provider that the admitting fiber committed (`None` where `ctx[key]` raises for an unloaded fiber, or where `strict` hides it); a root context is not checked; `ctx.reflect.get(ctx, key)` is the unchecked lookup | `LIFE-ORDER`, `LIFE-COHERENT` | A read that is not declared is outside the lifecycle: its provider can revert under it, and a change of provider does not reload it. Test: `divergence("checked-get")` in `tests/test_reflect.py` |
 | `service-access` (existing row) | adaptation | — | Remove "`ctx.get(key)` (lenient)"; name `ctx.get(key)` as checked in a component's context, as `ctx[key]` is | — | — |

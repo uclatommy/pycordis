@@ -161,10 +161,11 @@ class ReflectService:
     ) -> Any:
         """Return `ctx[key]`: an accessor's value, or the value of a provider.
 
-        A context whose fiber runs a component reads a service only if the fiber, or an
-        ancestor of the fiber, injects it or provides it. The def site of `ctx` (see
-        `Context.shadow`) decides, and the root context reads without this check. A
-        service that has a `Tracker` is returned as a view for `ctx`.
+        A read of a service from a component's context must be admitted (see
+        `def_site` and `admit`); a root context reads without this check. The
+        `internal/get` listeners run before the admission, so they also see a read
+        that no fiber admits. A service that has a `Tracker` is returned as a view for
+        `ctx`.
 
         Args:
             ctx: The context that reads.
@@ -173,24 +174,67 @@ class ReflectService:
                 accessor.
 
         Raises:
-            CordisError: If no fiber admits the access, or the fiber that admits it is
+            CordisError: If no fiber admits the read, or the fiber that admits it is
                 not loaded.
         """
         name = key_name(key)
         accessor = self._accessors.get(name)
         if accessor is not None:
             return accessor.get(ctx, receiver)
-        def_site = ctx if ctx.shadow is None else ctx.shadow
-        if def_site.fiber.runtime is None:
+        site = self.def_site(ctx)
+        if site is None:
             return self.get(ctx, name, False)
         return ctx.waterfall(
-            "internal/get", ctx, name, lambda: self._checked(ctx, def_site, name)
+            "internal/get", ctx, name, lambda: self._checked(ctx, site, name)
         )
 
-    def _checked(self, ctx: "Context", def_site: "Context", name: str) -> Any:
+    @owner_thread("scheduler")
+    def def_site(self, ctx: "Context") -> "Context | None":
+        """Return the context whose fiber decides which services `ctx` can read.
+
+        That context is the shadow of `ctx` (see `Context.shadow`) when `ctx` has
+        one, so a service method reads what its own fiber declares, not what its
+        caller declares. Otherwise it is `ctx`.
+
+        Returns:
+            The def site, or `None` when its fiber is the fiber of a root context
+            (`root`, `root.isolate(...)`): a read from it is not checked.
+        """
+        site = ctx if ctx.shadow is None else ctx.shadow
+        return None if site.fiber.runtime is None else site
+
+    @owner_thread("scheduler")
+    def admit(self, def_site: "Context", name: str) -> Located:
+        """Return the fiber that admits a read of the service `name` from `def_site`.
+
+        A fiber admits the read when it, or an ancestor of it, declares `name` in
+        `inject` or provides `name` in the realm of `def_site`. A context that isolates
+        `name` again stops the search (see `locate`).
+
+        Args:
+            def_site: A context that `def_site` returns.
+            name: The service name.
+
+        Returns:
+            The admitting fiber and the provider that it committed.
+
+        Raises:
+            CordisError: If no fiber admits the read. A note on the error names the
+                two ways to declare the read.
+        """
         found = locate(def_site, name)
         if found is None:
-            raise CordisError(f'cannot get property "{name}" without inject')
+            error = CordisError(f'cannot get property "{name}" without inject')
+            error.add_note(
+                f'declare "{name}" in inject, or use ctx.inject(["{name}"], callback) '
+                "for an optional service"
+            )
+            raise error
+        return found
+
+    def _checked(self, ctx: "Context", def_site: "Context", name: str) -> Any:
+        """Admit `ctx[key]` and return its value; raise if the fiber is not loaded."""
+        found = self.admit(def_site, name)
         if found.impl is None:
             raise CordisError(
                 f'cannot get required service "{name}" in inactive context'

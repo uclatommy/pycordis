@@ -435,6 +435,84 @@ def test_the_get_listener_sees_an_access_that_no_fiber_admits(root: Context) -> 
     assert results == ['cannot get property "nope" without inject']
 
 
+@pytest.mark.parametrize(
+    ("declared", "notes"),
+    [
+        (
+            False,
+            [
+                'declare "metrics" in inject, or use ctx.inject(["metrics"], '
+                "callback) for an optional service"
+            ],
+        ),
+        (True, []),
+    ],
+)
+def test_only_an_undeclared_access_names_both_declarations(
+    root: Context, declared: bool, notes: list[str]
+) -> None:
+    if declared:
+        root.provide("metrics", 1)
+        fiber = root.inject(["metrics"], lambda ctx: None)
+        fiber.dispose()
+        reader = fiber.ctx
+    else:
+        reader = root.use(lambda ctx, config: None).ctx
+
+    with pytest.raises(CordisError) as caught:
+        reader["metrics"]
+
+    assert getattr(caught.value, "__notes__", []) == notes
+
+
+@pytest.mark.parametrize(
+    ("reader", "expected"),
+    [
+        ("root", None),
+        ("isolated root", None),
+        ("component", "component"),
+        ("shadowed root", "component"),
+    ],
+)
+def test_the_def_site_decides_which_reads_are_checked(
+    root: Context, reader: str, expected: str | None
+) -> None:
+    component = root.inject(["foo"], lambda ctx: None).ctx
+    readers = {
+        "root": root,
+        "isolated root": root.isolate("foo"),
+        "component": component,
+        "shadowed root": root.with_shadow(component),
+    }
+
+    site = root.reflect.def_site(readers[reader])
+
+    assert site is (None if expected is None else readers[expected])
+
+
+@pytest.mark.parametrize("declared", ["inject", "provide"])
+def test_a_fiber_admits_what_it_injects_or_provides(
+    root: Context, declared: str
+) -> None:
+    root.provide("foo", 1)
+    contexts: list[Context] = []
+
+    def component(ctx: Context, config: object) -> None:
+        if declared == "provide":
+            ctx.provide("bar", 2)
+        contexts.append(ctx)
+
+    fiber = root.use(SimpleNamespace(inject=["foo"], apply=component))
+    (ctx,) = contexts
+    name = "foo" if declared == "inject" else "bar"
+
+    found = root.reflect.admit(ctx, name)
+
+    assert found.impl is not None
+    assert found.impl.value == (1 if declared == "inject" else 2)
+    assert found.fiber is (fiber if declared == "inject" else None)
+
+
 def test_the_set_listener_wraps_a_write_to_a_service(root: Context) -> None:
     seen: list[object] = []
 
