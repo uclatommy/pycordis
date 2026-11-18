@@ -1127,6 +1127,7 @@ status = "ported"
 target = "pycordis.fiber.Fiber._reload"
 hash = "6682be41383a6c0e2f4dd813638eb3fab8c04b5409d2721294ef4af1ea92b7d6"
 mirror = true
+note = "The `start` calls pass the owner fiber for `observe_steps`; the control flow is unchanged."
 
 [items."src/fiber.ts:Fiber._replace"]
 status = "ported"
@@ -1143,12 +1144,14 @@ status = "ported"
 target = "pycordis.fiber.Fiber._set_epoch"
 hash = "59735115ed5aa5ae323f512a6a05f0d53e12784c93bfeac7d7bcf65ba5a148eb"
 mirror = true
+note = "The `start` calls pass the owner fiber for `observe_steps`; the control flow is unchanged."
 
 [items."src/fiber.ts:Fiber._unload"]
 status = "ported"
 target = "pycordis.fiber.Fiber._unload"
 hash = "521ea9721c196b3a1c1a51b78afe0d6eb6892e8487027f3ec5f81bcb3d527ebb"
 mirror = true
+note = "The `start` calls pass the owner fiber for `observe_steps`; the control flow is unchanged."
 
 [items."src/fiber.ts:Fiber._updateState"]
 status = "ported"

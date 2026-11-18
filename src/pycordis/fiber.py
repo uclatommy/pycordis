@@ -85,6 +85,7 @@ class _Runner:
     epoch: object
     collect: Callable[[Disposer], object]
     call_site: CallSite
+    label: str | None = None
 
 
 def _issues(error: Exception) -> list[Issue]:
@@ -232,8 +233,10 @@ class EffectHandle:
         runner: _Runner,
         dispose: Disposer,
         task: Deferred[None] | None,
+        fiber: "Fiber",
     ) -> None:
         self.meta = meta
+        self._fiber = fiber
         self._scheduler = scheduler
         self._runner = runner
         self._dispose = dispose
@@ -246,7 +249,12 @@ class EffectHandle:
         with self._scheduler.call():
             if self._task is None:
                 return self._dispose()
-            return spawn(self._scheduler, _then(self._task, self._dispose))
+            return spawn(
+                self._scheduler,
+                _then(self._task, self._dispose),
+                fiber=self._fiber,
+                label=self.meta.label,
+            )
 
     def __await__(self) -> Generator[Deferred[None], None, Disposer]:
         yield from (self._task or _hop()).__await__()
@@ -450,14 +458,16 @@ class Fiber:
             while inverses:
                 inverse = inverses.pop()
                 if pending is not None:
-                    pending = spawn(scheduler, _then(pending, inverse))
+                    pending = spawn(
+                        scheduler, _then(pending, inverse), fiber=self, label=label
+                    )
                     continue
                 result = inverse()
                 if result is not None:
                     pending = result
             return pending
 
-        runner = _Runner(execute, True, collect, site)
+        runner = _Runner(execute, True, collect, site, label)
         with scheduler.call():
             try:
                 task = self._execute(runner)
@@ -466,7 +476,7 @@ class Fiber:
                 raise
             if task is not None:
                 self._revert_on_failure(task, dispose, label)
-            handle = EffectHandle(scheduler, meta, runner, dispose, task)
+            handle = EffectHandle(scheduler, meta, runner, dispose, task, self)
             inverses.append(self._disposables.push(handle))
         if self._reverting and self._uid == 0:
             # EFF-REVERT, root-late-effect: this effect outlives the disposal that is
@@ -485,7 +495,7 @@ class Fiber:
             failed it.
         """
         with self._scheduler.call():
-            return start(self._scheduler, self._settle())
+            return start(self._scheduler, self._settle(), fiber=self)
 
     def __await__(self) -> Generator[Deferred[Self], None, Self]:
         return self.wait().__await__()
@@ -502,7 +512,7 @@ class Fiber:
             self.assert_active()
             self._revision += 1
             self._refresh()
-            return start(self._scheduler, self._restarted())
+            return start(self._scheduler, self._restarted(), fiber=self)
 
     @owner_thread("_scheduler")
     def update(self, config: object, no_save: bool = False) -> Deferred[None]:
@@ -559,7 +569,7 @@ class Fiber:
             if isinstance(result, Deferred):
                 return result
             if inspect.iscoroutine(result):
-                return start(self._scheduler, result)
+                return start(self._scheduler, result, fiber=self)
             return Deferred.resolved(None)
 
     @owner_thread("_scheduler")
@@ -598,7 +608,10 @@ class Fiber:
                 runner.collect(effect)
             elif inspect.iscoroutine(effect):
                 return spawn(
-                    scheduler, _noted(runner.call_site, _run_coroutine(runner, effect))
+                    scheduler,
+                    _noted(runner.call_site, _run_coroutine(runner, effect)),
+                    fiber=self,
+                    label=runner.label,
                 )
             elif isinstance(effect, Iterator):
                 _run_iterator(runner, effect)
@@ -608,6 +621,8 @@ class Fiber:
                     _noted(
                         runner.call_site, _run_async_iterator(runner, effect, epoch)
                     ),
+                    fiber=self,
+                    label=runner.label,
                 )
             else:
                 raise TypeError("Invalid effect")
@@ -635,11 +650,13 @@ class Fiber:
                 except Exception as error:
                     self._log_error(label, error)
 
-        spawn(self._scheduler, revert())
+        spawn(self._scheduler, revert(), fiber=self, label=label)
 
     def _log_failure(self, pending: Deferred[None] | None, label: str) -> None:
         if pending is not None:
-            spawn(self._scheduler, self._logged(pending, label))
+            spawn(
+                self._scheduler, self._logged(pending, label), fiber=self, label=label
+            )
 
     def _log_error(self, label: str, error: BaseException) -> None:
         self.logger.error("error while reverting effect %r", label, exc_info=error)
@@ -684,7 +701,7 @@ class Fiber:
 
     def _leave(self) -> Deferred[None]:
         with self._scheduler.call():
-            return start(self._scheduler, self._left())
+            return start(self._scheduler, self._left(), fiber=self)
 
     async def _left(self) -> None:
         assert self.runtime is not None
@@ -790,9 +807,9 @@ class Fiber:
 
         def transition() -> FiberState:
             if epoch != INACTIVE and old_epoch == INACTIVE:
-                self._inertia = start(self._scheduler, self._reload())
+                self._inertia = start(self._scheduler, self._reload(), fiber=self)
                 return FiberState.LOADING
-            self._inertia = start(self._scheduler, self._unload())
+            self._inertia = start(self._scheduler, self._unload(), fiber=self)
             return FiberState.UNLOADING
 
         self._update_state(transition)
@@ -821,7 +838,7 @@ class Fiber:
             if self._runner.epoch == old_epoch:
                 self._inertia = None
                 return None
-            self._inertia = start(self._scheduler, self._unload())
+            self._inertia = start(self._scheduler, self._unload(), fiber=self)
             return FiberState.UNLOADING
 
         self._update_state(transition)
@@ -852,7 +869,14 @@ class Fiber:
                 self._log_error(label, error)
                 continue
             if result is not None:
-                pending.append(spawn(self._scheduler, self._logged(result, label)))
+                pending.append(
+                    spawn(
+                        self._scheduler,
+                        self._logged(result, label),
+                        fiber=self,
+                        label=label,
+                    )
+                )
         for watcher in pending:
             await watcher
         self._reverting = False
@@ -874,7 +898,7 @@ class Fiber:
             if self._runner.epoch == INACTIVE:
                 self._inertia = None
                 return None
-            self._inertia = start(self._scheduler, self._reload())
+            self._inertia = start(self._scheduler, self._reload(), fiber=self)
             return FiberState.LOADING
 
         self._update_state(transition)

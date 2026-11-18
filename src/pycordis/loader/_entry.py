@@ -192,10 +192,15 @@ def new_id(taken: Mapping[str, object]) -> str:
             return identifier
 
 
-def run[T](scheduler: Scheduler, coroutine: Coroutine[Any, Any, T]) -> Deferred[T]:
-    """Run the first step of `coroutine` now, and complete the rest on `scheduler`."""
+def run[T](
+    scheduler: Scheduler, coroutine: Coroutine[Any, Any, T], fiber: Fiber
+) -> Deferred[T]:
+    """Run the first step of `coroutine` now, and complete the rest on `scheduler`.
+
+    `fiber` owns the task.
+    """
     with scheduler.call():
-        return start(scheduler, coroutine)
+        return start(scheduler, coroutine, fiber=fiber)
 
 
 def _same_mapping(a: Mapping[str, object], b: Mapping[str, object]) -> bool:
@@ -275,6 +280,7 @@ class Entry:
         self.subgroup: EntryGroup | None = None
         self.subtree: EntryTree | None = None
         self._scheduler = loader.ctx.scheduler
+        self._owner = loader.ctx.fiber
         self._init_task: Deferred[None] | None = None
         self._disposing = False
         self._verdict: bool | None = None
@@ -460,7 +466,9 @@ class Entry:
         if task is None:
             # the first step runs after this assignment: `_init` releases the task
             # before its component can start another load
-            task = self._init_task = spawn(self._scheduler, self._init(dispose_task))
+            task = self._init_task = spawn(
+                self._scheduler, self._init(dispose_task), fiber=self._owner
+            )
         try:
             await task
         finally:
@@ -468,7 +476,7 @@ class Entry:
             # can start another
             if self._init_task is task:
                 self._init_task = None
-        spawn(self._scheduler, self._announce())
+        spawn(self._scheduler, self._announce(), fiber=self._owner)
 
     async def _announce(self) -> None:
         """Tell the `loader` service to check its readers when the loader is idle."""

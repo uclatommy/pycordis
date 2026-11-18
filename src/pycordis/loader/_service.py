@@ -135,7 +135,7 @@ class Loader(EntryTree, Service):
         config = [
             own_options(item) if isinstance(item, Mapping) else item for item in data
         ]
-        return run(self.ctx.scheduler, self._read(config))  # type: ignore[arg-type]
+        return run(self.ctx.scheduler, self._read(config), self.ctx.fiber)  # type: ignore[arg-type]
 
     async def _read(self, config: list[Any]) -> None:
         await self.root.update(config)
@@ -158,7 +158,7 @@ class Loader(EntryTree, Service):
             A `Deferred` that completes when the whole tree is idle. A fiber that
             failed does not keep the wait open.
         """
-        return run(self.ctx.scheduler, self._settled())
+        return run(self.ctx.scheduler, self._settled(), self.ctx.fiber)
 
     async def _settled(self) -> None:
         while True:

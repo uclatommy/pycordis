@@ -237,7 +237,7 @@ class EntryTree(ABC):
         identifier = group.tree.ensure_id(owned)
         group.data.insert(len(group.data) if position is None else position, owned)
         group.tree.commit(EntryChange(identifier, group, None, own_options(owned)))
-        return run(self.ctx.scheduler, group.create(owned))
+        return run(self.ctx.scheduler, group.create(owned), self.ctx.fiber)
 
     def remove(self, identifier: str) -> None:
         """Remove an entry: dispose its fiber, and report the removal.
@@ -294,7 +294,7 @@ class EntryTree(ABC):
         owned = own_options(options, merged.get("group") is True)
         # `Entry.update` assigns the options before its first wait, so the change is
         # visible to `commit` when the call returns
-        task = run(self.ctx.scheduler, entry.update(owned, False, True))
+        task = run(self.ctx.scheduler, entry.update(owned, False, True), self.ctx.fiber)
         group = entry.parent
         if group.tree is not source.tree:
             source.tree.commit(EntryChange(legacy["id"], source, None, None, legacy))

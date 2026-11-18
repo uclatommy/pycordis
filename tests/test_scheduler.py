@@ -1,6 +1,8 @@
 """Tests for `Deferred`, tasks, `ImmediateScheduler`, and the `FakeClock` helper."""
 
 import gc
+import logging
+import random
 import threading
 import time
 import tracemalloc
@@ -13,10 +15,31 @@ from typing import Any
 
 import pytest
 from conftest import FakeClock
+from test_invariants import (
+    OPS,
+    SEEDS,
+    Probe,
+    build_pool,
+    keys_of,
+    random_ops,
+    run_schedule,
+    settle,
+    structure,
+)
 
+from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
-from pycordis.scheduler import FramePumpScheduler, ImmediateScheduler, Scheduler, spawn
+from pycordis.scheduler import (
+    FramePumpScheduler,
+    ImmediateScheduler,
+    Scheduler,
+    StepKind,
+    StepReport,
+    observe_steps,
+    spawn,
+)
+from pycordis.timer import CLOCK, ManualClock, ThreadingClock, TimerService
 
 Run = Callable[[Coroutine[Any, Any, Any]], Deferred[Any]]
 
@@ -524,6 +547,299 @@ def test_an_empty_pump_is_fast_and_allocates_nothing() -> None:
     ]
     if grown:  # interpreter noise on some platforms: warn, and let the timing gate
         warnings.warn(f"an empty pump allocated memory: {grown}", stacklevel=1)
+
+
+# Step reports
+
+
+class Stepper:
+    """A built-in scheduler with a counting clock, and a way to run its queue."""
+
+    def __init__(
+        self, kind: type[ImmediateScheduler] | type[FramePumpScheduler]
+    ) -> None:
+        self.clock = StepClock()
+        self.scheduler = kind(clock=self.clock)
+
+    def run(self) -> None:
+        if isinstance(self.scheduler, FramePumpScheduler):
+            self.scheduler.pump(100)
+        else:
+            with self.scheduler.call():
+                pass
+
+
+@pytest.fixture(params=[ImmediateScheduler, FramePumpScheduler])
+def stepper(request: pytest.FixtureRequest) -> Stepper:
+    return Stepper(request.param)
+
+
+def test_each_step_reports_its_kind_and_duration(stepper: Stepper) -> None:
+    scheduler = stepper.scheduler
+    reports: list[StepReport] = []
+    observe_steps(scheduler, reports.append)
+    clock = stepper.clock
+
+    async def body() -> None:
+        clock.step()
+        await gate
+        clock.step()
+        clock.step()
+
+    gate = Deferred[None]()
+    with scheduler.call():
+        spawn(scheduler, body())
+        scheduler.submit(clock.step)
+    stepper.run()
+    gate.resolve(None)
+    stepper.run()
+
+    assert [(r.kind, r.duration) for r in reports] == [
+        (StepKind.START, 1.0),
+        (StepKind.SUBMITTED, 1.0),
+        (StepKind.RESUME, 2.0),
+    ]
+    assert all(r.fiber is None and r.label is None for r in reports)
+
+
+def test_a_step_that_raises_reports_before_the_exception_propagates(
+    stepper: Stepper,
+) -> None:
+    scheduler = stepper.scheduler
+    reports: list[StepReport] = []
+    observe_steps(scheduler, reports.append)
+    failure = RuntimeError("step failed")
+
+    def fail() -> None:
+        raise failure
+
+    async def body() -> None:
+        raise ValueError("task failed")
+
+    with pytest.raises(RuntimeError, match="step failed"):
+        with scheduler.call():
+            scheduler.submit(fail)
+        stepper.run()
+    assert [(r.kind, r.error) for r in reports] == [(StepKind.SUBMITTED, failure)]
+
+    task = spawn(scheduler, body())
+    stepper.run()
+    assert [r.error for r in reports[1:]] == [None]
+    with pytest.raises(ValueError, match="task failed"):
+        task.result()
+
+
+def test_a_callback_that_raises_is_logged_and_later_work_runs(
+    stepper: Stepper, caplog: pytest.LogCaptureFixture
+) -> None:
+    seen: list[str] = []
+
+    def bad(report: StepReport) -> None:
+        raise RuntimeError("observer failed")
+
+    observe_steps(stepper.scheduler, bad)
+    observe_steps(stepper.scheduler, lambda report: seen.append("second"))
+    stepper.scheduler.submit(lambda: seen.append("a"))
+    stepper.scheduler.submit(lambda: seen.append("b"))
+    with caplog.at_level(logging.ERROR, logger="pycordis.scheduler"):
+        stepper.run()
+
+    assert seen == ["a", "second", "b", "second"]
+    assert "a step observer raised" in caplog.text
+
+
+def test_the_disposer_stops_reports_and_callbacks_run_in_registration_order(
+    stepper: Stepper,
+) -> None:
+    order: list[str] = []
+    stop_first = observe_steps(stepper.scheduler, lambda r: order.append("first"))
+    observe_steps(stepper.scheduler, lambda r: order.append("second"))
+
+    stepper.scheduler.submit(lambda: None)
+    stepper.run()
+    stop_first()
+    stop_first()
+    stepper.scheduler.submit(lambda: None)
+    stepper.run()
+
+    assert order == ["first", "second", "second"]
+
+
+def test_a_callback_can_submit_and_read_but_not_call_pycordis(
+    stepper: Stepper,
+) -> None:
+    scheduler = stepper.scheduler
+    outcome: list[str] = []
+    later: list[str] = []
+
+    def observer(report: StepReport) -> None:
+        if outcome:
+            return
+        outcome.append("seen")
+        scheduler.submit(lambda: later.append("ran"))
+        with pytest.raises(CordisError, match="step observer cannot call"):
+            observe_steps(scheduler, lambda r: None)
+        with pytest.raises(CordisError, match="step observer cannot call"):
+            scheduler.assert_owner()
+
+    observe_steps(scheduler, observer)
+    scheduler.submit(lambda: None)
+    stepper.run()
+    stepper.run()
+
+    assert later == ["ran"]
+    scheduler.assert_owner()  # the owner is restored
+
+
+def test_a_step_reads_no_clock_when_no_callback_is_registered(
+    stepper: Stepper,
+) -> None:
+    clock = stepper.clock
+    stepper.scheduler.submit(lambda: None)
+    stepper.run()
+    assert clock.reads == 0
+
+    stop = observe_steps(stepper.scheduler, lambda r: None)
+    stepper.scheduler.submit(lambda: None)
+    stepper.run()
+    assert clock.reads == 2
+    stop()
+    stepper.scheduler.submit(lambda: None)
+    stepper.run()
+    assert clock.reads == 2
+
+
+def _plugin_with_slow_effect(manual: ManualClock) -> Callable[[Context, object], None]:
+    async def slow() -> None:
+        manual.advance(0.02)
+
+    def plugin(ctx: Context, config: object) -> None:
+        ctx.effect(slow, "slow-effect")
+
+    return plugin
+
+
+def test_a_task_step_reports_its_fiber_and_its_effect_label() -> None:
+    manual = ManualClock()
+    pump = FramePumpScheduler(clock=manual.now)
+    root = Context(pump)
+    reports: list[StepReport] = []
+    observe_steps(pump, reports.append)
+
+    fiber = root.use(_plugin_with_slow_effect(manual))
+    pump.pump(100)
+
+    slow = [r for r in reports if r.label == "slow-effect" and r.duration > 0]
+    assert [(r.kind, r.fiber, r.duration) for r in slow] == [
+        (StepKind.START, fiber, pytest.approx(0.02))
+    ]
+    unlabeled = [r for r in reports if r.fiber is fiber and r.label is None]
+    assert unlabeled, "the load of the fiber reports its owner and no label"
+
+
+def test_an_inner_step_does_not_change_the_report_of_the_outer_step() -> None:
+    pump = FramePumpScheduler()
+    reports: list[StepReport] = []
+    observe_steps(pump, reports.append)
+
+    async def inner() -> None:
+        return None
+
+    def outer() -> None:
+        spawn(pump, inner())
+        pump.pump(1)
+
+    pump.submit(outer)
+    pump.pump(1)
+
+    assert [r.kind for r in reports] == [StepKind.START, StepKind.SUBMITTED]
+
+
+def test_a_timer_callback_through_a_threading_clock_reports_its_fiber_and_label(
+    scheduler: ImmediateScheduler,
+) -> None:
+    root = Context(scheduler)
+    clock = ThreadingClock(scheduler)
+    reports: list[StepReport] = []
+    ticks: list[int] = []
+
+    def plugin(ctx: Context, config: object) -> None:
+        ctx["interval"](lambda: ticks.append(1), 0.001)
+
+    plugin.inject = ["timer"]  # type: ignore[attr-defined]
+    try:
+        root.provide(CLOCK, clock)
+        root.use(TimerService)
+        fiber = root.use(plugin)
+        observe_steps(scheduler, reports.append)
+        scheduler.serve(lambda: bool(ticks), timeout=5)
+    finally:
+        clock.close(timeout=5)
+
+    claimed = [r for r in reports if r.label == "ctx.interval()"]
+    assert claimed
+    assert {(r.kind, r.fiber) for r in claimed} == {(StepKind.SUBMITTED, fiber)}
+
+
+def test_a_step_that_runs_several_timer_callbacks_reports_the_first(
+    scheduler: ImmediateScheduler,
+) -> None:
+    manual = ManualClock()
+    root = Context(scheduler)
+    root.provide(CLOCK, manual)
+    root.use(TimerService)
+
+    def plugin(ctx: Context, config: object) -> None:
+        ctx["timeout"](lambda: None, 1.0)
+        ctx["interval"](lambda: None, 2.0)
+
+    plugin.inject = ["timer"]  # type: ignore[attr-defined]
+    fiber = root.use(plugin)
+    reports: list[StepReport] = []
+    observe_steps(scheduler, reports.append)
+
+    scheduler.submit(lambda: manual.advance(5.0))
+
+    assert [(r.kind, r.fiber, r.label) for r in reports] == [
+        (StepKind.SUBMITTED, fiber, "ctx.timeout()")
+    ]
+
+
+@pytest.mark.contract("LIFE-CONFLUENT")
+@pytest.mark.divergence("step-reports")
+@pytest.mark.parametrize("seed", SEEDS)
+def test_an_observer_that_calls_pycordis_does_not_change_the_lifecycle_result(
+    seed: int,
+) -> None:
+    def execute(observe: bool) -> tuple[Any, list[str], list[str]]:
+        rng = random.Random(seed)
+        pump = FramePumpScheduler()
+        root = Context(pump)
+        refused: list[str] = []
+        names: list[str] = []
+
+        def observer(report: StepReport) -> None:
+            with pytest.raises(CordisError, match="step observer cannot call"):
+                root.get("a")
+            refused.append("refused")
+            if report.fiber is not None:
+                names.append(report.fiber.name)
+            if len(refused) == 1:
+                pump.submit(lambda: None)
+
+        if observe:
+            observe_steps(pump, observer)
+        slots = build_pool(Probe())
+        run_schedule(root, pump, slots, random_ops(rng, slots, OPS), rng, seed)
+        settle(pump, seed)
+        return structure(root, keys_of()), refused, names
+
+    plain, _, _ = execute(False)
+    observed, refused, names = execute(True)
+
+    assert refused, f"seed {seed}: the observer ran"
+    assert names, f"seed {seed}: the observer read a fiber name"
+    assert observed == plain, f"seed {seed}"
 
 
 # FakeClock

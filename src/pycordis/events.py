@@ -178,7 +178,8 @@ class EventsService:
         """
         hooks = self._resolve("serial", name, args, this)
         with self.scheduler.call():
-            return start(self.scheduler, self._serial(hooks, args))
+            owner = hooks[0].ctx.fiber if hooks else None
+            return start(self.scheduler, self._serial(hooks, args), fiber=owner)
 
     @owner_thread("scheduler")
     def parallel(
@@ -194,7 +195,10 @@ class EventsService:
         """
         hooks = self._resolve("parallel", name, args, this)
         with self.scheduler.call():
-            runs = [start(self.scheduler, self._invoke(hook, args)) for hook in hooks]
+            runs = [
+                start(self.scheduler, self._invoke(hook, args), fiber=hook.ctx.fiber)
+                for hook in hooks
+            ]
             return start(self.scheduler, self._gather(runs, name))
 
     @owner_thread("scheduler")

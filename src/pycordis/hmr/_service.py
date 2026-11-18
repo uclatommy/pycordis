@@ -333,7 +333,11 @@ class Hmr(Service):
         done = Deferred[None]()
         self._tail = done
         with self.ctx.scheduler.call():
-            return start(self.ctx.scheduler, self._transaction(previous, done, changes))
+            return start(
+                self.ctx.scheduler,
+                self._transaction(previous, done, changes),
+                fiber=self.ctx.fiber,
+            )
 
     def _is_nested(self, caller: Fiber) -> bool:
         """Tell whether a call from `caller` runs inside the running transaction."""

@@ -26,7 +26,7 @@ A host subclass that calls `super().__init__()` with no argument gets the defaul
 change does not break a subclass. A host that drives time with `pycordis.timer.ManualClock`
 passes `clock=manual_clock.now`, and both the timers and the budget then use one time source.
 
-[Step Reports](../step_reports.md) uses the same clock for the duration of a step.
+[Step Reports](step_reports.md) uses the same clock for the duration of a step.
 
 ### The budget
 
@@ -104,14 +104,14 @@ docs/
   not do that, for this reason. The docstrings state the rule: the clock measures work, and a
   blocking wait uses real time.
 - `ImmediateScheduler` takes the clock now, although no `ImmediateScheduler` method reads it in
-  this spec, so that [Step Reports](../step_reports.md) needs no second constructor change.
+  this spec, so that [Step Reports](step_reports.md) needs no second constructor change.
 
 ## Integration
 
 - No new export. `FramePumpScheduler`, `ImmediateScheduler`, and `Scheduler` are already
   exported. The new keyword arguments and the `pending` property add to the public API and break
   nothing.
-- Release: a patch increment. This spec and [Step Reports](../step_reports.md) ship in `0.1.3`.
+- Release: a patch increment. This spec and [Step Reports](step_reports.md) ship in `0.1.3`.
   The work is one increment, so it goes directly on `develop`.
 - `conformance/ledger.toml`: no change (no upstream item).
 - Issue #9: the accepted design said that `ImmediateScheduler` uses the injected clock for its
@@ -160,12 +160,12 @@ docs/
 
 ## Dependencies
 
-- **Sequence**: spec 1 of 4. The order is Pump Budget, [Step Reports](../step_reports.md),
+- **Sequence**: spec 1 of 4. The order is Pump Budget, [Step Reports](step_reports.md),
   [Checked Get](../checked_get.md), [Context Restriction](../context_restriction.md). Specs 1 and 2
   ship in `0.1.3`, before the breaking change of spec 3 in `0.2.0`, so that a host can adopt the
   budget and the step reports without the `ctx.get` change.
 - **Prerequisite**: none. The `0.1.3` release branch starts after `release/0.1.2` merges.
-- **Required by**: [Step Reports](../step_reports.md) (the scheduler clock).
+- **Required by**: [Step Reports](step_reports.md) (the scheduler clock).
 - **Runtime**: none (standard library: `time`).
 - **Dev**: none new.
 

@@ -285,6 +285,7 @@ def _run_logged(fiber: "Fiber", label: str, call: Callable[[], object]) -> None:
 
     A failed callback of one timer does not stop the other timers (`EFF-ISOLATE`).
     """
+    fiber.ctx.scheduler._claim_step(fiber, label)
     try:
         call()
     except Exception as error:

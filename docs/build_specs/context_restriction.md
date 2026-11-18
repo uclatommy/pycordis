@@ -186,7 +186,7 @@ docs/
 ## Dependencies
 
 - **Sequence**: spec 4 of 4. The order is [Pump Budget](completed/pump_budget.md),
-  [Step Reports](step_reports.md), [Checked Get](checked_get.md), Context Restriction.
+  [Step Reports](completed/step_reports.md), [Checked Get](checked_get.md), Context Restriction.
 - **In parallel**: Increment 1 (the audit) is read-only and runs during
   [Checked Get](checked_get.md), so that a breaking change it finds can join `0.2.0`.
 - **Prerequisite**: [Checked Get](checked_get.md) (`ReflectService.admit` and the checked

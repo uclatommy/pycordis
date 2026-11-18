@@ -159,7 +159,7 @@ docs/
 ## Dependencies
 
 - **Sequence**: spec 3 of 4. The order is [Pump Budget](completed/pump_budget.md),
-  [Step Reports](step_reports.md), Checked Get, [Context Restriction](context_restriction.md).
+  [Step Reports](completed/step_reports.md), Checked Get, [Context Restriction](context_restriction.md).
   `0.1.3` (specs 1 and 2) is released first, so that a host can take those without this
   breaking change.
 - **In parallel**: Increment 1 of [Context Restriction](context_restriction.md) (the audit) is

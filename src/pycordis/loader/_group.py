@@ -133,7 +133,11 @@ class EntryGroup:
         for key in dict.fromkeys([*old_map, *new_items]):
             if key in new_items:
                 runs.append(
-                    run(self.ctx.scheduler, self._create_logged(new_items[key]))
+                    run(
+                        self.ctx.scheduler,
+                        self._create_logged(new_items[key]),
+                        self.ctx.fiber,
+                    )
                 )
             else:
                 self.remove(key)  # type: ignore[arg-type]
@@ -181,7 +185,7 @@ class Group(EntryGroup):
 
     def _take(self, config: list[EntryOptions]) -> Any:
         # the group takes the update itself: it reconciles the children in place
-        return run(self.ctx.scheduler, self.update(config))
+        return run(self.ctx.scheduler, self.update(config), self.ctx.fiber)
 
     async def cordis_init(self) -> "AsyncIterator[Any]":
         """Remove the children when the group unloads, and load the children."""

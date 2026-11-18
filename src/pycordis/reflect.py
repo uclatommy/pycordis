@@ -414,7 +414,7 @@ class ReflectService:
             del self._store[impl.isolate]
         self.notify(ctx.isolate(impl.name, impl.isolate), [impl.name])
         with self.scheduler.call():
-            return start(self.scheduler, self._release(impl))
+            return start(self.scheduler, self._release(impl), fiber=ctx.fiber)
 
     async def _release(self, impl: Impl) -> None:
         # Every removal waits at least one step, so that the unload of a child can still
