@@ -76,11 +76,11 @@ class TestArguments:
         assert rule.admits(name) is admitted
 
 
-def _via_component(ctx: Context) -> Fiber:
+def _via_component(root: Context, ctx: Context) -> Fiber:
     return ctx.use(_needs_db)
 
 
-def _via_inject_method(ctx: Context) -> Fiber:
+def _via_inject_method(root: Context, ctx: Context) -> Fiber:
     class Owner:
         def __init__(self, ctx: Context, config: object) -> None:
             pass
@@ -93,13 +93,13 @@ def _via_inject_method(ctx: Context) -> Fiber:
     return owner.children[0]
 
 
-def _via_ctx_inject(ctx: Context) -> Fiber:
+def _via_ctx_inject(root: Context, ctx: Context) -> Fiber:
     return ctx.inject(["db"], lambda inner: None)
 
 
-def _via_replace(ctx: Context) -> Fiber:
+def _via_replace(root: Context, ctx: Context) -> Fiber:
     fiber = ctx.use(_no_deps)
-    ctx.registry.replace(_no_deps, _needs_db)
+    root.registry.replace(_no_deps, _needs_db)
     return fiber
 
 
@@ -114,12 +114,12 @@ def _via_replace(ctx: Context) -> Fiber:
     ],
 )
 def test_inject_outside_the_rule_fails_the_fiber(
-    root: Context, via: Callable[[Context], Fiber]
+    root: Context, via: Callable[[Context, Context], Fiber]
 ) -> None:
     restricted = restrict(root, inject=["other"])
     sibling = restricted.use(lambda ctx, config: None)
 
-    fiber = via(restricted)
+    fiber = via(root, restricted)
 
     assert fiber.state == FiberState.FAILED
     message = str(fiber.error)
@@ -297,3 +297,70 @@ def test_provide_accessor_or_mixin_outside_the_rule_fails_the_fiber(
     assert '"blocked"' in str(fiber.error)
     assert "allowed" in str(fiber.error)
     assert fiber.get_effects() == []
+
+
+@pytest.mark.parametrize(
+    "read",
+    [
+        lambda ctx: ctx.root,
+        lambda ctx: ctx.reflect,
+        lambda ctx: ctx.registry,
+        lambda ctx: ctx.events,
+    ],
+    ids=["root", "reflect", "registry", "events"],
+)
+def test_a_guarded_attribute_raises_in_a_restricted_context_and_works_in_others(
+    root: Context, read: Callable[[Context], object]
+) -> None:
+    value = read(root)
+    assert value is read(root)
+
+    restricted = restrict(root, inject=["other"])
+    with pytest.raises(CordisError, match="restricted context"):
+        read(restricted)
+
+
+def test_a_guarded_attribute_is_checked_at_the_def_site(root: Context) -> None:
+    unrestricted_service = root.inject(["db"], lambda ctx: None).ctx
+    restricted_caller = restrict(root, inject=["other"])
+
+    # the def site (the service's own context) is unrestricted: the caller's
+    # restriction does not apply
+    shadowed = restricted_caller.with_shadow(unrestricted_service)
+    assert shadowed.root is root
+
+    restricted_service = (
+        restrict(root, inject=["other"]).inject(["other"], lambda ctx: None).ctx
+    )
+
+    # the def site is restricted even though the caller (root) has no restriction
+    with pytest.raises(CordisError, match="restricted context"):
+        _ = root.with_shadow(restricted_service).root
+
+
+def test_on_and_emit_are_not_restricted(root: Context) -> None:
+    restricted = restrict(root, inject=["other"], provide=["other"])
+    received: list[str] = []
+
+    restricted.on("greet", lambda who: received.append(who))
+    restricted.emit("greet", "world")
+
+    assert received == ["world"]
+
+
+def test_a_restricted_fibers_provide_notifies_an_existing_dependent(
+    root: Context,
+) -> None:
+    restricted = restrict(root, provide=["svc"])
+    dependent = root.inject(["svc"], lambda inner: None)
+    assert dependent.state == FiberState.PENDING
+
+    def component(ctx: Context, config: object) -> None:
+        ctx.provide("svc", 1)
+
+    fiber = restricted.use(component)
+
+    assert fiber.state == FiberState.ACTIVE
+    # the dependent fiber reaches ACTIVE only if the restricted provider's fiber
+    # announces its new provision through `ReflectService.notify`
+    assert dependent.state == FiberState.ACTIVE

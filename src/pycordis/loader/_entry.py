@@ -178,7 +178,7 @@ def find_loader(ctx: Context) -> "Loader":
     Raises:
         CordisError: If no loader is provided.
     """
-    loader = ctx.reflect.get(ctx, "loader", strict=False)
+    loader = ctx._reflect.get(ctx, "loader", strict=False)
     if loader is None:
         raise CordisError("the loader service is not provided")
     return loader
@@ -489,7 +489,7 @@ class Entry:
                 pass  # the fiber has logged its own failure
         if not self.loader.busy():
             ctx = self.loader.ctx
-            ctx.reflect.notify(ctx, ["loader"])
+            ctx._reflect.notify(ctx, ["loader"])
 
     async def _init(self, dispose_task: Deferred[None] | None) -> None:
         if dispose_task is not None:
@@ -549,7 +549,7 @@ class Entry:
             component = tree.import_function(self.options["name"])
             if isinstance(component, Deferred):
                 component = await component
-            if tree.ctx.registry.resolve(component) is None:  # type: ignore[arg-type]
+            if tree.ctx._registry.resolve(component) is None:  # type: ignore[arg-type]
                 raise TypeError(
                     f"{self.options['name']!r} is not a component: expect a function, "
                     'a class, or an object with an "apply" method'

@@ -12,7 +12,7 @@ from types import MappingProxyType
 from typing import Any, Self
 
 from pycordis.deferred import Deferred
-from pycordis.errors import CallSite
+from pycordis.errors import CallSite, CordisError
 from pycordis.events import EventName, EventOptions, EventsService, Listener
 from pycordis.fiber import EffectForm, EffectHandle, Fiber, resolve_config
 from pycordis.keys import Keyable, key_name
@@ -139,40 +139,90 @@ class Context:
 
     Attributes:
         scheduler: The scheduler that runs the work of the root context.
-        root: The root context.
         fiber: The fiber that owns the effects that this context registers.
-        events: The service that stores the listeners of the root context. Every
-            derived context shares it.
-        reflect: The service that stores the providers and accessors of the root
-            context. Every derived context shares it.
-        registry: The service that records the loaded components of the root context.
-            Every derived context shares it.
     """
 
     def __init__(self, scheduler: Scheduler) -> None:
         self.scheduler = scheduler
-        self.root: Self = self
+        self._root: Self = self
         self._isolates: ChainMap[str, object] = ChainMap()
         self._intercepts: ChainMap[str, object] = ChainMap()
         self._meta: ChainMap[str, object] = ChainMap()
         self._restrictions: tuple[Restriction, ...] = ()
         self._shadow: Context | None = None
         self._use_site: Context | None = None
-        self.events = EventsService(scheduler)
-        self.reflect = ReflectService(scheduler)
-        self.registry = RegistryService(scheduler)
+        self._events = EventsService(scheduler)
+        self._reflect = ReflectService(scheduler)
+        self._registry = RegistryService(scheduler)
         self.fiber = Fiber(self)
         self._logger = LoggerService(self)
-        self.events.install(
+        self._events.install(
             self,
             "internal/config",
             lambda fiber, next_: resolve_config(fiber.runtime.config, next_()),
         )
-        self.events.install(self, "internal/listener", self._route_update_listener)
-        self.events.install(self, "internal/update", _run_update_hooks, prepend=True)
+        self._events.install(self, "internal/listener", self._route_update_listener)
+        self._events.install(self, "internal/update", _run_update_hooks, prepend=True)
 
     def __repr__(self) -> str:
         return f"Context <{self.fiber.name}>"
+
+    def _check_guarded(self, name: str) -> None:
+        """Raise if a restriction on the def site makes `name` unreadable.
+
+        A restricted plugin that merely injects a service cannot reach the root
+        context, or the services that store providers, listeners, or components,
+        through it: each of those gives an unrestricted view of the whole tree.
+        """
+        site = self if self._shadow is None else self._shadow
+        if site._restrictions:
+            raise CordisError(f'cannot read "{name}" in a restricted context')
+
+    @property
+    def root(self) -> Self:
+        """The root context.
+
+        Raises:
+            CordisError: In a restricted context.
+        """
+        self._check_guarded("root")
+        return self._root
+
+    @property
+    def events(self) -> EventsService:
+        """The service that stores the listeners of the root context.
+
+        Every derived context shares it.
+
+        Raises:
+            CordisError: In a restricted context.
+        """
+        self._check_guarded("events")
+        return self._events
+
+    @property
+    def reflect(self) -> ReflectService:
+        """The service that stores the providers and accessors of the root context.
+
+        Every derived context shares it.
+
+        Raises:
+            CordisError: In a restricted context.
+        """
+        self._check_guarded("reflect")
+        return self._reflect
+
+    @property
+    def registry(self) -> RegistryService:
+        """The service that records the loaded components of the root context.
+
+        Every derived context shares it.
+
+        Raises:
+            CordisError: In a restricted context.
+        """
+        self._check_guarded("registry")
+        return self._registry
 
     @property
     def logger(self) -> LoggerService:
@@ -181,7 +231,7 @@ class Context:
         Call it to get a `Logger`, or log through it directly. A call from a service
         method names the logger after the service. See `LoggerService`.
         """
-        return get_traceable(self, self.root._logger)
+        return get_traceable(self, self._root._logger)
 
     @staticmethod
     def _route_update_listener(
@@ -296,7 +346,7 @@ class Context:
         The default realm is shared by every context that does not isolate `name`. It is
         stored in the root context, so a later `isolate` call hides it.
         """
-        self.root._isolates.setdefault(name, object())
+        self._root._isolates.setdefault(name, object())
 
     @owner_thread("scheduler")
     def extend(self, **meta: object) -> Self:
@@ -439,7 +489,7 @@ class Context:
             ```
         """
         with self.scheduler.call():
-            return self.registry.use(
+            return self._registry.use(
                 self.use_site, component, config, CallSite.capture(skip=1)
             )
 
@@ -457,7 +507,7 @@ class Context:
             The new fiber.
         """
         with self.scheduler.call():
-            return self.registry.inject(
+            return self._registry.inject(
                 self.use_site, deps, callback, CallSite.capture(skip=1)
             )
 
@@ -476,7 +526,7 @@ class Context:
                 if the fiber that injects it is not loaded.
             TypeError: If `key` is neither a `Key` nor a `str`.
         """
-        return self.reflect.read(self, key)
+        return self._reflect.read(self, key)
 
     def __setitem__(self, key: Keyable[Any], value: Any) -> None:
         """Set the value of the accessor or the service `key`.
@@ -486,7 +536,7 @@ class Context:
                 `key` is provided.
             TypeError: If `key` is neither a `Key` nor a `str`.
         """
-        self.reflect.write(self, key, value)
+        self._reflect.write(self, key, value)
 
     @owner_thread("scheduler")
     def get[T](self, key: Keyable[T], strict: bool = True) -> T | None:
@@ -529,7 +579,7 @@ class Context:
             >>> fiber = root.use(apply)  # loads with no "metrics" provider
             ```
         """
-        return self.reflect.checked_get(self, key, strict)
+        return self._reflect.checked_get(self, key, strict)
 
     @owner_thread("scheduler")
     def set[T](self, key: Keyable[T], value: T) -> None:
@@ -538,7 +588,7 @@ class Context:
         Raises:
             CordisError: If no service `key` is provided.
         """
-        self.reflect.set(self, key, value)
+        self._reflect.set(self, key, value)
 
     @owner_thread("scheduler")
     def provide[T](
@@ -575,7 +625,7 @@ class Context:
             >>> remove()
             ```
         """
-        return self.reflect.provide(self.use_site, key, value, check)
+        return self._reflect.provide(self.use_site, key, value, check)
 
     @owner_thread("scheduler")
     def accessor(
@@ -600,7 +650,7 @@ class Context:
         Raises:
             CordisError: If `key` is already declared as a service or an accessor.
         """
-        return self.reflect.accessor(self.use_site, key, Accessor(get, set))
+        return self._reflect.accessor(self.use_site, key, Accessor(get, set))
 
     @owner_thread("scheduler")
     def mixin(
@@ -623,7 +673,7 @@ class Context:
         Raises:
             CordisError: If a property name is already declared.
         """
-        return self.reflect.mixin(self.use_site, source, mixins)
+        return self._reflect.mixin(self.use_site, source, mixins)
 
     @owner_thread("scheduler")
     def on(
@@ -657,7 +707,7 @@ class Context:
             >>> remove()
             ```
         """
-        return self.events.on(self.use_site, name, listener, options)
+        return self._events.on(self.use_site, name, listener, options)
 
     @owner_thread("scheduler")
     def once(
@@ -670,7 +720,7 @@ class Context:
 
         The arguments and the result are those of `on`.
         """
-        return self.events.once(self.use_site, name, listener, options)
+        return self._events.once(self.use_site, name, listener, options)
 
     @owner_thread("scheduler")
     def emit(self, name: EventName, *args: Any, this: object = None) -> None:
@@ -682,7 +732,7 @@ class Context:
             this: An object with a `cordis_filter(ctx)` method that selects the
                 listeners by the context that registered them.
         """
-        self.events.emit(name, *args, this=this)
+        self._events.emit(name, *args, this=this)
 
     @owner_thread("scheduler")
     def bail(self, name: EventName, *args: Any, this: object = None) -> Any:
@@ -691,7 +741,7 @@ class Context:
 
         The arguments are those of `emit`.
         """
-        return self.events.bail(name, *args, this=this)
+        return self._events.bail(name, *args, this=this)
 
     @owner_thread("scheduler")
     def serial(self, name: EventName, *args: Any, this: object = None) -> Deferred[Any]:
@@ -700,7 +750,7 @@ class Context:
         The arguments are those of `emit`. The result is a `Deferred` of the first
         result that is not `None` or `False`.
         """
-        return self.events.serial(name, *args, this=this)
+        return self._events.serial(name, *args, this=this)
 
     @owner_thread("scheduler")
     def parallel(
@@ -711,7 +761,7 @@ class Context:
         The arguments are those of `emit`. The `Deferred` rejects with an
         `ExceptionGroup` when any listener fails.
         """
-        return self.events.parallel(name, *args, this=this)
+        return self._events.parallel(name, *args, this=this)
 
     @owner_thread("scheduler")
     def waterfall(self, name: EventName, *args: Any, this: object = None) -> Any:
@@ -720,7 +770,7 @@ class Context:
         Each listener receives the other arguments and a `next` function that runs the
         rest of the chain. See `EventsService.waterfall`.
         """
-        return self.events.waterfall(name, *args, this=this)
+        return self._events.waterfall(name, *args, this=this)
 
     def _derive(
         self,
@@ -733,11 +783,11 @@ class Context:
     ) -> Self:
         child = object.__new__(type(self))
         child.scheduler = self.scheduler
-        child.root = self.root
+        child._root = self._root
         child.fiber = self.fiber if fiber is None else fiber
-        child.events = self.events
-        child.reflect = self.reflect
-        child.registry = self.registry
+        child._events = self._events
+        child._reflect = self._reflect
+        child._registry = self._registry
         child._isolates = isolates
         child._intercepts = intercepts
         child._meta = meta

@@ -1,6 +1,6 @@
 # Build Spec: Context Restriction
 
-**Status**: 🚧 In progress — Increment 3 of 5 complete; spec 4 of 4 (see [Dependencies](#dependencies))
+**Status**: 🚧 In progress — Increment 4 of 5 complete; spec 4 of 4 (see [Dependencies](#dependencies))
 
 **Reference**: [#8 Feature request: context view that restricts which keys a component can inject and provide](https://github.com/uclatommy/pycordis/issues/8)
 
@@ -369,7 +369,51 @@ names), `test_restrict.py` (~50)
 `ctx.root.provide(...)` and gets `CordisError`, and a host service method that reads
 `self.ctx.registry` works when that plugin calls it
 **Docs**: the docstrings of the guarded attributes and of `Context` (the `Attributes:` section)
-**Status**: ⏳ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `context.py`: `root`, `events`, `reflect`, and `registry` are read-only properties, backed
+  by the private attributes `_root`, `_events`, `_reflect`, and `_registry`; each property
+  calls `Context._check_guarded(name)`, which raises `CordisError` naming the attribute when
+  the def site (`self.shadow` when set, else `self`) carries any restriction. `_derive` and
+  `__init__` set the private attributes directly, so deriving a context never goes through
+  the guard. The `Context` docstring's `Attributes:` section keeps only `scheduler` and
+  `fiber`; each guarded property has its own docstring and a `Raises:` entry
+- `reflect.py`, `events.py`, `traceable.py`, `logger.py`, `fiber.py`, `hmr/_service.py`,
+  `loader/_entry.py`: every internal read of a guarded attribute moves to its private name
+  (`_root`, `_events`, `_reflect`, `_registry`), so framework plumbing that must act on behalf
+  of a restricted context's own fiber (registering a listener, admitting a read, notifying a
+  provider change, buffering a log record) does not trip the new guard
+**Tests**:
+- `test_restrict.py` (4 new cases): a parametrized case that each of `ctx.root`, `ctx.reflect`,
+  `ctx.registry`, and `ctx.events` raises `CordisError` in a restricted context and gives the
+  same value on every call in an unrestricted one; a case that the guard follows the def site,
+  not the use site, in both directions (mirrors
+  `test_a_shadowed_read_is_checked_at_the_def_site_not_the_use_site`); a case that `ctx.on` and
+  `ctx.emit` on a restricted context still register and call a listener, proving the internal
+  `events.py` read of `_reflect` (not the guarded `reflect` property) keeps `on`/`emit`
+  unrestricted; a case that a restricted component's `ctx.provide` reaches a dependent fiber
+  that already injects the service, proving the internal `fiber.py` reads of `_reflect` in
+  `_update_state`'s `announce` call keep a restricted provider's `internal/service`
+  notification working. Both of the last two were checked to fail against the guarded
+  `.reflect` property before the private-name fix, confirming they are not vacuous
+- `uv run pytest tests/test_restrict.py`: 37 passed
+- Regression: `uv run pytest` (full suite): 1470 passed; no unmarked slow tests
+**Deviations**:
+- `tests/test_restrict.py::_via_replace` called `ctx.registry.replace(...)` on the restricted
+  context under test, which the new guard on `registry` now rejects. The fix is in the test,
+  not the guard: a replacement is a host operation on the shared registry, so the helper now
+  takes the unrestricted `root` fixture alongside `ctx` and calls `root.registry.replace(...)`.
+  The other three `_via_*` helpers take the same two-argument shape for a uniform
+  `parametrize` signature, though only `_via_replace` uses `root`
+- The new guarded-attribute test does not carry `@pytest.mark.divergence("context-restriction")`:
+  Appendix A states that row joins `docs/architecture.md` in Increment 5, and
+  `test_conformance.py` rejects a marker with no matching row
+**Manual validation**:
+- `uv run python -c`: `plugin_ctx = restrict(root, inject=['db']); plugin_ctx.root.provide('x',
+  1)` raises `CordisError: cannot read "root" in a restricted context`; a service whose own
+  `self.ctx` is the host's unrestricted root reads `self.ctx.registry` without error when a
+  plugin restricted to `inject=['svc']` calls it through `inject(['svc'], ...)`, confirming the
+  guard follows the def site, not the use site
 
 ### Increment 5: Close the escape paths and close out
 **Goal**: every "close" row of Appendix B is closed, and the divergence row is in place.

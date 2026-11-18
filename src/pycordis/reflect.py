@@ -414,7 +414,7 @@ class ReflectService:
         the event only when its context uses the same realm of the name as `ctx`.
         """
         names = list(names)
-        for runtime in list(ctx.registry.values()):
+        for runtime in list(ctx._registry.values()):
             for fiber in list(runtime.fibers):
                 changed = False
                 for name in names:
@@ -428,7 +428,7 @@ class ReflectService:
                     fiber._refresh()
         for name in names:
             impl = self.find(ctx, name, False)
-            ctx.events.emit(
+            ctx._events.emit(
                 "internal/service",
                 name,
                 None if impl is None else impl.value,

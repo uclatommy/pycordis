@@ -272,7 +272,7 @@ class EventsService:
             else EventOptions(prepend=options)
         )
         ctx.fiber.assert_active()
-        listener = ctx.reflect.bind(ctx, listener)
+        listener = ctx._reflect.bind(ctx, listener)
         result = self.bail("internal/listener", ctx, name, listener, opts)
         if result:
             return result

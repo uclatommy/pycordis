@@ -469,7 +469,7 @@ class Hmr(Service):
         loaded = [name for name in old if name in accepted]
         return [
             _stale(exporters, old, accepted)
-            for exporters in find_components(loaded, self.ctx.registry).values()
+            for exporters in find_components(loaded, self.ctx._registry).values()
         ]
 
     def _import(self, item: _Stale, accepted: set[str]) -> None:
@@ -480,13 +480,13 @@ class Hmr(Service):
                 importlib.import_module(name)
             module = importlib.import_module(item.entry.module)
             value = item.entry.read(module)
-            if self.ctx.registry.resolve(value) is None:  # type: ignore[arg-type]
+            if self.ctx._registry.resolve(value) is None:  # type: ignore[arg-type]
                 raise CordisError(
                     f"invalid component at {item.entry.module}, expect function or "
                     f'object with an "apply" method, received {type(value).__name__}'
                 )
             item.replacement = value  # type: ignore[assignment]
-            if _holds_other_value(item, value, self.ctx.registry):  # type: ignore[arg-type]
+            if _holds_other_value(item, value, self.ctx._registry):  # type: ignore[arg-type]
                 item.skip = SkipReason.AMBIGUOUS_EXPORT
         except Exception as error:
             self._logger.warning(
@@ -524,7 +524,7 @@ class Hmr(Service):
 
     def _replace(self, applied: list[_Stale]) -> list[Fiber]:
         """Replace each component with its new value, and return the moved fibers."""
-        registry = self.ctx.registry
+        registry = self.ctx._registry
         fibers: list[Fiber] = []
         for item in applied:
             old, new = item.entry.value, item.replacement

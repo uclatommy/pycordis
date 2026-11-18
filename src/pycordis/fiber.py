@@ -332,7 +332,7 @@ class Fiber:
                 call_site=CallSite(()),
             )
             return
-        self._uid = parent.registry.next_uid()
+        self._uid = parent._registry.next_uid()
         self._state = FiberState.PENDING
         self.ctx = parent.bind_fiber(self)
         self._runner = _Runner(
@@ -676,7 +676,7 @@ class Fiber:
         if not inspect.isclass(callback):
             return callback(self.ctx, config)
         instance = callback(self.ctx, config)
-        self.ctx.registry.run_inject_methods(self.ctx, instance)
+        self.ctx._registry.run_inject_methods(self.ctx, instance)
         init = getattr(instance, "cordis_init", None)
         return None if init is None else init()
 
@@ -728,7 +728,7 @@ class Fiber:
         del self.parent.fiber._children[self]
         runtime.fibers.delete(self)
         if not len(runtime.fibers):
-            self.ctx.registry.unregister(runtime)
+            self.ctx._registry.unregister(runtime)
         self._set_epoch(INACTIVE)
         # `_reload` and `_unload` log their own errors, so `_inertia` never rejects
         while self._inertia is not None:
@@ -760,10 +760,10 @@ class Fiber:
         # the providers
         if old_state != FiberState.ACTIVE and self._state != FiberState.ACTIVE:
             return
-        self.ctx.reflect.announce(self)
+        self.ctx._reflect.announce(self)
 
     def _check_impl(self, name: str) -> None:
-        impl = self.ctx.reflect.find(self.ctx, name, True)
+        impl = self.ctx._reflect.find(self.ctx, name, True)
         if impl is not None and impl.check is not None:
             try:
                 accepted = impl.check(get_traceable(self.ctx, impl.value))
