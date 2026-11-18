@@ -62,28 +62,37 @@ def test_the_caller_and_the_shadow_of_a_view_are_separate(root: Context) -> None
     "shadow.spec.ts::Traceable caller::"
     "applies the service inject when entered from root"
 )
-def test_a_service_without_inject_cannot_read_a_service_when_entered_from_root(
-    root: Context,
+@pytest.mark.parametrize("read", ["item", "get"])
+@pytest.mark.parametrize("declared", [False, True], ids=["no-inject", "inject"])
+def test_a_service_reads_what_it_injects_whatever_its_caller_injects(
+    root: Context, read: str, declared: bool
 ) -> None:
-    class Outer(Service[Any]):  # does not inject `inner`
+    class Outer(Service[Any]):
+        inject = ["inner"] if declared else []
+
         def __init__(self, ctx: Context, config: object = None) -> None:
             super().__init__(ctx, "outer")
 
         def probe(self) -> str:
-            return self.ctx["inner"].hello()
+            inner = self.ctx["inner"] if read == "item" else self.ctx.get("inner")
+            return inner.hello()
 
     root.use(Hello)
     root.use(Outer)
-    message = 'cannot get property "inner" without inject'
+    results: list[object] = []
 
-    with pytest.raises(CordisError, match=message):
-        root["outer"].probe()
+    def probe(outer: Any) -> None:
+        try:
+            results.append(outer.probe())
+        except CordisError as error:
+            results.append(str(error))
 
-    def reader(ctx: Context) -> None:
-        with pytest.raises(CordisError, match=message):
-            ctx["outer"].probe()
+    probe(root["outer"])
+    # the reader injects `outer` only
+    root.inject(["outer"], lambda ctx: probe(ctx["outer"]))
 
-    root.inject(["outer"], reader)
+    expected = "hello" if declared else 'cannot get property "inner" without inject'
+    assert results == [expected, expected]
 
 
 @pytest.mark.upstream(

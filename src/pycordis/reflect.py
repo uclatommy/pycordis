@@ -37,10 +37,16 @@ class Accessor:
             came, or `None` for a plain `ctx[key]`.
         set: Called with the context, the new value, and the receiver, or `None` for a
             read-only property.
+        source: The service name that a mixin forwards, or `None` for a plain
+            accessor. A read of the accessor is checked against this name instead of
+            the accessor's own name, so a restriction that admits `"timer"` but not
+            `"sleep"` still rejects `ctx["sleep"]` when `"sleep"` is a mixin of
+            `"timer"`.
     """
 
     get: Callable[["Context", Any], Any]
     set: Callable[["Context", Any, Any], None] | None = None
+    source: str | None = None
 
 
 @dataclass(eq=False, slots=True)
@@ -97,7 +103,7 @@ def locate(ctx: "Context", name: str) -> Located | None:
         The provider, or `None` when no fiber admits the access.
     """
     realm = ctx.isolates.get(name)
-    fiber = ctx.fiber
+    fiber = ctx._fiber
     while True:
         for provision in fiber.provisions:
             if provision.name == name and provision.ctx.isolates.get(name) is realm:
@@ -109,12 +115,38 @@ def locate(ctx: "Context", name: str) -> Located | None:
             return Located(impl, fiber)
         if fiber.runtime is None:
             return None
-        fiber = fiber.parent.fiber
+        fiber = fiber.parent._fiber
+
+
+def _visible(impl: Impl | None, strict: bool) -> Impl | None:
+    """Return `impl`, or `None` when `strict` hides it: its fiber is not `ACTIVE`."""
+    if impl is None or (strict and impl.ctx._fiber.state != FiberState.ACTIVE):
+        return None
+    return impl
 
 
 def _already_declared(name: str, declared: str) -> CordisError:
     """Return the error for a `name` that is already declared as `declared`."""
     return CordisError(f'property "{name}" is already declared as {declared}')
+
+
+def _site(ctx: "Context") -> "Context":
+    """Return the context whose restriction chain decides a read of `ctx`."""
+    return ctx if ctx.shadow is None else ctx.shadow
+
+
+def _check_read(site: "Context", name: str) -> None:
+    """Raise if a restriction on `site` rejects a read of `name`."""
+    rule = site._rejecting(name)
+    if rule is not None:
+        raise CordisError(f'cannot get property "{name}": {rule}')
+
+
+def _check_provide(ctx: "Context", name: str) -> None:
+    """Raise if a restriction on `ctx` rejects registering `name`."""
+    rule = ctx._rejecting(name, provide=True)
+    if rule is not None:
+        raise CordisError(f'cannot provide "{name}": {rule}')
 
 
 class _Filter:
@@ -161,10 +193,13 @@ class ReflectService:
     ) -> Any:
         """Return `ctx[key]`: an accessor's value, or the value of a provider.
 
-        A context whose fiber runs a component reads a service only if the fiber, or an
-        ancestor of the fiber, injects it or provides it. The def site of `ctx` (see
-        `Context.shadow`) decides, and the root context reads without this check. A
-        service that has a `Tracker` is returned as a view for `ctx`.
+        A read of a service from a component's context must be admitted (see
+        `def_site` and `admit`); a root context reads without this check. A
+        restriction on the def site (see `def_site`) is checked before either: a
+        plain accessor is checked by its own name, and a mixin accessor by the
+        service name it forwards (see `Accessor.source`). The `internal/get`
+        listeners run before the admission, so they also see a read that no fiber
+        admits. A service that has a `Tracker` is returned as a view for `ctx`.
 
         Args:
             ctx: The context that reads.
@@ -173,24 +208,69 @@ class ReflectService:
                 accessor.
 
         Raises:
-            CordisError: If no fiber admits the access, or the fiber that admits it is
-                not loaded.
+            CordisError: If a restriction rejects the read, if no fiber admits the
+                read, or if the fiber that admits it is not loaded.
         """
         name = key_name(key)
+        site = _site(ctx)
         accessor = self._accessors.get(name)
         if accessor is not None:
+            _check_read(site, accessor.source or name)
             return accessor.get(ctx, receiver)
-        def_site = ctx if ctx.shadow is None else ctx.shadow
-        if def_site.fiber.runtime is None:
+        _check_read(site, name)
+        if site._fiber.runtime is None:
             return self.get(ctx, name, False)
         return ctx.waterfall(
-            "internal/get", ctx, name, lambda: self._checked(ctx, def_site, name)
+            "internal/get", ctx, name, lambda: self._checked(ctx, site, name)
         )
 
-    def _checked(self, ctx: "Context", def_site: "Context", name: str) -> Any:
+    @owner_thread("scheduler")
+    def def_site(self, ctx: "Context") -> "Context | None":
+        """Return the context whose fiber decides which services `ctx` can read.
+
+        That context is the shadow of `ctx` (see `Context.shadow`) when `ctx` has
+        one, so a service method reads what its own fiber declares, not what its
+        caller declares. Otherwise it is `ctx`.
+
+        Returns:
+            The def site, or `None` when its fiber is the fiber of a root context
+            (`root`, `root.isolate(...)`): a read from it is not checked.
+        """
+        site = _site(ctx)
+        return None if site._fiber.runtime is None else site
+
+    @owner_thread("scheduler")
+    def admit(self, def_site: "Context", name: str) -> Located:
+        """Return the fiber that admits a read of the service `name` from `def_site`.
+
+        A fiber admits the read when it, or an ancestor of it, declares `name` in
+        `inject` or provides `name` in the realm of `def_site`. A context that isolates
+        `name` again stops the search (see `locate`).
+
+        Args:
+            def_site: A context that `def_site` returns.
+            name: The service name.
+
+        Returns:
+            The admitting fiber and the provider that it committed.
+
+        Raises:
+            CordisError: If no fiber admits the read. A note on the error names the
+                two ways to declare the read.
+        """
         found = locate(def_site, name)
         if found is None:
-            raise CordisError(f'cannot get property "{name}" without inject')
+            error = CordisError(f'cannot get property "{name}" without inject')
+            error.add_note(
+                f'declare "{name}" in inject, or use ctx.inject(["{name}"], callback) '
+                "for an optional service"
+            )
+            raise error
+        return found
+
+    def _checked(self, ctx: "Context", def_site: "Context", name: str) -> Any:
+        """Admit `ctx[key]` and return its value; raise if the fiber is not loaded."""
+        found = self.admit(def_site, name)
         if found.impl is None:
             raise CordisError(
                 f'cannot get required service "{name}" in inactive context'
@@ -217,13 +297,47 @@ class ReflectService:
         elif accessor.set is None:
             raise CordisError(f'property "{name}" is read-only')
         else:
+            _check_read(_site(ctx), accessor.source or name)
             accessor.set(ctx, value, receiver)
+
+    @owner_thread("scheduler")
+    def checked_get(
+        self, ctx: "Context", key: Keyable[Any], strict: bool = True
+    ) -> Any:
+        """Return `ctx.get(key, strict)`: the value of an admitted read, or `None`.
+
+        A read from a component's context must be admitted (see `def_site` and
+        `admit`), and a restriction on the def site is checked first, as for `ctx[key]`
+        (see `read`). It gives the provider that the admitting fiber committed, not the
+        provider that the store holds now, so it agrees with `ctx[key]`. A root context
+        reads without the admission check, as `get` does. A service that has a
+        `Tracker` is returned as a view for the use site of `ctx`.
+
+        Returns:
+            The value, or `None` when the fiber that declares `key` is not loaded, when
+            `strict` hides the provider, or, at a root context, when no provider is
+            visible.
+
+        Raises:
+            CordisError: If a restriction rejects the read, or no fiber admits it.
+        """
+        name = key_name(key)
+        site = _site(ctx)
+        _check_read(site, name)
+        if site._fiber.runtime is None:
+            return self.get(ctx, key, strict)
+        impl = _visible(self.admit(site, name).impl, strict)
+        return None if impl is None else get_traceable(ctx.use_site, impl.value)
 
     @owner_thread("scheduler")
     def get(self, ctx: "Context", key: Keyable[Any], strict: bool = True) -> Any:
         """Return the value of the service `key` that `ctx` sees, or `None`.
 
-        A service that has a `Tracker` is returned as a view for the use site of `ctx`.
+        This lookup is not checked: it reads the provider that the realm of `ctx` holds
+        now, whether or not a fiber declares the read. A host uses it to see which
+        provider a component's context resolves; a component reads with
+        `Context.get` or `ctx[key]`. A service that has a `Tracker` is returned as a
+        view for the use site of `ctx`.
         """
         impl = self.find(ctx, key_name(key), strict)
         return None if impl is None else get_traceable(ctx.use_site, impl.value)
@@ -240,7 +354,7 @@ class ReflectService:
         impl = self.find(ctx, name, False)
         if impl is None:
             raise CordisError(f'cannot set property "{name}" without provide')
-        if impl.ctx.fiber is not ctx.fiber:
+        if impl.ctx._fiber is not ctx._fiber:
             raise CordisError(f'cannot set property "{name}" in multiple fibers')
         impl.value = value
 
@@ -263,21 +377,23 @@ class ReflectService:
             service has left.
 
         Raises:
-            CordisError: If the realm already has a provider, or `key` is an accessor.
+            CordisError: If a restriction on `ctx` rejects `key`, the realm already
+                has a provider, or `key` is an accessor.
         """
         name = key_name(key)
-        fiber = ctx.fiber
+        fiber = ctx._fiber
 
         def setup() -> Callable[[], Deferred[None]]:
             if name in self._accessors:
                 raise _already_declared(name, "accessor")
+            _check_provide(ctx, name)
             self._services.add(name)
             ctx.declare_realm(name)
             realm = ctx.isolates[name]
             taken = self._store.get(realm)
             if taken is not None:
                 raise CordisError(
-                    f'service "{name}" has been registered at <{taken.ctx.fiber.name}>'
+                    f'service "{name}" has been registered at <{taken.ctx._fiber.name}>'
                 )
             self._impl_counter += 1
             impl = Impl(self._impl_counter, name, ctx, value, realm, check=check)
@@ -298,7 +414,7 @@ class ReflectService:
         the event only when its context uses the same realm of the name as `ctx`.
         """
         names = list(names)
-        for runtime in list(ctx.registry.values()):
+        for runtime in list(ctx._registry.values()):
             for fiber in list(runtime.fibers):
                 changed = False
                 for name in names:
@@ -312,7 +428,7 @@ class ReflectService:
                     fiber._refresh()
         for name in names:
             impl = self.find(ctx, name, False)
-            ctx.events.emit(
+            ctx._events.emit(
                 "internal/service",
                 name,
                 None if impl is None else impl.value,
@@ -337,7 +453,8 @@ class ReflectService:
         """Register `accessor` as the property `key` on the fiber of `ctx`.
 
         Raises:
-            CordisError: If `key` is already declared as a service or an accessor.
+            CordisError: If a restriction on `ctx` rejects `key`, or `key` is already
+                declared as a service or an accessor.
         """
         name = key_name(key)
 
@@ -346,6 +463,7 @@ class ReflectService:
                 raise _already_declared(name, "service")
             if name in self._accessors:
                 raise _already_declared(name, "accessor")
+            _check_provide(ctx, name)
             self._accessors[name] = accessor
 
             def remove() -> None:
@@ -353,7 +471,7 @@ class ReflectService:
 
             return remove
 
-        return ctx.fiber.effect(setup, f"ctx.accessor({json.dumps(name)})")
+        return ctx._fiber.effect(setup, f"ctx.accessor({json.dumps(name)})")
 
     @owner_thread("scheduler")
     def mixin(
@@ -365,7 +483,9 @@ class ReflectService:
         """Register an accessor for each attribute of the service `source`.
 
         An accessor reads or sets the attribute on the service value that the reading
-        context sees. It gives `None` while no provider is visible.
+        context sees. It gives `None` while no provider is visible. A restriction on
+        `ctx` checks each attribute name against its provide rule, and each read or
+        write of the accessor against `source`'s read rule (see `Accessor.source`).
         """
         source_name = key_name(source)
         entries = (
@@ -376,7 +496,7 @@ class ReflectService:
             for attribute, name in list(entries):
                 yield self.accessor(ctx, name, self._forward(source_name, attribute))
 
-        return ctx.fiber.effect(setup, f"ctx.mixin({json.dumps(source_name)})")
+        return ctx._fiber.effect(setup, f"ctx.mixin({json.dumps(source_name)})")
 
     @owner_thread("scheduler")
     def bind[**P, R](self, ctx: "Context", callback: Callable[P, R]) -> Callable[P, R]:
@@ -400,12 +520,7 @@ class ReflectService:
         With `strict`, a provider whose fiber is not `ACTIVE` gives `None`.
         """
         realm = ctx.isolates.get(name)
-        impl = None if realm is None else self._store.get(realm)
-        if impl is None:
-            return None
-        if strict and impl.ctx.fiber.state != FiberState.ACTIVE:
-            return None
-        return impl
+        return _visible(None if realm is None else self._store.get(realm), strict)
 
     def _remove(self, impl: Impl) -> Deferred[None]:
         """Unpublish `impl`, then wait until its dependents leave."""
@@ -414,7 +529,7 @@ class ReflectService:
             del self._store[impl.isolate]
         self.notify(ctx.isolate(impl.name, impl.isolate), [impl.name])
         with self.scheduler.call():
-            return start(self.scheduler, self._release(impl))
+            return start(self.scheduler, self._release(impl), fiber=ctx._fiber)
 
     async def _release(self, impl: Impl) -> None:
         # Every removal waits at least one step, so that the unload of a child can still
@@ -425,7 +540,7 @@ class ReflectService:
             gate.resolve(None)
         await gate
         impl.release = None
-        impl.ctx.fiber.provisions.discard(impl)
+        impl.ctx._fiber.provisions.discard(impl)
 
     def _forward(self, source: str, attribute: str) -> Accessor:
         def get(ctx: "Context", receiver: object | None) -> Any:
@@ -444,4 +559,4 @@ class ReflectService:
                 value,
             )
 
-        return Accessor(get, set_)
+        return Accessor(get, set_, source=source)

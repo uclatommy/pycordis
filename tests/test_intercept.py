@@ -86,6 +86,7 @@ def test_a_service_takes_the_injected_config_of_its_def_site(root: Context) -> N
     "intercept.spec.ts::Intercept::"
     "stop looking for injected config at an isolation boundary"
 )
+@pytest.mark.divergence("checked-get")
 def test_an_isolation_boundary_hides_the_injected_config(root: Context) -> None:
     Foo(root)
     label = object()
@@ -93,8 +94,9 @@ def test_an_isolation_boundary_hides_the_injected_config(root: Context) -> None:
     configs: list[dict[str, Any]] = []
 
     def reader(ctx: Context, _: object) -> None:
+        # no fiber admits a read across the isolate, so the reader probes the realm
         isolated = ctx.isolate("foo", label)
-        configs.append(isolated.get("foo").config())
+        configs.append(ctx.reflect.get(isolated, "foo").config())
 
     root.inject({"foo": {"a": 1}}, lambda ctx: ctx.use(reader))
 

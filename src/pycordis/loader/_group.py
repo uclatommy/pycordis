@@ -44,7 +44,7 @@ class EntryGroup:
     def __init__(self, ctx: Context, tree: "EntryTree") -> None:
         self.ctx = ctx
         self.tree = tree
-        self.entry: Entry | None = tree.loader.entry_of(ctx.fiber)
+        self.entry: Entry | None = tree.loader.entry_of(ctx._fiber)
         self.data: list[EntryOptions] = []
         if self.entry is not None:
             self.entry.subgroup = self
@@ -133,7 +133,11 @@ class EntryGroup:
         for key in dict.fromkeys([*old_map, *new_items]):
             if key in new_items:
                 runs.append(
-                    run(self.ctx.scheduler, self._create_logged(new_items[key]))
+                    run(
+                        self.ctx.scheduler,
+                        self._create_logged(new_items[key]),
+                        self.ctx._fiber,
+                    )
                 )
             else:
                 self.remove(key)  # type: ignore[arg-type]
@@ -144,7 +148,7 @@ class EntryGroup:
         try:
             await self.create(options)
         except Exception as error:
-            self.tree.ctx.fiber.logger.error(error)
+            self.tree.ctx._fiber.logger.error(error)
 
     def stop(self) -> None:
         """Dispose every entry of the group, and keep the options in `data`."""
@@ -172,7 +176,7 @@ class Group(EntryGroup):
     """
 
     def __init__(self, ctx: Context, config: Sequence[EntryOptions]) -> None:
-        entry = find_loader(ctx).entry_of(ctx.fiber)
+        entry = find_loader(ctx).entry_of(ctx._fiber)
         if entry is None:
             raise CordisError("Group must run as the component of an entry")
         super().__init__(ctx, entry.parent.tree)
@@ -181,7 +185,7 @@ class Group(EntryGroup):
 
     def _take(self, config: list[EntryOptions]) -> Any:
         # the group takes the update itself: it reconciles the children in place
-        return run(self.ctx.scheduler, self.update(config))
+        return run(self.ctx.scheduler, self.update(config), self.ctx._fiber)
 
     async def cordis_init(self) -> "AsyncIterator[Any]":
         """Remove the children when the group unloads, and load the children."""

@@ -86,9 +86,44 @@ stateDiagram-v2
     FAILED --> DISPOSED: dispose
 ```
 
-Read a service through the context: `ctx["db"]` raises `CordisError` when the component did
-not declare the service, and `ctx.get("db")` returns `None` when no provider is visible. A component receives its context and its configuration: `apply(ctx, config)`. A
+Read a service through the context, with `ctx["db"]` or `ctx.get("db")`. A component can read
+only a service that its fiber, or an ancestor fiber, declares in `inject` or provides. For any
+other service, both reads raise `CordisError`, and a note on the error names the two ways to
+declare the read. The two reads differ only when the fiber that declares the service is not
+loaded, or when `strict` hides a provider whose fiber is not `ACTIVE`: then `ctx["db"]` raises,
+and `ctx.get("db")` returns `None`. Both reads give the provider that the fiber loaded against,
+also after the provider changes, until the fiber loads again. A read from the root context is
+not checked.
+
+A component receives its context and its configuration: `apply(ctx, config)`. A
 `Key[Database]("db")` gives a type checker the type of the value.
+
+A host can see which provider a context resolves, with no check, through
+`ctx.reflect.get(ctx, "db")`.
+
+#### Optional services
+
+A component that can work without a service does not put the service in its own `inject`,
+because then the component waits for a provider. It reads the service in a child fiber that
+injects it. The child fiber loads when a provider is visible, and unloads when the provider goes
+away. The component itself loads at once.
+
+```python
+from pycordis import Context, ImmediateScheduler
+
+
+def apply(ctx: Context, config: object) -> None:
+    ctx.inject(["metrics"], lambda inner: print("metrics:", inner.get("metrics")))
+
+
+root = Context(ImmediateScheduler())
+fiber = root.use(apply)  # ACTIVE: the component does not wait for "metrics"
+root.provide("metrics", {"count": 0})  # prints "metrics: {'count': 0}"
+```
+
+For a service in another realm, isolate the name first:
+`ctx.isolate("metrics", label).inject(["metrics"], callback)`. An `inject` of an ancestor does
+not admit a read across an isolate, so `ctx.isolate("metrics", label).get("metrics")` raises.
 
 ### Failure
 
@@ -111,7 +146,28 @@ context.
 | Scheduler | Use it when |
 |---|---|
 | `ImmediateScheduler` | Tests and headless programs. Lifecycle work runs to completion when the outermost call returns. |
-| `FramePumpScheduler` | A host with a frame loop. Call `scheduler.pump(max_steps)` once per frame. A call runs at most `max_steps` steps and never blocks. |
+| `FramePumpScheduler` | A host with a frame loop. Call `scheduler.pump(max_steps)` or `scheduler.pump(budget=seconds)` once per frame. A call stops at its step limit or its time budget, and never blocks. |
+
+A frame loop that limits lifecycle work by time passes a budget, and reads `pending` to see
+whether steps remain:
+
+```python
+from pycordis import Context, FramePumpScheduler
+
+scheduler = FramePumpScheduler()
+root = Context(scheduler)
+
+
+def on_frame() -> None:
+    scheduler.pump(budget=0.002)  # no later step starts after 2 ms
+    if scheduler.pending:
+        ...  # work remains for the next frame
+```
+
+When the queue has work, the first step of a call always runs, so a frame can be late by at
+most one step. The budget measures the scheduler clock (`time.monotonic` by default). Pass
+`FramePumpScheduler(clock=manual_clock.now)` to use the clock of a `ManualClock`. A blocking
+wait, such as `ImmediateScheduler.serve`, uses real time.
 
 An asynchronous effect is an `async def` coroutine or an async generator that awaits only a
 `Deferred` or a `Fiber`. Use `fiber.wait()` to get a `Deferred` that completes when a fiber
@@ -396,8 +452,9 @@ These limits apply to every host:
 - The old imports of a module that was imported after the last transaction, and that changed
   before the next one, come from its new source. Call `reconcile` with no paths after the host
   loads modules to record them.
-- `reconcile` finds a nested call only through a view of the service that `ctx.get("hmr")`
-  returns. If a moved fiber waits for a call through another reference, the transaction does not
+- `reconcile` finds a nested call only through a view of the service that `ctx["hmr"]` returns.
+  A component that calls `reconcile` reads `hmr` this way, so it, or an ancestor, must inject
+  `hmr`. If a moved fiber waits for a call through another reference, the transaction does not
   end.
 
 ## Where to Go Next

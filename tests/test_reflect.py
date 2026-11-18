@@ -44,9 +44,13 @@ def test_a_key_and_its_name_select_the_same_service(
     assert root.get("foo") == 2
 
 
-def test_a_key_must_be_a_str_or_a_key(root: Context) -> None:
+@pytest.mark.parametrize("read", ["item", "get"])
+@pytest.mark.parametrize("reader", ["root", "component"])
+def test_a_key_must_be_a_str_or_a_key(root: Context, read: str, reader: str) -> None:
+    ctx = root if reader == "root" else root.use(lambda ctx, config: None).ctx
+
     with pytest.raises(TypeError):
-        root[1]  # type: ignore[index]
+        ctx[1] if read == "item" else ctx.get(1)  # type: ignore[index, arg-type]
 
 
 def test_a_service_that_nobody_provides_reads_as_none(root: Context) -> None:
@@ -433,6 +437,235 @@ def test_the_get_listener_sees_an_access_that_no_fiber_admits(root: Context) -> 
 
     assert names == ["nope"]
     assert results == ['cannot get property "nope" without inject']
+
+
+HINT = (
+    'declare "metrics" in inject, or use ctx.inject(["metrics"], callback) for an '
+    "optional service"
+)
+READS: dict[str, Callable[[Context], object]] = {
+    "item": lambda ctx: ctx["metrics"],
+    "get": lambda ctx: ctx.get("metrics"),
+}
+
+
+@pytest.mark.parametrize(
+    ("read", "declared", "notes"),
+    [
+        ("item", False, [HINT]),
+        pytest.param(
+            "get",
+            False,
+            [HINT],
+            marks=[
+                pytest.mark.divergence("checked-get"),
+                pytest.mark.contract("LIFE-ORDER"),
+            ],
+        ),
+        ("item", True, []),
+    ],
+)
+def test_only_an_undeclared_access_names_both_declarations(
+    root: Context, read: str, declared: bool, notes: list[str]
+) -> None:
+    # a sibling provides the service, so that no ancestor of the reader admits it
+    root.use(lambda ctx, config: ctx.provide("metrics", 1))
+    if declared:
+        fiber = root.inject(["metrics"], lambda ctx: None)
+        fiber.dispose()
+        reader = fiber.ctx
+    else:
+        reader = root.use(lambda ctx, config: None).ctx
+
+    with pytest.raises(CordisError) as caught:
+        READS[read](reader)
+
+    assert getattr(caught.value, "__notes__", []) == notes
+
+
+def outcome(call: Callable[[], object]) -> object:
+    """Return what `call` returns, or the message of the `CordisError` it raises."""
+    try:
+        return call()
+    except CordisError as error:
+        return str(error)
+
+
+def reads(ctx: Context) -> tuple[object, ...]:
+    """Read `foo` from `ctx` four ways.
+
+    The ways are `ctx[key]`, `ctx.get(key)`, `ctx.get(key, strict=False)`, and the
+    unchecked host lookup `ctx.reflect.get(ctx, key)`.
+    """
+    return (
+        outcome(lambda: ctx["foo"]),
+        outcome(lambda: ctx.get("foo")),
+        outcome(lambda: ctx.get("foo", strict=False)),
+        ctx.reflect.get(ctx, "foo"),
+    )
+
+
+def read_undeclared(root: Context) -> tuple[object, ...]:
+    # a sibling provides `foo`: a provision of the root would admit the read
+    root.use(lambda ctx, config: ctx.provide("foo", 1))
+    return reads(root.use(lambda ctx, config: None).ctx)
+
+
+def read_loaded(root: Context) -> tuple[object, ...]:
+    root.provide("foo", 1)
+    return reads(root.inject(["foo"], lambda ctx: None).ctx)
+
+
+def read_provided(root: Context) -> tuple[object, ...]:
+    seen: list[tuple[object, ...]] = []
+
+    def provider(ctx: Context, config: object) -> None:
+        ctx.provide("foo", 1)
+        # the fiber is still loading, so `strict` hides its own provision
+        seen.append(reads(ctx))
+
+    root.use(provider)
+    return seen[0]
+
+
+def read_unloaded(root: Context) -> tuple[object, ...]:
+    root.provide("foo", 1)
+    fiber = root.inject(["foo"], lambda ctx: None)
+    fiber.dispose()
+    return reads(fiber.ctx)
+
+
+def read_hidden(root: Context) -> tuple[object, ...]:
+    seen: list[tuple[object, ...]] = []
+    provider = root.use(lambda ctx, config: ctx.provide("foo", 1))
+    # the dependent unloads first, and reads while the provider's fiber disposes
+    root.inject(
+        ["foo"], lambda ctx: ctx.effect(lambda: lambda: seen.append(reads(ctx)))
+    )
+    provider.dispose()
+    return seen[0]
+
+
+def read_changed(root: Context) -> tuple[object, ...]:
+    remove = root.provide("foo", 1)
+    fiber = root.inject(["foo"], lambda ctx: None)
+    with root.scheduler.call():
+        remove()
+        root.provide("foo", 2)
+        # the fiber has not reloaded yet: it still resolves `foo` to the first provider
+        return reads(fiber.ctx)
+
+
+def read_across_an_isolate(root: Context) -> tuple[object, ...]:
+    root.provide("foo", 1)
+    return reads(root.inject(["foo"], lambda ctx: None).ctx.isolate("foo"))
+
+
+def read_root(root: Context) -> tuple[object, ...]:
+    root.provide("foo", 1)
+    return reads(root)
+
+
+def read_isolated_root(root: Context) -> tuple[object, ...]:
+    root.provide("foo", 1)
+    return reads(root.isolate("foo"))
+
+
+NO_INJECT = 'cannot get property "foo" without inject'
+INACTIVE = 'cannot get required service "foo" in inactive context'
+
+
+@pytest.mark.divergence("checked-get")
+@pytest.mark.parametrize(
+    ("scenario", "expected"),
+    [
+        (read_undeclared, (NO_INJECT, NO_INJECT, NO_INJECT, 1)),
+        (read_loaded, (1, 1, 1, 1)),
+        (read_provided, (1, None, 1, None)),
+        (read_unloaded, (INACTIVE, None, None, 1)),
+        (read_hidden, (1, None, 1, None)),
+        pytest.param(
+            read_changed, (1, 1, 1, 2), marks=pytest.mark.contract("LIFE-COHERENT")
+        ),
+        (read_across_an_isolate, (NO_INJECT, NO_INJECT, NO_INJECT, None)),
+        (read_root, (1, 1, 1, 1)),
+        (read_isolated_root, (None, None, None, None)),
+    ],
+    ids=lambda value: value.__name__.removeprefix("read_") if callable(value) else None,
+)
+def test_get_admits_a_read_as_an_item_access_does_and_returns_none_where_it_raises(
+    root: Context,
+    scenario: Callable[[Context], tuple[object, ...]],
+    expected: tuple[object, ...],
+) -> None:
+    assert scenario(root) == expected
+
+
+@pytest.mark.parametrize("realm", [None, object()], ids=["same-realm", "other-realm"])
+def test_a_child_fiber_reads_an_optional_service_without_holding_its_parent(
+    root: Context, realm: object | None
+) -> None:
+    seen: list[object] = []
+
+    def apply(ctx: Context, config: object) -> None:
+        scope = ctx if realm is None else ctx.isolate("metrics", realm)
+        scope.inject(["metrics"], lambda inner: seen.append(inner.get("metrics")))
+
+    fiber = root.use(apply)
+    assert (fiber.state, seen) == (FiberState.ACTIVE, [])
+
+    provider = root if realm is None else root.isolate("metrics", realm)
+    provider.provide("metrics", 1)
+
+    assert (fiber.state, seen) == (FiberState.ACTIVE, [1])
+
+
+@pytest.mark.parametrize(
+    ("reader", "expected"),
+    [
+        ("root", None),
+        ("isolated root", None),
+        ("component", "component"),
+        ("shadowed root", "component"),
+    ],
+)
+def test_the_def_site_decides_which_reads_are_checked(
+    root: Context, reader: str, expected: str | None
+) -> None:
+    component = root.inject(["foo"], lambda ctx: None).ctx
+    readers = {
+        "root": root,
+        "isolated root": root.isolate("foo"),
+        "component": component,
+        "shadowed root": root.with_shadow(component),
+    }
+
+    site = root.reflect.def_site(readers[reader])
+
+    assert site is (None if expected is None else readers[expected])
+
+
+@pytest.mark.parametrize("declared", ["inject", "provide"])
+def test_a_fiber_admits_what_it_injects_or_provides(
+    root: Context, declared: str
+) -> None:
+    root.provide("foo", 1)
+    contexts: list[Context] = []
+
+    def component(ctx: Context, config: object) -> None:
+        if declared == "provide":
+            ctx.provide("bar", 2)
+        contexts.append(ctx)
+
+    fiber = root.use(SimpleNamespace(inject=["foo"], apply=component))
+    (ctx,) = contexts
+    name = "foo" if declared == "inject" else "bar"
+
+    found = root.reflect.admit(ctx, name)
+
+    assert found.impl is not None
+    assert found.impl.value == (1 if declared == "inject" else 2)
+    assert found.fiber is (fiber if declared == "inject" else None)
 
 
 def test_the_set_listener_wraps_a_write_to_a_service(root: Context) -> None:

@@ -285,6 +285,7 @@ def _run_logged(fiber: "Fiber", label: str, call: Callable[[], object]) -> None:
 
     A failed callback of one timer does not stop the other timers (`EFF-ISOLATE`).
     """
+    fiber.ctx.scheduler._claim_step(fiber, label)
     try:
         call()
     except Exception as error:
@@ -497,7 +498,7 @@ class TimerService(Service):
             ValueError: If `delay` is negative.
         """
         _check_delay(delay)
-        fiber = self.ctx.fiber
+        fiber = self.ctx._fiber
 
         def fire() -> None:
             handle()
@@ -567,7 +568,7 @@ class TimerService(Service):
             ValueError: If `delay` is not positive.
         """
         _check_delay(delay, positive=True)
-        fiber = self.ctx.fiber
+        fiber = self.ctx._fiber
         return self._every(
             delay,
             lambda: _run_logged(fiber, "ctx.interval()", callback),
@@ -618,7 +619,7 @@ class TimerService(Service):
             ValueError: If `delay` is negative.
         """
         _check_delay(delay)
-        fiber = self.ctx.fiber
+        fiber = self.ctx._fiber
         clock = self._clock
         last = -math.inf
 
@@ -660,7 +661,7 @@ class TimerService(Service):
             ValueError: If `delay` is negative.
         """
         _check_delay(delay)
-        fiber = self.ctx.fiber
+        fiber = self.ctx._fiber
         clock = self._clock
 
         def trigger(*args: P.args, **kwargs: P.kwargs) -> Cancel:

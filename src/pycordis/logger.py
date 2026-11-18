@@ -137,7 +137,7 @@ class _BufferFilter(logging.Filter):
         # a record from a logger that is not a fiber logger has no fiber
         fiber: Fiber | None = getattr(record, _FIBER_ATTRIBUTE, None)
         if fiber is not None:
-            fiber.ctx.root._logger._buffer.add(record)
+            fiber.ctx._root._logger._buffer.add(record)
         return True
 
 
@@ -154,7 +154,7 @@ class _RootFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         # a record from a logger that is not a fiber logger has no fiber
         fiber: Fiber | None = getattr(record, _FIBER_ATTRIBUTE, None)
-        return fiber is not None and fiber.ctx.root is self._root
+        return fiber is not None and fiber.ctx._root is self._root
 
 
 class Logger(logging.LoggerAdapter[logging.Logger]):
@@ -273,7 +273,7 @@ class LoggerService(Service[LoggerIntercept]):
         Returns:
             The handle of the effect. Call it to detach the handler.
         """
-        root_filter = _RootFilter(self.ctx.root)
+        root_filter = _RootFilter(self.ctx._root)
 
         def attach() -> Any:
             handler.addFilter(root_filter)
@@ -291,7 +291,7 @@ class LoggerService(Service[LoggerIntercept]):
         """Return the logger for `name`, or for the caller when `name` is `None`."""
         if name is None:
             name = self.cordis_resolve_intercept().get("name")
-        fiber = self.cordis_caller.fiber if self.cordis_caller else self.ctx.fiber
+        fiber = self.cordis_caller._fiber if self.cordis_caller else self.ctx._fiber
         if name is None:
             name = fiber.name
         return Logger(logging.getLogger(f"pycordis.{name}"), fiber)

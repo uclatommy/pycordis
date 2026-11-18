@@ -85,6 +85,7 @@ class _Runner:
     epoch: object
     collect: Callable[[Disposer], object]
     call_site: CallSite
+    label: str | None = None
 
 
 def _issues(error: Exception) -> list[Issue]:
@@ -232,8 +233,10 @@ class EffectHandle:
         runner: _Runner,
         dispose: Disposer,
         task: Deferred[None] | None,
+        fiber: "Fiber",
     ) -> None:
         self.meta = meta
+        self._fiber = fiber
         self._scheduler = scheduler
         self._runner = runner
         self._dispose = dispose
@@ -246,7 +249,12 @@ class EffectHandle:
         with self._scheduler.call():
             if self._task is None:
                 return self._dispose()
-            return spawn(self._scheduler, _then(self._task, self._dispose))
+            return spawn(
+                self._scheduler,
+                _then(self._task, self._dispose),
+                fiber=self._fiber,
+                label=self.meta.label,
+            )
 
     def __await__(self) -> Generator[Deferred[None], None, Disposer]:
         yield from (self._task or _hop()).__await__()
@@ -324,7 +332,7 @@ class Fiber:
                 call_site=CallSite(()),
             )
             return
-        self._uid = parent.registry.next_uid()
+        self._uid = parent._registry.next_uid()
         self._state = FiberState.PENDING
         self.ctx = parent.bind_fiber(self)
         self._runner = _Runner(
@@ -336,7 +344,7 @@ class Fiber:
         self.ctx.emit("internal/plugin", self)
         for name in self.inject:
             self._check_impl(name)
-        self._handle = parent.fiber.effect(
+        self._handle = parent._fiber.effect(
             self._attach, "ctx.use()", call_site=call_site
         )
 
@@ -375,7 +383,7 @@ class Fiber:
         while True:
             if fiber.runtime is not None and fiber.runtime.name:
                 return fiber.runtime.name
-            parent = fiber.parent.fiber
+            parent = fiber.parent._fiber
             if parent is fiber:
                 return "root"
             fiber = parent
@@ -450,14 +458,16 @@ class Fiber:
             while inverses:
                 inverse = inverses.pop()
                 if pending is not None:
-                    pending = spawn(scheduler, _then(pending, inverse))
+                    pending = spawn(
+                        scheduler, _then(pending, inverse), fiber=self, label=label
+                    )
                     continue
                 result = inverse()
                 if result is not None:
                     pending = result
             return pending
 
-        runner = _Runner(execute, True, collect, site)
+        runner = _Runner(execute, True, collect, site, label)
         with scheduler.call():
             try:
                 task = self._execute(runner)
@@ -466,7 +476,7 @@ class Fiber:
                 raise
             if task is not None:
                 self._revert_on_failure(task, dispose, label)
-            handle = EffectHandle(scheduler, meta, runner, dispose, task)
+            handle = EffectHandle(scheduler, meta, runner, dispose, task, self)
             inverses.append(self._disposables.push(handle))
         if self._reverting and self._uid == 0:
             # EFF-REVERT, root-late-effect: this effect outlives the disposal that is
@@ -485,7 +495,7 @@ class Fiber:
             failed it.
         """
         with self._scheduler.call():
-            return start(self._scheduler, self._settle())
+            return start(self._scheduler, self._settle(), fiber=self)
 
     def __await__(self) -> Generator[Deferred[Self], None, Self]:
         return self.wait().__await__()
@@ -502,7 +512,7 @@ class Fiber:
             self.assert_active()
             self._revision += 1
             self._refresh()
-            return start(self._scheduler, self._restarted())
+            return start(self._scheduler, self._restarted(), fiber=self)
 
     @owner_thread("_scheduler")
     def update(self, config: object, no_save: bool = False) -> Deferred[None]:
@@ -559,7 +569,7 @@ class Fiber:
             if isinstance(result, Deferred):
                 return result
             if inspect.iscoroutine(result):
-                return start(self._scheduler, result)
+                return start(self._scheduler, result, fiber=self)
             return Deferred.resolved(None)
 
     @owner_thread("_scheduler")
@@ -598,7 +608,10 @@ class Fiber:
                 runner.collect(effect)
             elif inspect.iscoroutine(effect):
                 return spawn(
-                    scheduler, _noted(runner.call_site, _run_coroutine(runner, effect))
+                    scheduler,
+                    _noted(runner.call_site, _run_coroutine(runner, effect)),
+                    fiber=self,
+                    label=runner.label,
                 )
             elif isinstance(effect, Iterator):
                 _run_iterator(runner, effect)
@@ -608,6 +621,8 @@ class Fiber:
                     _noted(
                         runner.call_site, _run_async_iterator(runner, effect, epoch)
                     ),
+                    fiber=self,
+                    label=runner.label,
                 )
             else:
                 raise TypeError("Invalid effect")
@@ -635,11 +650,13 @@ class Fiber:
                 except Exception as error:
                     self._log_error(label, error)
 
-        spawn(self._scheduler, revert())
+        spawn(self._scheduler, revert(), fiber=self, label=label)
 
     def _log_failure(self, pending: Deferred[None] | None, label: str) -> None:
         if pending is not None:
-            spawn(self._scheduler, self._logged(pending, label))
+            spawn(
+                self._scheduler, self._logged(pending, label), fiber=self, label=label
+            )
 
     def _log_error(self, label: str, error: BaseException) -> None:
         self.logger.error("error while reverting effect %r", label, exc_info=error)
@@ -659,7 +676,7 @@ class Fiber:
         if not inspect.isclass(callback):
             return callback(self.ctx, config)
         instance = callback(self.ctx, config)
-        self.ctx.registry.run_inject_methods(self.ctx, instance)
+        self.ctx._registry.run_inject_methods(self.ctx, instance)
         init = getattr(instance, "cordis_init", None)
         return None if init is None else init()
 
@@ -674,27 +691,44 @@ class Fiber:
         """
         assert self.runtime is not None
         self.runtime.fibers.push(self)
-        self.parent.fiber._children[self] = None
+        self.parent._fiber._children[self] = None
         try:
+            self._check_inject()
             self._refresh()
         except Exception as error:
-            self.logger.error("error while loading", exc_info=error)
-            self._error = error
+            self._fail(error)
         return self._leave
+
+    def _check_inject(self) -> None:
+        """Raise if a restriction on `self.parent` rejects one of `self.inject`.
+
+        `self.parent` is the context that created the fiber, which is the use site
+        for inject (see `restrict`).
+        """
+        for name in self.inject:
+            rule = self.parent._rejecting(name)
+            if rule is not None:
+                raise CordisError(f'cannot inject "{name}": {rule}')
+
+    def _fail(self, error: BaseException) -> None:
+        """Record `error` as the reason the fiber cannot run, and report `FAILED`."""
+        self.logger.error("error while loading", exc_info=error)
+        self._error = error
+        self._update_state(lambda: None)
 
     def _leave(self) -> Deferred[None]:
         with self._scheduler.call():
-            return start(self._scheduler, self._left())
+            return start(self._scheduler, self._left(), fiber=self)
 
     async def _left(self) -> None:
         assert self.runtime is not None
         self._uid = None
         self.ctx.emit("internal/plugin", self)
         runtime = self.runtime
-        del self.parent.fiber._children[self]
+        del self.parent._fiber._children[self]
         runtime.fibers.delete(self)
         if not len(runtime.fibers):
-            self.ctx.registry.unregister(runtime)
+            self.ctx._registry.unregister(runtime)
         self._set_epoch(INACTIVE)
         # `_reload` and `_unload` log their own errors, so `_inertia` never rejects
         while self._inertia is not None:
@@ -726,15 +760,15 @@ class Fiber:
         # the providers
         if old_state != FiberState.ACTIVE and self._state != FiberState.ACTIVE:
             return
-        self.ctx.reflect.announce(self)
+        self.ctx._reflect.announce(self)
 
     def _check_impl(self, name: str) -> None:
-        impl = self.ctx.reflect.find(self.ctx, name, True)
+        impl = self.ctx._reflect.find(self.ctx, name, True)
         if impl is not None and impl.check is not None:
             try:
                 accepted = impl.check(get_traceable(self.ctx, impl.value))
             except Exception as error:
-                impl.ctx.fiber.logger.error(
+                impl.ctx._fiber.logger.error(
                     "error while checking service %r", name, exc_info=error
                 )
                 accepted = False
@@ -762,6 +796,11 @@ class Fiber:
         for name in self.inject:
             self._check_impl(name)
         self._error = None
+        try:
+            self._check_inject()
+        except Exception as error:
+            self._fail(error)
+            return
         self._revision += 1
         self._refresh()
 
@@ -790,9 +829,9 @@ class Fiber:
 
         def transition() -> FiberState:
             if epoch != INACTIVE and old_epoch == INACTIVE:
-                self._inertia = start(self._scheduler, self._reload())
+                self._inertia = start(self._scheduler, self._reload(), fiber=self)
                 return FiberState.LOADING
-            self._inertia = start(self._scheduler, self._unload())
+            self._inertia = start(self._scheduler, self._unload(), fiber=self)
             return FiberState.UNLOADING
 
         self._update_state(transition)
@@ -800,7 +839,7 @@ class Fiber:
     async def _reload(self) -> None:
         self.committed = dict(self._store)
         for impl in self.committed.values():
-            if impl.ctx.fiber is self:
+            if impl.ctx._fiber is self:
                 continue
             impl.dependents.add(self)
         old_epoch = self._runner.epoch
@@ -821,7 +860,7 @@ class Fiber:
             if self._runner.epoch == old_epoch:
                 self._inertia = None
                 return None
-            self._inertia = start(self._scheduler, self._unload())
+            self._inertia = start(self._scheduler, self._unload(), fiber=self)
             return FiberState.UNLOADING
 
         self._update_state(transition)
@@ -852,7 +891,14 @@ class Fiber:
                 self._log_error(label, error)
                 continue
             if result is not None:
-                pending.append(spawn(self._scheduler, self._logged(result, label)))
+                pending.append(
+                    spawn(
+                        self._scheduler,
+                        self._logged(result, label),
+                        fiber=self,
+                        label=label,
+                    )
+                )
         for watcher in pending:
             await watcher
         self._reverting = False
@@ -865,7 +911,7 @@ class Fiber:
                 continue
             if impl.release is not None:
                 impl.release()
-            release = impl.ctx.fiber._release
+            release = impl.ctx._fiber._release
             if release is not None:
                 release()
         self.committed = None
@@ -874,7 +920,7 @@ class Fiber:
             if self._runner.epoch == INACTIVE:
                 self._inertia = None
                 return None
-            self._inertia = start(self._scheduler, self._reload())
+            self._inertia = start(self._scheduler, self._reload(), fiber=self)
             return FiberState.LOADING
 
         self._update_state(transition)

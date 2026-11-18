@@ -7,21 +7,79 @@ use an event loop.
 
 Start with `ImmediateScheduler` for tests and headless programs, or with
 `FramePumpScheduler` for a host that has a frame loop. Use `spawn` to run a coroutine on
-a scheduler in a later step, and `start` to run its first step at once.
+a scheduler in a later step, and `start` to run its first step at once. Use
+`observe_steps` to measure the steps that a scheduler runs.
 """
 
+import logging
+import math
 import threading
 import time
 from abc import ABC, abstractmethod
 from collections import deque
 from collections.abc import Callable, Coroutine, Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
+from enum import Enum
 from functools import wraps
 from operator import attrgetter
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
+
+if TYPE_CHECKING:
+    from pycordis.fiber import Fiber
+
+_log = logging.getLogger(__name__)
+
+
+class _Step:
+    """The state of one running step: its kind, and the owner that it has so far."""
+
+    __slots__ = ("fiber", "kind", "label")
+
+    def __init__(self, kind: "StepKind", fiber: "Fiber | None", label: str | None):
+        self.kind = kind
+        self.fiber = fiber
+        self.label = label
+
+
+class StepKind(Enum):
+    """The way a step began."""
+
+    START = "start"
+    """The first step of a task."""
+
+    RESUME = "resume"
+    """A later step of a task, after a `Deferred` that it awaited completed."""
+
+    SUBMITTED = "submitted"
+    """A callable that a caller handed to `Scheduler.submit`."""
+
+
+@dataclass(frozen=True, slots=True)
+class StepReport:
+    """The measurement of one scheduler step, as `observe_steps` delivers it.
+
+    A callback must not keep a report after it returns: the report holds a reference
+    to its fiber.
+
+    Attributes:
+        duration: The time that the step took, in seconds, from the scheduler clock.
+        kind: The way that the step began.
+        fiber: The fiber that owns the step, or `None` when the step has no owner.
+        label: The label of the effect that owns the step, or `None`.
+        error: The exception that leaves the step, or `None`. A task catches every
+            `Exception` and rejects its `Deferred`, so a task that fails gives `None`.
+            A submitted step, or a `BaseException` in a task, sets it.
+    """
+
+    duration: float
+    kind: StepKind
+    fiber: "Fiber | None"
+    label: str | None
+    error: BaseException | None
 
 
 class Scheduler(ABC):
@@ -33,20 +91,88 @@ class Scheduler(ABC):
     The thread that creates the scheduler is the owner thread. Every method of the
     context, its fibers, and its services runs on that thread. Only `submit` and the
     completion of a `Deferred` are allowed from other threads.
+
+    Args:
+        clock: A function that returns monotonic time in seconds. The scheduler uses it
+            to measure work, such as the budget of `FramePumpScheduler.pump`. A host
+            that drives time with a `ManualClock` passes `manual_clock.now`, so that
+            timers and budgets share one time source. A blocking wait, such as
+            `ImmediateScheduler.serve`, uses real time and ignores the clock.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, clock: Callable[[], float] = time.monotonic) -> None:
+        self._clock = clock
         self._parked: set[_Task[Any]] = set()
         self._owner = threading.get_ident()
+        self._observing = False
+        self._observers: dict[object, Callable[[StepReport], None]] = {}
+        self._step: _Step | None = None
 
     def assert_owner(self) -> None:
         """Check that the calling thread is the owner thread.
 
         Raises:
-            CordisError: With the message `WRONG_THREAD` when another thread calls.
+            CordisError: With the message `WRONG_THREAD` when another thread calls, also
+                while step observers run, or with a message that says that a step
+                observer cannot call pycordis when a step observer calls.
         """
         if threading.get_ident() != self._owner:
             raise CordisError("WRONG_THREAD")
+        if self._observing:
+            raise CordisError("a step observer cannot call pycordis")
+
+    def _run_step(self, fn: Callable[[], None]) -> None:
+        """Run one queued callable, and report it when a callback is registered.
+
+        With no callback, this reads no clock and inspects nothing. If `fn` raises, the
+        report goes out first and then the exception propagates.
+        """
+        if not self._observers:
+            fn()
+            return
+        step = _identify(fn)
+        outer = self._step
+        self._step = step
+        clock = self._clock
+        started = clock()
+        error: BaseException | None = None
+        try:
+            fn()
+        except BaseException as failure:
+            error = failure
+            raise
+        finally:
+            duration = clock() - started
+            self._step = outer
+            self._report(StepReport(duration, step.kind, step.fiber, step.label, error))
+
+    def _claim_step(self, fiber: "Fiber", label: str) -> None:
+        """Give the running submitted step an owner, when it has none.
+
+        A timer callback calls it. It does nothing when no callback is registered, no
+        step runs, or the step is a task step. The first claim in a step wins.
+        """
+        step = self._step
+        if step is not None and step.kind is StepKind.SUBMITTED and step.fiber is None:
+            step.fiber = fiber
+            step.label = label
+
+    def _report(self, report: StepReport) -> None:
+        """Send `report` to the callbacks in registration order.
+
+        A callback that raises an `Exception` is logged, and the others still run. While
+        the callbacks run, every owner check fails.
+        """
+        saved = self._observing
+        self._observing = True
+        try:
+            for callback in tuple(self._observers.values()):
+                try:
+                    callback(report)
+                except Exception:
+                    _log.exception("a step observer raised")
+        finally:
+            self._observing = saved
 
     @abstractmethod
     def submit(self, fn: Callable[[], None]) -> None:
@@ -88,6 +214,11 @@ class ImmediateScheduler(Scheduler):
     other work runs waits in a queue and runs in the same drain. Work that other
     threads submit runs at the next drain on the owner thread.
 
+    Args:
+        clock: A function that returns monotonic time in seconds, as for `Scheduler`.
+            The `timeout` of `run_until_quiet` and `serve` always uses real time,
+            because those methods wait on a condition that waits in real time.
+
     Examples:
         ```python
         >>> scheduler = ImmediateScheduler()
@@ -99,8 +230,8 @@ class ImmediateScheduler(Scheduler):
         ```
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *, clock: Callable[[], float] = time.monotonic) -> None:
+        super().__init__(clock=clock)
         self._ready = threading.Condition()
         self._queue: deque[Callable[[], None]] = deque()
         self._depth = 0
@@ -210,7 +341,7 @@ class ImmediateScheduler(Scheduler):
                     if not self._queue:
                         return
                     fn = self._queue.popleft()
-                fn()
+                self._run_step(fn)
         finally:
             self._draining = False
 
@@ -218,13 +349,18 @@ class ImmediateScheduler(Scheduler):
 class FramePumpScheduler(Scheduler):
     """A scheduler that a host with a frame loop drives with `pump`.
 
-    Submitted work waits in a queue. `pump` runs a bounded number of steps and never
-    blocks, so a host calls it once per frame without a long pause. Work that any
-    thread submits runs on the owner thread in a later `pump` call.
+    Submitted work waits in a queue. `pump` runs a bounded number of steps, for a
+    bounded time, or both, and never blocks, so a host calls it once per frame without a
+    long pause. Work that any thread submits runs on the owner thread in a later `pump`
+    call.
 
     To run all ready work, for example before the first frame, call `pump` with a limit
     that is larger than the work. A task that waits for a `Deferred` stays parked, and
     it resumes in the `pump` call that follows the completion.
+
+    Args:
+        clock: A function that returns monotonic time in seconds, as for `Scheduler`.
+            `pump` reads it to apply a `budget`.
 
     Examples:
         ```python
@@ -235,42 +371,169 @@ class FramePumpScheduler(Scheduler):
         1
         >>> scheduler.pump(10)
         0
+        >>> scheduler.submit(lambda: print("step"))
+        >>> scheduler.pump(budget=0.002)
+        step
+        1
+        >>> scheduler.pending
+        0
         ```
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *, clock: Callable[[], float] = time.monotonic) -> None:
+        super().__init__(clock=clock)
         self._queue: deque[Callable[[], None]] = deque()
+
+    @property
+    def pending(self) -> int:
+        """The number of queued steps. Read it on the owner thread.
+
+        Raises:
+            CordisError: If another thread reads it (`WRONG_THREAD`).
+        """
+        self.assert_owner()
+        return len(self._queue)
 
     def submit(self, fn: Callable[[], None]) -> None:
         self._queue.append(fn)
 
-    def pump(self, max_steps: int) -> int:
-        """Run at most `max_steps` queued steps, then return.
+    def pump(self, max_steps: int | None = None, *, budget: float | None = None) -> int:
+        """Run queued steps until a limit is reached, then return.
 
-        A step that another step submits is in the same call when the limit allows it.
-        An empty queue returns `0` at once. If a step raises, the exception goes to the
-        caller and the later steps stay queued. Call it on the owner thread.
+        The call stops at the first limit that it reaches: the queue is empty,
+        `max_steps` steps ran, or the time `budget` is used up. When the queue has work,
+        the first step always runs, also with a `budget` of `0`, so that every frame
+        makes progress. The budget is checked only before each later step, so a frame
+        can be late by at most one step.
+
+        A step that another step submits is in the same call when the limits allow it.
+        An empty queue returns `0` at once. A step that does not run stays queued, in
+        order. If a step raises, the exception goes to the caller and the later steps
+        stay queued. Call it on the owner thread.
+
+        The budget measures the scheduler's clock, which must be monotonic. A clock that
+        does not move during the call, such as a `ManualClock.now` that no step
+        advances, gives no time limit. A call without a `budget` does not read the
+        clock; a call with a `budget` reads it only when a step will run.
 
         Args:
             max_steps: The most steps to run. `0` runs none.
+            budget: The time in seconds after which no later step starts. `0` runs one
+                step.
 
         Returns:
             The number of steps that ran.
 
         Raises:
-            ValueError: If `max_steps` is negative.
+            ValueError: If neither limit is given, `max_steps` is negative, or `budget`
+                is negative or NaN.
             CordisError: If another thread calls (`WRONG_THREAD`).
         """
         self.assert_owner()
-        if max_steps < 0:
+        if max_steps is None and budget is None:
+            raise ValueError("pump needs max_steps, budget, or both")
+        if max_steps is not None and max_steps < 0:
             raise ValueError(f"max_steps must not be negative, got {max_steps}")
+        if budget is not None and not budget >= 0:
+            raise ValueError(f"budget must be a number of seconds >= 0, got {budget}")
         queue = self._queue
         steps = 0
-        while steps < max_steps and queue:
+        if budget is None:
+            assert max_steps is not None
+            while steps < max_steps and queue:
+                steps += 1
+                self._run_step(queue.popleft())
+            return steps
+        limit = math.inf if max_steps is None else max_steps
+        clock = self._clock
+        deadline = 0.0
+        while steps < limit and queue:
+            if steps == 0:
+                deadline = clock() + budget
+            elif clock() >= deadline:
+                break
             steps += 1
-            queue.popleft()()
+            self._run_step(queue.popleft())
         return steps
+
+
+def _identify(fn: Callable[[], None]) -> _Step:
+    """Read the kind and the owner of a queued callable from its bound method."""
+    task = getattr(fn, "__self__", None)  # `fn` is a user-supplied callable
+    if not isinstance(task, _Task):
+        return _Step(StepKind.SUBMITTED, None, None)
+    kind = StepKind.START if fn == task.run else StepKind.RESUME
+    return _Step(kind, task.fiber, task.label)
+
+
+def observe_steps(
+    scheduler: Scheduler, callback: Callable[[StepReport], None]
+) -> Callable[[], None]:
+    """Register `callback` to receive a `StepReport` after each step of `scheduler`.
+
+    !!! warning "Experimental"
+        This API can change before `pycordis` exports it.
+
+    A step is one callable that the scheduler takes from its queue and runs, with all
+    the work that it runs inline: listeners that it emits to, effect setups, and the
+    first step of a task that it starts. Work in a host call and the timer callbacks
+    that a `ManualClock` runs outside a step are not steps. With no callback
+    registered, a step costs no clock read and no report.
+
+    A task step reports the fiber that owns the task and the label of the effect that
+    owns it, or `None` for a task that no effect owns. A timer callback that a clock
+    submits (such as `ThreadingClock`) reports the fiber and the label of its timer
+    effect; a step that runs several timer callbacks reports the first. The `sleep`
+    and `ticks` timers report no fiber, and the task that they wake reports its own
+    owner. A step that a host submits reports no fiber.
+
+    A callback only observes. While it runs, a call into pycordis from it raises
+    `CordisError`, because lifecycle work that a timing report starts would make the
+    result depend on timing. A callback can read `fiber.name`, `fiber.uid`, and
+    `fiber.state`, and it can call `Scheduler.submit`. It must not keep a report after
+    it returns.
+
+    A step that raises sends its report, with `error` set, and then the exception
+    propagates. A callback that raises an `Exception` is logged, and the other
+    callbacks and later steps run. Callbacks run in registration order. A callback that
+    is removed during a report stops from the next step. A callback cannot add a
+    callback.
+
+    A host subclass of `Scheduler` reports only the steps that it runs through the base
+    class; a subclass that runs its own queue sends no reports.
+
+    Args:
+        scheduler: The scheduler to observe.
+        callback: A function that receives the report of each step.
+
+    Returns:
+        A function that removes the callback. Calling it again does nothing.
+
+    Raises:
+        CordisError: If another thread calls (`WRONG_THREAD`).
+
+    Examples:
+        ```python
+        >>> scheduler = FramePumpScheduler()
+        >>> def slow(report: StepReport) -> None:
+        ...     if report.duration > 0.016:
+        ...         print(f"slow {report.kind.value} step: {report.duration:.3f}s")
+        >>> stop = observe_steps(scheduler, slow)
+        >>> scheduler.submit(lambda: time.sleep(0.02))
+        >>> scheduler.pump(1)
+        slow submitted step: 0.020s
+        1
+        >>> stop()
+        ```
+    """
+    scheduler.assert_owner()
+    token = object()
+    scheduler._observers[token] = callback
+
+    def remove() -> None:
+        scheduler._observers.pop(token, None)
+
+    return remove
 
 
 def owner_thread[**P, R](attribute: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -304,10 +567,14 @@ class _Task[T]:
         scheduler: Scheduler,
         coroutine: Coroutine[Any, Any, T],
         result: Deferred[T],
+        fiber: "Fiber | None",
+        label: str | None,
     ) -> None:
         self._scheduler = scheduler
         self._coroutine = coroutine
         self._result = result
+        self.fiber = fiber
+        self.label = label
 
     def run(self) -> None:
         """Run the coroutine until it finishes or awaits an incomplete `Deferred`."""
@@ -338,7 +605,13 @@ class _Task[T]:
         self.run()
 
 
-def spawn[T](scheduler: Scheduler, coroutine: Coroutine[Any, Any, T]) -> Deferred[T]:
+def spawn[T](
+    scheduler: Scheduler,
+    coroutine: Coroutine[Any, Any, T],
+    *,
+    fiber: "Fiber | None" = None,
+    label: str | None = None,
+) -> Deferred[T]:
     """Run `coroutine` as a task on `scheduler`.
 
     The first step is submitted to the scheduler, so a scheduler that is busy runs it
@@ -348,17 +621,25 @@ def spawn[T](scheduler: Scheduler, coroutine: Coroutine[Any, Any, T]) -> Deferre
     Args:
         scheduler: The scheduler that drives the task.
         coroutine: The coroutine to run.
+        fiber: The fiber that owns the task, for `observe_steps`.
+        label: The label of the effect that owns the task, for `observe_steps`.
 
     Returns:
         A `Deferred` that completes with the coroutine's return value, or rejects with
         the exception that ends it.
     """
     result = Deferred[T]()
-    scheduler.submit(_Task(scheduler, coroutine, result).run)
+    scheduler.submit(_Task(scheduler, coroutine, result, fiber, label).run)
     return result
 
 
-def start[T](scheduler: Scheduler, coroutine: Coroutine[Any, Any, T]) -> Deferred[T]:
+def start[T](
+    scheduler: Scheduler,
+    coroutine: Coroutine[Any, Any, T],
+    *,
+    fiber: "Fiber | None" = None,
+    label: str | None = None,
+) -> Deferred[T]:
     """Run the first step of `coroutine` now, and the other steps on `scheduler`.
 
     Call it on the owner thread inside `Scheduler.call`, so that the scheduler does
@@ -368,6 +649,8 @@ def start[T](scheduler: Scheduler, coroutine: Coroutine[Any, Any, T]) -> Deferre
     Args:
         scheduler: The scheduler that drives the later steps.
         coroutine: The coroutine to run.
+        fiber: The fiber that owns the task, for `observe_steps`.
+        label: The label of the effect that owns the task, for `observe_steps`.
 
     Returns:
         A `Deferred` that completes with the coroutine's return value, or rejects with
@@ -375,5 +658,5 @@ def start[T](scheduler: Scheduler, coroutine: Coroutine[Any, Any, T]) -> Deferre
         without an `await`.
     """
     result = Deferred[T]()
-    _Task(scheduler, coroutine, result).run()
+    _Task(scheduler, coroutine, result, fiber, label).run()
     return result

@@ -137,11 +137,12 @@ def test_the_fiber_of_an_entry_is_a_child_of_the_fiber_of_its_tree(
         [{"id": "a", "name": "foo"}, {"id": "g", **group({"id": "b", "name": "foo"})}]
     ).result()
 
+    loader_fiber = loader.cordis_original.ctx.fiber
     for identifier in ("a", "b"):
         fiber = loader.fiber(identifier)
-        assert fiber.parent.fiber is loader.ctx.fiber
-        assert fiber in loader.ctx.fiber.children
-    assert loader.fiber("g").parent.fiber is loader.ctx.fiber
+        assert fiber.parent.fiber is loader_fiber
+        assert fiber in loader_fiber.children
+    assert loader.fiber("g").parent.fiber is loader_fiber
 
 
 @pytest.mark.divergence("loader-tree-owner")

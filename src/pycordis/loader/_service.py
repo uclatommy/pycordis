@@ -17,7 +17,6 @@ from pycordis.loader._tree import (
     import_component,
 )
 from pycordis.service import Service, resolve_intercept
-from pycordis.traceable import Tracker
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,8 +61,8 @@ class Loader(EntryTree, Service):
 
     Examples:
         ```python
-        >>> fiber = ctx.use(Loader)
-        >>> ctx.get("loader").read([{"id": "a", "name": "app.plugins:greet"}])
+        >>> fiber = root.use(Loader)
+        >>> root.get("loader").read([{"id": "a", "name": "app.plugins:greet"}])
         ```
 
     Attributes:
@@ -88,9 +87,6 @@ class Loader(EntryTree, Service):
             or partial(import_component, package=self.config.package),
         )
         Service.__init__(self, ctx)
-        # A reader gets a view that shows the loader's own `ctx`: the loader acts for
-        # its own context, whoever reads it. The view tells the check who reads.
-        self.cordis_tracker = Tracker(no_shadow=True)  # type: ignore[assignment]
         self.enable_logs = self.config.enable_logs
         ctx.on("internal/status", self._on_status)
         ctx.on("internal/plugin", self._on_plugin)
@@ -135,7 +131,7 @@ class Loader(EntryTree, Service):
         config = [
             own_options(item) if isinstance(item, Mapping) else item for item in data
         ]
-        return run(self.ctx.scheduler, self._read(config))  # type: ignore[arg-type]
+        return run(self.ctx.scheduler, self._read(config), self.ctx._fiber)  # type: ignore[arg-type]
 
     async def _read(self, config: list[Any]) -> None:
         await self.root.update(config)
@@ -158,7 +154,7 @@ class Loader(EntryTree, Service):
             A `Deferred` that completes when the whole tree is idle. A fiber that
             failed does not keep the wait open.
         """
-        return run(self.ctx.scheduler, self._settled())
+        return run(self.ctx.scheduler, self._settled(), self.ctx._fiber)
 
     async def _settled(self) -> None:
         while True:
@@ -185,12 +181,12 @@ class Loader(EntryTree, Service):
         Args:
             fiber: The fiber to start from. The default is the fiber of the loader.
         """
-        fiber = self.ctx.fiber if fiber is None else fiber
+        fiber = self.ctx._fiber if fiber is None else fiber
         while True:
             entry = self._links.get(fiber)
             if entry is not None:
                 return entry.id
-            parent = fiber.parent.fiber
+            parent = fiber.parent._fiber
             if parent is fiber:
                 return None
             fiber = parent
@@ -242,12 +238,12 @@ class Loader(EntryTree, Service):
             return
         group = entry.parent
         # 3. the tree of the entry is being disposed
-        if group.tree.ctx.fiber.uid is None:
+        if group.tree.ctx._fiber.uid is None:
             return
         self._show_log(entry, "unload")
         # 4. the group of the entry, or the outer fiber of the entry, unloads and takes
         # the entry with it
-        if FiberState.UNLOADING in (group.ctx.fiber.state, fiber.parent.fiber.state):
+        if FiberState.UNLOADING in (group.ctx._fiber.state, fiber.parent._fiber.state):
             return
         # 5. the loader removes the entry: it leaves the store before its disposal
         if group.tree.store.get(entry.options["id"]) is not entry:
