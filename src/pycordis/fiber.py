@@ -332,7 +332,7 @@ class Fiber:
                 call_site=CallSite(()),
             )
             return
-        self._uid = parent.registry.next_uid()
+        self._uid = parent._registry.next_uid()
         self._state = FiberState.PENDING
         self.ctx = parent.bind_fiber(self)
         self._runner = _Runner(
@@ -344,7 +344,7 @@ class Fiber:
         self.ctx.emit("internal/plugin", self)
         for name in self.inject:
             self._check_impl(name)
-        self._handle = parent.fiber.effect(
+        self._handle = parent._fiber.effect(
             self._attach, "ctx.use()", call_site=call_site
         )
 
@@ -383,7 +383,7 @@ class Fiber:
         while True:
             if fiber.runtime is not None and fiber.runtime.name:
                 return fiber.runtime.name
-            parent = fiber.parent.fiber
+            parent = fiber.parent._fiber
             if parent is fiber:
                 return "root"
             fiber = parent
@@ -676,7 +676,7 @@ class Fiber:
         if not inspect.isclass(callback):
             return callback(self.ctx, config)
         instance = callback(self.ctx, config)
-        self.ctx.registry.run_inject_methods(self.ctx, instance)
+        self.ctx._registry.run_inject_methods(self.ctx, instance)
         init = getattr(instance, "cordis_init", None)
         return None if init is None else init()
 
@@ -691,13 +691,30 @@ class Fiber:
         """
         assert self.runtime is not None
         self.runtime.fibers.push(self)
-        self.parent.fiber._children[self] = None
+        self.parent._fiber._children[self] = None
         try:
+            self._check_inject()
             self._refresh()
         except Exception as error:
-            self.logger.error("error while loading", exc_info=error)
-            self._error = error
+            self._fail(error)
         return self._leave
+
+    def _check_inject(self) -> None:
+        """Raise if a restriction on `self.parent` rejects one of `self.inject`.
+
+        `self.parent` is the context that created the fiber, which is the use site
+        for inject (see `restrict`).
+        """
+        for name in self.inject:
+            rule = self.parent._rejecting(name)
+            if rule is not None:
+                raise CordisError(f'cannot inject "{name}": {rule}')
+
+    def _fail(self, error: BaseException) -> None:
+        """Record `error` as the reason the fiber cannot run, and report `FAILED`."""
+        self.logger.error("error while loading", exc_info=error)
+        self._error = error
+        self._update_state(lambda: None)
 
     def _leave(self) -> Deferred[None]:
         with self._scheduler.call():
@@ -708,10 +725,10 @@ class Fiber:
         self._uid = None
         self.ctx.emit("internal/plugin", self)
         runtime = self.runtime
-        del self.parent.fiber._children[self]
+        del self.parent._fiber._children[self]
         runtime.fibers.delete(self)
         if not len(runtime.fibers):
-            self.ctx.registry.unregister(runtime)
+            self.ctx._registry.unregister(runtime)
         self._set_epoch(INACTIVE)
         # `_reload` and `_unload` log their own errors, so `_inertia` never rejects
         while self._inertia is not None:
@@ -743,15 +760,15 @@ class Fiber:
         # the providers
         if old_state != FiberState.ACTIVE and self._state != FiberState.ACTIVE:
             return
-        self.ctx.reflect.announce(self)
+        self.ctx._reflect.announce(self)
 
     def _check_impl(self, name: str) -> None:
-        impl = self.ctx.reflect.find(self.ctx, name, True)
+        impl = self.ctx._reflect.find(self.ctx, name, True)
         if impl is not None and impl.check is not None:
             try:
                 accepted = impl.check(get_traceable(self.ctx, impl.value))
             except Exception as error:
-                impl.ctx.fiber.logger.error(
+                impl.ctx._fiber.logger.error(
                     "error while checking service %r", name, exc_info=error
                 )
                 accepted = False
@@ -779,6 +796,11 @@ class Fiber:
         for name in self.inject:
             self._check_impl(name)
         self._error = None
+        try:
+            self._check_inject()
+        except Exception as error:
+            self._fail(error)
+            return
         self._revision += 1
         self._refresh()
 
@@ -817,7 +839,7 @@ class Fiber:
     async def _reload(self) -> None:
         self.committed = dict(self._store)
         for impl in self.committed.values():
-            if impl.ctx.fiber is self:
+            if impl.ctx._fiber is self:
                 continue
             impl.dependents.add(self)
         old_epoch = self._runner.epoch
@@ -889,7 +911,7 @@ class Fiber:
                 continue
             if impl.release is not None:
                 impl.release()
-            release = impl.ctx.fiber._release
+            release = impl.ctx._fiber._release
             if release is not None:
                 release()
         self.committed = None

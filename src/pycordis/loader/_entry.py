@@ -173,12 +173,12 @@ def merge_options(target: EntryOptions, options: Mapping[str, Any]) -> EntryOpti
 
 
 def find_loader(ctx: Context) -> "Loader":
-    """Return the loader service that `ctx` sees.
+    """Return the loader service that `ctx` sees, whether or not `ctx` injects it.
 
     Raises:
         CordisError: If no loader is provided.
     """
-    loader = ctx.get("loader", strict=False)
+    loader = ctx._reflect.get(ctx, "loader", strict=False)
     if loader is None:
         raise CordisError("the loader service is not provided")
     return loader
@@ -280,7 +280,7 @@ class Entry:
         self.subgroup: EntryGroup | None = None
         self.subtree: EntryTree | None = None
         self._scheduler = loader.ctx.scheduler
-        self._owner = loader.ctx.fiber
+        self._owner = loader.ctx._fiber
         self._init_task: Deferred[None] | None = None
         self._disposing = False
         self._verdict: bool | None = None
@@ -489,7 +489,7 @@ class Entry:
                 pass  # the fiber has logged its own failure
         if not self.loader.busy():
             ctx = self.loader.ctx
-            ctx.reflect.notify(ctx, ["loader"])
+            ctx._reflect.notify(ctx, ["loader"])
 
     async def _init(self, dispose_task: Deferred[None] | None) -> None:
         if dispose_task is not None:
@@ -510,7 +510,7 @@ class Entry:
         group_ctx = self.parent.ctx
         link = self._group_layers = InterceptLink(group_ctx)
         ctx = self._isolate(
-            group_ctx.bind_fiber(tree.ctx.fiber).intercept_through(link)
+            group_ctx.bind_fiber(tree.ctx._fiber).intercept_through(link)
         )
         self._home = (tree, group_ctx)
         if not self.inject:
@@ -549,13 +549,13 @@ class Entry:
             component = tree.import_function(self.options["name"])
             if isinstance(component, Deferred):
                 component = await component
-            if tree.ctx.registry.resolve(component) is None:  # type: ignore[arg-type]
+            if tree.ctx._registry.resolve(component) is None:  # type: ignore[arg-type]
                 raise TypeError(
                     f"{self.options['name']!r} is not a component: expect a function, "
                     'a class, or an object with an "apply" method'
                 )
         except Exception as error:
-            self.parent.tree.ctx.fiber.logger.error(error)
+            self.parent.tree.ctx._fiber.logger.error(error)
             return None
         return component
 

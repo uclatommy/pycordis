@@ -149,7 +149,7 @@ def test_a_new_inject_loads_the_component_again_with_a_new_outer_fiber(
 
     assert entry.outer_fiber is None
     assert entry.inner_fiber is not None
-    assert entry.inner_fiber.parent.fiber is loader.ctx.fiber
+    assert entry.inner_fiber.parent.fiber is loader.cordis_original.ctx.fiber
     assert len(worker.calls) == 3
 
 

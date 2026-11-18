@@ -302,13 +302,13 @@ def test_a_provider_that_changes_realm_loads_again_and_leaves_its_old_realm(
     loader.mock("svc", provider)
     entry = loader.create({"name": "svc", "config": {"tag": "init"}}).result()
     old = loader.fiber(entry)
-    assert loader.ctx.get("svc") == {"tag": "init"}
+    assert loader.ctx.reflect.get(loader.ctx, "svc") == {"tag": "init"}
 
     loader.update(entry, {"isolate": {"svc": "A"}}).result()
 
     assert len(calls) == 2
     assert old.uid is None
-    assert loader.ctx.get("svc", strict=False) is None
+    assert loader.ctx.reflect.get(loader.ctx, "svc", strict=False) is None
     realm = loader.fiber(entry).ctx.isolates["svc"]
     assert realm == "A"
     assert loader.fiber(entry).ctx["svc"] == {"tag": "init"}

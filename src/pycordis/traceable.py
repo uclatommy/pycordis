@@ -176,9 +176,9 @@ def _read_attribute(
     use_site = ctx.use_site
     if tracker.associate is not None:
         associated = f"{tracker.associate}.{name}"
-        if use_site.reflect.has_property(associated):
+        if use_site._reflect.has_property(associated):
             # `ctx`, not `use_site`: one def site governs `view.bar`, `ctx["foo.bar"]`
-            return ctx.reflect.read(ctx, associated, view)
+            return ctx._reflect.read(ctx, associated, view)
     attr = inspect.getattr_static(type(target), name, _MISSING)
     if isinstance(attr, property):
         shadow = _create_shadow(use_site, target, tracker.property, view)
@@ -256,8 +256,8 @@ class TraceableView(_Forwarder):
         use_site = ctx.use_site
         if tracker.associate is not None:
             associated = f"{tracker.associate}.{name}"
-            if use_site.reflect.has_property(associated):
-                ctx.reflect.write(ctx, associated, value, self)
+            if use_site._reflect.has_property(associated):
+                ctx._reflect.write(ctx, associated, value, self)
                 return
         attr = inspect.getattr_static(type(target), name, _MISSING)
         if isinstance(attr, property):

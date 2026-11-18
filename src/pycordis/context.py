@@ -7,14 +7,15 @@ and meta tables. Start with `Context(scheduler)` to create a root context.
 
 from collections import ChainMap
 from collections.abc import Callable, Iterable, Iterator, Mapping
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Self
 
 from pycordis.deferred import Deferred
-from pycordis.errors import CallSite
+from pycordis.errors import CallSite, CordisError
 from pycordis.events import EventName, EventOptions, EventsService, Listener
 from pycordis.fiber import EffectForm, EffectHandle, Fiber, resolve_config
-from pycordis.keys import Keyable
+from pycordis.keys import Keyable, key_name
 from pycordis.logger import LoggerService
 from pycordis.reflect import Accessor, ReflectService
 from pycordis.registry import Component, RegistryService
@@ -66,6 +67,57 @@ class InterceptLink(Mapping[str, object]):
         return len(self.target.intercepts)
 
 
+@dataclass(frozen=True, slots=True)
+class Rule:
+    """Which service names one dimension of a `restrict` call admits.
+
+    A `restrict` call builds one `Rule` for inject keys and reads, and one `Rule` for
+    provide keys. A name passes the rule when it is in `names`, or starts with one of
+    `prefixes`.
+
+    Attributes:
+        names: The admitted names, by exact match. A `Key[T]` passed to `restrict`
+            becomes its name.
+        prefixes: The admitted name prefixes, such as `"plugin."`.
+    """
+
+    names: frozenset[str]
+    prefixes: tuple[str, ...] = ()
+
+    def admits(self, name: str) -> bool:
+        """Return whether `name` passes this rule."""
+        return name in self.names or name.startswith(self.prefixes)
+
+    def __str__(self) -> str:
+        names = ", ".join(sorted(self.names))
+        prefixes = ", ".join(sorted(self.prefixes))
+        parts = [
+            part
+            for part in (
+                f"names: {names}" if names else "",
+                f"prefixes: {prefixes}" if prefixes else "",
+            )
+            if part
+        ]
+        return "; ".join(parts) if parts else "no names"
+
+
+@dataclass(frozen=True, slots=True)
+class Restriction:
+    """One `restrict` call's rules, carried in a context's restriction chain.
+
+    A context admits a key only when every `Restriction` in its chain admits it (see
+    `restrict`).
+
+    Attributes:
+        inject: The rule for inject keys and reads, or `None` to admit every key.
+        provide: The rule for provide keys, or `None` to admit every key.
+    """
+
+    inject: Rule | None
+    provide: Rule | None
+
+
 class Context:
     """The place from which code registers effects.
 
@@ -87,39 +139,103 @@ class Context:
 
     Attributes:
         scheduler: The scheduler that runs the work of the root context.
-        root: The root context.
-        fiber: The fiber that owns the effects that this context registers.
-        events: The service that stores the listeners of the root context. Every
-            derived context shares it.
-        reflect: The service that stores the providers and accessors of the root
-            context. Every derived context shares it.
-        registry: The service that records the loaded components of the root context.
-            Every derived context shares it.
     """
 
     def __init__(self, scheduler: Scheduler) -> None:
         self.scheduler = scheduler
-        self.root: Self = self
+        self._root: Self = self
         self._isolates: ChainMap[str, object] = ChainMap()
         self._intercepts: ChainMap[str, object] = ChainMap()
         self._meta: ChainMap[str, object] = ChainMap()
+        self._restrictions: tuple[Restriction, ...] = ()
         self._shadow: Context | None = None
         self._use_site: Context | None = None
-        self.events = EventsService(scheduler)
-        self.reflect = ReflectService(scheduler)
-        self.registry = RegistryService(scheduler)
-        self.fiber = Fiber(self)
+        self._events = EventsService(scheduler)
+        self._reflect = ReflectService(scheduler)
+        self._registry = RegistryService(scheduler)
+        self._fiber = Fiber(self)
         self._logger = LoggerService(self)
-        self.events.install(
+        self._events.install(
             self,
             "internal/config",
             lambda fiber, next_: resolve_config(fiber.runtime.config, next_()),
         )
-        self.events.install(self, "internal/listener", self._route_update_listener)
-        self.events.install(self, "internal/update", _run_update_hooks, prepend=True)
+        self._events.install(self, "internal/listener", self._route_update_listener)
+        self._events.install(self, "internal/update", _run_update_hooks, prepend=True)
 
     def __repr__(self) -> str:
-        return f"Context <{self.fiber.name}>"
+        return f"Context <{self._fiber.name}>"
+
+    def _check_guarded(self, name: str) -> None:
+        """Raise if a restriction on the def site makes `name` unreadable.
+
+        A restricted plugin that merely injects a service cannot reach the root
+        context, or the services that store providers, listeners, or components,
+        through it: each of those gives an unrestricted view of the whole tree.
+        """
+        site = self if self._shadow is None else self._shadow
+        if site._restrictions:
+            raise CordisError(f'cannot read "{name}" in a restricted context')
+
+    @property
+    def fiber(self) -> Fiber:
+        """The fiber that owns the effects that this context registers.
+
+        Raises:
+            CordisError: If `restrict` added a restriction to this context without
+                binding it to a new fiber, so that this attribute would give the
+                fiber of a less-restricted ancestor. `use`, `inject`, and the other
+                methods that create a fiber do not trip this guard.
+        """
+        if self._restrictions is not self._fiber.ctx._restrictions:
+            raise CordisError('cannot read "fiber" in a restricted context')
+        return self._fiber
+
+    @property
+    def root(self) -> Self:
+        """The root context.
+
+        Raises:
+            CordisError: In a restricted context.
+        """
+        self._check_guarded("root")
+        return self._root
+
+    @property
+    def events(self) -> EventsService:
+        """The service that stores the listeners of the root context.
+
+        Every derived context shares it.
+
+        Raises:
+            CordisError: In a restricted context.
+        """
+        self._check_guarded("events")
+        return self._events
+
+    @property
+    def reflect(self) -> ReflectService:
+        """The service that stores the providers and accessors of the root context.
+
+        Every derived context shares it.
+
+        Raises:
+            CordisError: In a restricted context.
+        """
+        self._check_guarded("reflect")
+        return self._reflect
+
+    @property
+    def registry(self) -> RegistryService:
+        """The service that records the loaded components of the root context.
+
+        Every derived context shares it.
+
+        Raises:
+            CordisError: In a restricted context.
+        """
+        self._check_guarded("registry")
+        return self._registry
 
     @property
     def logger(self) -> LoggerService:
@@ -128,7 +244,7 @@ class Context:
         Call it to get a `Logger`, or log through it directly. A call from a service
         method names the logger after the service. See `LoggerService`.
         """
-        return get_traceable(self, self.root._logger)
+        return get_traceable(self, self._root._logger)
 
     @staticmethod
     def _route_update_listener(
@@ -144,7 +260,7 @@ class Context:
             def guarded(fiber: Fiber, config: object, next_: Callable[[], Any]) -> Any:
                 return next_() if removed else listener(fiber, config, next_)
 
-            hooks = ctx.fiber.update_hooks
+            hooks = ctx._fiber.update_hooks
             remove = hooks.unshift(guarded) if options.prepend else hooks.push(guarded)
 
             def revert() -> None:
@@ -154,7 +270,7 @@ class Context:
 
             return revert
 
-        return ctx.fiber.effect(setup, 'ctx.on("internal/update")')
+        return ctx._fiber.effect(setup, 'ctx.on("internal/update")')
 
     @property
     def shadow(self) -> "Context | None":
@@ -243,7 +359,7 @@ class Context:
         The default realm is shared by every context that does not isolate `name`. It is
         stored in the root context, so a later `isolate` call hides it.
         """
-        self.root._isolates.setdefault(name, object())
+        self._root._isolates.setdefault(name, object())
 
     @owner_thread("scheduler")
     def extend(self, **meta: object) -> Self:
@@ -352,7 +468,9 @@ class Context:
             TypeError: If `execute` returns an invalid effect.
         """
         with self.scheduler.call():
-            return self.fiber.effect(execute, label, call_site=CallSite.capture(skip=1))
+            return self._fiber.effect(
+                execute, label, call_site=CallSite.capture(skip=1)
+            )
 
     @owner_thread("scheduler")
     def use(self, component: Component, config: object = None) -> Fiber:
@@ -386,7 +504,7 @@ class Context:
             ```
         """
         with self.scheduler.call():
-            return self.registry.use(
+            return self._registry.use(
                 self.use_site, component, config, CallSite.capture(skip=1)
             )
 
@@ -404,7 +522,7 @@ class Context:
             The new fiber.
         """
         with self.scheduler.call():
-            return self.registry.inject(
+            return self._registry.inject(
                 self.use_site, deps, callback, CallSite.capture(skip=1)
             )
 
@@ -416,14 +534,14 @@ class Context:
         the provider's fiber, or `None` when no provider is visible.
 
         A context that belongs to a component's fiber reads only the services that the
-        fiber or one of its ancestors injects or provides.
+        fiber or one of its ancestors injects or provides. `get` checks the same rule.
 
         Raises:
             CordisError: In a component's context, if no fiber injects the service, or
                 if the fiber that injects it is not loaded.
             TypeError: If `key` is neither a `Key` nor a `str`.
         """
-        return self.reflect.read(self, key)
+        return self._reflect.read(self, key)
 
     def __setitem__(self, key: Keyable[Any], value: Any) -> None:
         """Set the value of the accessor or the service `key`.
@@ -433,21 +551,50 @@ class Context:
                 `key` is provided.
             TypeError: If `key` is neither a `Key` nor a `str`.
         """
-        self.reflect.write(self, key, value)
+        self._reflect.write(self, key, value)
 
     @owner_thread("scheduler")
     def get[T](self, key: Keyable[T], strict: bool = True) -> T | None:
         """Return the value of the service `key`, or `None`.
+
+        A context that belongs to a component's fiber reads only the services that
+        the fiber or one of its ancestors injects or provides, as `ctx[key]` does. The
+        read gives the provider that the declaring fiber loaded against: after a
+        change of provider, it gives the old provider until the fiber loads again.
+        Where `ctx[key]` raises because the declaring fiber is not loaded, `get`
+        returns `None`. Accessors are not read. At the root (`root`,
+        `root.isolate(...)`), the read is not checked.
+
+        For an optional service, read it in a child fiber that injects it:
+        `ctx.inject([key], callback)` runs `callback` when a provider is visible, and
+        the component itself does not wait for the service. For a service in another
+        realm, use `ctx.isolate(key, label).inject([key], callback)`: an ancestor's
+        `inject` does not admit a read across the isolate. A host that wants to see
+        which provider a context resolves, without the check, calls
+        `ctx.reflect.get(ctx, key, strict)`.
 
         Args:
             key: The service key.
             strict: When true, a provider whose fiber is not `ACTIVE` gives `None`.
 
         Returns:
-            The value that the provider holds. `None` when no provider is visible from
-            this context, or when `strict` hides the provider.
+            The value that the provider holds. `None` when the declaring fiber is not
+            loaded, when `strict` hides the provider, or, at the root, when no
+            provider is visible.
+
+        Raises:
+            CordisError: In a component's context, if no fiber injects or provides the
+                service. A note on the error names the two ways to declare the read.
+            TypeError: If `key` is neither a `Key` nor a `str`.
+
+        Examples:
+            ```python
+            >>> def apply(ctx, config):
+            ...     ctx.inject(["metrics"], lambda inner: print(inner.get("metrics")))
+            >>> fiber = root.use(apply)  # loads with no "metrics" provider
+            ```
         """
-        return self.reflect.get(self, key, strict)
+        return self._reflect.checked_get(self, key, strict)
 
     @owner_thread("scheduler")
     def set[T](self, key: Keyable[T], value: T) -> None:
@@ -456,7 +603,7 @@ class Context:
         Raises:
             CordisError: If no service `key` is provided.
         """
-        self.reflect.set(self, key, value)
+        self._reflect.set(self, key, value)
 
     @owner_thread("scheduler")
     def provide[T](
@@ -487,13 +634,13 @@ class Context:
 
         Examples:
             ```python
-            >>> remove = ctx.provide("db", {"rows": 0})
-            >>> ctx.get("db")
+            >>> remove = root.provide("db", {"rows": 0})
+            >>> root.get("db")
             {'rows': 0}
             >>> remove()
             ```
         """
-        return self.reflect.provide(self.use_site, key, value, check)
+        return self._reflect.provide(self.use_site, key, value, check)
 
     @owner_thread("scheduler")
     def accessor(
@@ -518,7 +665,7 @@ class Context:
         Raises:
             CordisError: If `key` is already declared as a service or an accessor.
         """
-        return self.reflect.accessor(self.use_site, key, Accessor(get, set))
+        return self._reflect.accessor(self.use_site, key, Accessor(get, set))
 
     @owner_thread("scheduler")
     def mixin(
@@ -541,7 +688,7 @@ class Context:
         Raises:
             CordisError: If a property name is already declared.
         """
-        return self.reflect.mixin(self.use_site, source, mixins)
+        return self._reflect.mixin(self.use_site, source, mixins)
 
     @owner_thread("scheduler")
     def on(
@@ -575,7 +722,7 @@ class Context:
             >>> remove()
             ```
         """
-        return self.events.on(self.use_site, name, listener, options)
+        return self._events.on(self.use_site, name, listener, options)
 
     @owner_thread("scheduler")
     def once(
@@ -588,7 +735,7 @@ class Context:
 
         The arguments and the result are those of `on`.
         """
-        return self.events.once(self.use_site, name, listener, options)
+        return self._events.once(self.use_site, name, listener, options)
 
     @owner_thread("scheduler")
     def emit(self, name: EventName, *args: Any, this: object = None) -> None:
@@ -600,7 +747,7 @@ class Context:
             this: An object with a `cordis_filter(ctx)` method that selects the
                 listeners by the context that registered them.
         """
-        self.events.emit(name, *args, this=this)
+        self._events.emit(name, *args, this=this)
 
     @owner_thread("scheduler")
     def bail(self, name: EventName, *args: Any, this: object = None) -> Any:
@@ -609,7 +756,7 @@ class Context:
 
         The arguments are those of `emit`.
         """
-        return self.events.bail(name, *args, this=this)
+        return self._events.bail(name, *args, this=this)
 
     @owner_thread("scheduler")
     def serial(self, name: EventName, *args: Any, this: object = None) -> Deferred[Any]:
@@ -618,7 +765,7 @@ class Context:
         The arguments are those of `emit`. The result is a `Deferred` of the first
         result that is not `None` or `False`.
         """
-        return self.events.serial(name, *args, this=this)
+        return self._events.serial(name, *args, this=this)
 
     @owner_thread("scheduler")
     def parallel(
@@ -629,7 +776,7 @@ class Context:
         The arguments are those of `emit`. The `Deferred` rejects with an
         `ExceptionGroup` when any listener fails.
         """
-        return self.events.parallel(name, *args, this=this)
+        return self._events.parallel(name, *args, this=this)
 
     @owner_thread("scheduler")
     def waterfall(self, name: EventName, *args: Any, this: object = None) -> Any:
@@ -638,7 +785,7 @@ class Context:
         Each listener receives the other arguments and a `next` function that runs the
         rest of the chain. See `EventsService.waterfall`.
         """
-        return self.events.waterfall(name, *args, this=this)
+        return self._events.waterfall(name, *args, this=this)
 
     def _derive(
         self,
@@ -646,17 +793,146 @@ class Context:
         intercepts: ChainMap[str, object],
         meta: ChainMap[str, object],
         fiber: Fiber | None = None,
+        *,
+        restrictions: tuple[Restriction, ...] | None = None,
     ) -> Self:
         child = object.__new__(type(self))
         child.scheduler = self.scheduler
-        child.root = self.root
-        child.fiber = self.fiber if fiber is None else fiber
-        child.events = self.events
-        child.reflect = self.reflect
-        child.registry = self.registry
+        child._root = self._root
+        child._fiber = self._fiber if fiber is None else fiber
+        child._events = self._events
+        child._reflect = self._reflect
+        child._registry = self._registry
         child._isolates = isolates
         child._intercepts = intercepts
         child._meta = meta
+        child._restrictions = (
+            self._restrictions if restrictions is None else restrictions
+        )
         child._shadow = None
         child._use_site = None
         return child if self._shadow is None else child.with_shadow(self._shadow)
+
+    def _rejecting(self, name: str, *, provide: bool = False) -> Rule | None:
+        """Return the first `Rule` in this context's chain that rejects `name`.
+
+        Args:
+            name: The service name.
+            provide: Check the provide dimension of each `Restriction` instead of the
+                inject-and-reads dimension.
+        """
+        for restriction in self._restrictions:
+            rule = restriction.provide if provide else restriction.inject
+            if rule is not None and not rule.admits(name):
+                return rule
+        return None
+
+
+def _rule(
+    names: Iterable[Keyable[Any]] | None,
+    prefixes: Iterable[str] | None,
+    names_arg: str,
+    prefixes_arg: str,
+) -> Rule | None:
+    """Build the `Rule` of one dimension of `restrict`, or `None` for no rule."""
+    if names is None and prefixes is None:
+        return None
+    if isinstance(names, str):
+        raise TypeError(f"{names_arg} must be an iterable of keys, not a bare str")
+    if isinstance(prefixes, str):
+        raise TypeError(f"{prefixes_arg} must be an iterable of str, not a bare str")
+    return Rule(
+        frozenset() if names is None else frozenset(key_name(n) for n in names),
+        () if prefixes is None else tuple(prefixes),
+    )
+
+
+@owner_thread("scheduler")
+def restrict(
+    ctx: Context,
+    *,
+    inject: Iterable[Keyable[Any]] | None = None,
+    inject_prefixes: Iterable[str] | None = None,
+    provide: Iterable[Keyable[Any]] | None = None,
+    provide_prefixes: Iterable[str] | None = None,
+) -> Context:
+    """Return a context that admits only the given inject, read, and provide keys.
+
+    !!! warning "Guard, not sandbox"
+        This restriction stops accidental and undeclared access, and fails fast. It
+        does not stop hostile code, which can reach other objects through `gc`,
+        `sys._getframe`, or module globals. Run untrusted code in another process.
+
+    !!! warning "Experimental"
+        This API can change before `pycordis` exports it.
+
+    The restriction reaches every context that the result derives: a fiber's own
+    context, and a context from `use`, `inject`, `isolate`, `intercept`, `extend`, or a
+    further `restrict` call. A key is admitted only when every `restrict` call in the
+    chain admits it, so a later call can narrow the restriction, but never widen it.
+
+    `inject` and `provide` take exact service names or `Key` objects; a `Key[T]`
+    becomes its name. `inject_prefixes` and `provide_prefixes` admit any name that
+    starts with one of their strings. Leaving both arguments of a dimension `None`
+    admits every key for it; an explicit empty iterable admits none.
+
+    A fiber that a derived context creates fails to load when one of its `inject` keys
+    is outside the inject rule: it goes to `FAILED`, and `fiber.error` names the key
+    and the rejecting `Rule`. A read (`ctx[key]`, `ctx.get`) outside the inject rule
+    raises `CordisError` the same way, checked at the def site of the read (see
+    `Context.shadow`): a mixin accessor is checked by the service name it forwards,
+    not by its own name. A `ctx.provide`, `ctx.accessor`, or `ctx.mixin` call outside
+    the provide rule raises from the call itself, so a component that makes the call
+    in its own setup fails to load with no effect installed. `ctx.root`, `ctx.reflect`,
+    `ctx.registry`, and `ctx.events` raise `CordisError` on the result, and on every
+    context it derives, because each of them gives an unrestricted view of the whole
+    tree. `ctx.fiber` raises on the result itself, until a call such as `use` or
+    `inject` binds it to a fiber of its own: before that, the attribute would give the
+    fiber of the unrestricted or less-restricted context that `ctx` derives from.
+
+    Args:
+        ctx: The context to restrict.
+        inject: The exact names and keys that a fiber derived from the result can
+            declare in `inject`, and that a read (`ctx[key]`, `ctx.get`) can reach.
+            `None` together with `inject_prefixes` admits every key.
+        inject_prefixes: The name prefixes for the same dimension as `inject`.
+        provide: The exact names and keys that `ctx.provide`, `ctx.accessor`, and
+            `ctx.mixin` can register. `None` together with `provide_prefixes` admits
+            every key.
+        provide_prefixes: The name prefixes for the same dimension as `provide`.
+
+    Returns:
+        A context derived from `ctx` that carries the restriction.
+
+    Raises:
+        ValueError: If `inject`, `inject_prefixes`, `provide`, and `provide_prefixes`
+            are all `None`.
+        TypeError: If one of the four arguments is a bare `str` in place of an
+            iterable: its characters would become names.
+
+    Examples:
+        ```python
+        >>> plugin_ctx = restrict(root, inject=["db"], provide_prefixes=("plugin.",))
+        >>> fiber = plugin_ctx.use(a_plugin)
+        ```
+    """
+    if (
+        inject is None
+        and inject_prefixes is None
+        and provide is None
+        and provide_prefixes is None
+    ):
+        raise ValueError(
+            "restrict needs at least one of inject, inject_prefixes, provide, "
+            "provide_prefixes"
+        )
+    restriction = Restriction(
+        _rule(inject, inject_prefixes, "inject", "inject_prefixes"),
+        _rule(provide, provide_prefixes, "provide", "provide_prefixes"),
+    )
+    return ctx._derive(
+        ctx._isolates,
+        ctx._intercepts,
+        ctx._meta,
+        restrictions=(*ctx._restrictions, restriction),
+    )

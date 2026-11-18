@@ -498,7 +498,7 @@ class TimerService(Service):
             ValueError: If `delay` is negative.
         """
         _check_delay(delay)
-        fiber = self.ctx.fiber
+        fiber = self.ctx._fiber
 
         def fire() -> None:
             handle()
@@ -568,7 +568,7 @@ class TimerService(Service):
             ValueError: If `delay` is not positive.
         """
         _check_delay(delay, positive=True)
-        fiber = self.ctx.fiber
+        fiber = self.ctx._fiber
         return self._every(
             delay,
             lambda: _run_logged(fiber, "ctx.interval()", callback),
@@ -619,7 +619,7 @@ class TimerService(Service):
             ValueError: If `delay` is negative.
         """
         _check_delay(delay)
-        fiber = self.ctx.fiber
+        fiber = self.ctx._fiber
         clock = self._clock
         last = -math.inf
 
@@ -661,7 +661,7 @@ class TimerService(Service):
             ValueError: If `delay` is negative.
         """
         _check_delay(delay)
-        fiber = self.ctx.fiber
+        fiber = self.ctx._fiber
         clock = self._clock
 
         def trigger(*args: P.args, **kwargs: P.kwargs) -> Cancel:

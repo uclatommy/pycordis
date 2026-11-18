@@ -34,9 +34,11 @@ class Service[T]:
     - `cordis_invoke(self, *args, **kwargs)`: Makes the service callable. A call runs
       the hook with the use-site context as `self.ctx`.
 
-    A read of the service through a context (`ctx["name"]`, `ctx.get("name")`) gives a
-    view of the service for that context (see `pycordis.traceable`): `isinstance`
-    works on it, `view.ctx` is the context that reads, and an effect that a method
+    A component's context reads the service only when its fiber or an ancestor fiber
+    injects it (see `Context.get`). A read through a context (`ctx["name"]`,
+    `ctx.get("name")`) gives a view of the service for that context (see
+    `pycordis.traceable`): `isinstance` works on it, `view.ctx` is the context that
+    reads, and an effect that a method
     registers belongs to the fiber of that context. Attributes that the view cannot
     find on the service are read from the service `"<name>.<attribute>"` and from the
     accessor of that name, so `ctx["foo"].bar` can read the service `foo.bar`.
@@ -60,8 +62,8 @@ class Service[T]:
         ...
         ...     def __init__(self, ctx, config):
         ...         super().__init__(ctx)
-        >>> fiber = ctx.use(Database)
-        >>> ctx.get("db")
+        >>> fiber = root.use(Database)
+        >>> root.get("db")
         <Database object>
         ```
     """

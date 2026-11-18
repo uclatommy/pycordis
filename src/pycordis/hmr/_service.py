@@ -211,9 +211,10 @@ class Hmr(Service):
         - The old imports of a module that was imported after the last transaction, and
           that changed before the next one, come from its new source.
         - `reconcile` finds a nested call only through a view of the service, which
-          `ctx.get("hmr")` returns. A call through a reference that the host keeps
-          outside a context is not found. If a moved fiber waits for such a call, the
-          transaction does not end.
+          `ctx["hmr"]` returns. A component that calls `reconcile` reads it this way,
+          so the component, or an ancestor, must inject `hmr`. A call through a
+          reference that the host keeps outside a context is not found. If a moved
+          fiber waits for such a call, the transaction does not end.
 
     Call every method on the owner thread.
 
@@ -228,8 +229,8 @@ class Hmr(Service):
 
     Examples:
         ```python
-        >>> fiber = ctx.use(Hmr)
-        >>> result = ctx.get("hmr").reconcile(lambda: ["/app/plugins/greet.py"])
+        >>> fiber = root.use(Hmr)
+        >>> result = root.get("hmr").reconcile(lambda: ["/app/plugins/greet.py"])
         >>> result.done()
         True
         ```
@@ -317,13 +318,13 @@ class Hmr(Service):
 
         Examples:
             ```python
-            >>> hmr = ctx.get("hmr")
+            >>> hmr = root.get("hmr")
             >>> result = hmr.reconcile(lambda: ["/app/plugins/greet.py"]).result()
             >>> [fiber.uid is not None for fiber in result.settled]
             [True]
             ```
         """
-        if self._is_nested(self.ctx.fiber):
+        if self._is_nested(self.ctx._fiber):
             nested = Deferred[ReloadResult]()
             nested.reject(
                 CordisError("cannot start a transaction inside another transaction")
@@ -336,7 +337,7 @@ class Hmr(Service):
             return start(
                 self.ctx.scheduler,
                 self._transaction(previous, done, changes),
-                fiber=self.ctx.fiber,
+                fiber=self.ctx._fiber,
             )
 
     def _is_nested(self, caller: Fiber) -> bool:
@@ -348,7 +349,7 @@ class Hmr(Service):
             return True
         fiber = caller
         while fiber not in running.moved:
-            parent = fiber.parent.fiber
+            parent = fiber.parent._fiber
             if parent is fiber:
                 return False
             fiber = parent
@@ -468,7 +469,7 @@ class Hmr(Service):
         loaded = [name for name in old if name in accepted]
         return [
             _stale(exporters, old, accepted)
-            for exporters in find_components(loaded, self.ctx.registry).values()
+            for exporters in find_components(loaded, self.ctx._registry).values()
         ]
 
     def _import(self, item: _Stale, accepted: set[str]) -> None:
@@ -479,13 +480,13 @@ class Hmr(Service):
                 importlib.import_module(name)
             module = importlib.import_module(item.entry.module)
             value = item.entry.read(module)
-            if self.ctx.registry.resolve(value) is None:  # type: ignore[arg-type]
+            if self.ctx._registry.resolve(value) is None:  # type: ignore[arg-type]
                 raise CordisError(
                     f"invalid component at {item.entry.module}, expect function or "
                     f'object with an "apply" method, received {type(value).__name__}'
                 )
             item.replacement = value  # type: ignore[assignment]
-            if _holds_other_value(item, value, self.ctx.registry):  # type: ignore[arg-type]
+            if _holds_other_value(item, value, self.ctx._registry):  # type: ignore[arg-type]
                 item.skip = SkipReason.AMBIGUOUS_EXPORT
         except Exception as error:
             self._logger.warning(
@@ -523,7 +524,7 @@ class Hmr(Service):
 
     def _replace(self, applied: list[_Stale]) -> list[Fiber]:
         """Replace each component with its new value, and return the moved fibers."""
-        registry = self.ctx.registry
+        registry = self.ctx._registry
         fibers: list[Fiber] = []
         for item in applied:
             old, new = item.entry.value, item.replacement

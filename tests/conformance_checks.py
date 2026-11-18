@@ -632,7 +632,7 @@ def _row_evidence_failures(
     if kind not in ("improvement", "correction"):
         return [f"kind {kind!r} is not adaptation, improvement, correction or omission"]
     failures = []
-    named = [cell for cell in re.split(r"[,\s]+", row["Contract"]) if cell]
+    named = [cell for cell in re.split(r"[,\s`]+", row["Contract"]) if cell]
     unknown = [name for name in named if name not in contract_ids]
     if not named or unknown:
         failures.append(
