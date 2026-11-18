@@ -1,6 +1,6 @@
 # Build Spec: Context Restriction
 
-**Status**: 📝 Draft — not started; spec 4 of 4 (see [Dependencies](#dependencies))
+**Status**: 🚧 In progress — Increment 2 of 5 complete; spec 4 of 4 (see [Dependencies](#dependencies))
 
 **Reference**: [#8 Feature request: context view that restricts which keys a component can inject and provide](https://github.com/uclatommy/pycordis/issues/8)
 
@@ -28,22 +28,35 @@ class Rule:
     prefixes: tuple[str, ...]      # for example "plugin."
     def admits(self, name: str) -> bool
 
-restrict(ctx: Context, *, inject: Iterable[Keyable | str] = (), inject_prefixes: Iterable[str] = (),
-         provide: Iterable[Keyable | str] = (), provide_prefixes: Iterable[str] = ()) -> Context
+restrict(ctx: Context, *, inject: Iterable[Keyable] | None = None,
+         inject_prefixes: Iterable[str] | None = None,
+         provide: Iterable[Keyable] | None = None,
+         provide_prefixes: Iterable[str] | None = None) -> Context
 ```
 
-`restrict` returns a derived context that carries a restriction: one `Rule` for inject and
-reads, and one for provide. `pycordis/__init__.py` does not export `restrict` or `Rule` (the
-feature flag). The rule is data, never a predicate: `LIFE-CONFLUENT` needs the same answer in
-every schedule, and an error can show a data rule.
+`restrict` returns a derived context that carries a restriction: one `Rule | None` for inject
+and reads, and one `Rule | None` for provide. A dimension whose two arguments are both `None`
+has no rule (`None`) and admits every key. An explicit empty iterable admits no key. A call
+with all four arguments `None` raises `ValueError`. A bare `str` in place of an iterable raises
+`TypeError`, because its characters would become names. `pycordis/__init__.py` does not export
+`restrict` or `Rule` (the feature flag). The rule is data, never a predicate: `LIFE-CONFLUENT`
+needs the same answer in every schedule, and an error can show a data rule.
 
 ### Inheritance and intersection
 
 The restriction is stored in the context chain, as the isolation table is, so every context that
 a restricted context derives (`use`, `inject`, `isolate`, `intercept`, `extend`, a fiber's own
-context) carries it. A `restrict` call on a restricted context adds a second restriction. A key
-is admitted only when every restriction in the chain admits it, so a component can make its
-restriction stricter, but never wider. An error names the restriction that rejects.
+context) carries it. `Context._derive` copies each field by name, so the restriction is a new
+field there and in `Context.__init__` (empty at the root); `with_shadow` copies the use site's
+fields, so a shadow carries the caller's restriction. A `restrict` call on a restricted context
+adds a second restriction. A key is admitted only when every restriction in the chain admits
+it, so a component can make its restriction stricter, but never wider. An error names the
+`Rule` that rejects (its names and prefixes, sorted, so the text is the same in every run).
+
+**Which context's restriction applies**: reads and the guarded attributes use the def site
+(`ctx.shadow` when it is set, else `ctx`); inject and provide use the use site. So a method of
+a host service that a restricted plugin calls can read `self.ctx.registry`, and its
+`self.ctx.provide(...)` follows the plugin's provide rule.
 
 ```mermaid
 flowchart TD
@@ -58,10 +71,16 @@ flowchart TD
 | Operation | Enforcement point | Result outside the rule |
 |---|---|---|
 | A declared inject key | The one helper that every path that sets `Fiber.inject` calls: fiber attach and `Fiber._replace` | The fiber goes to `FAILED` before `apply`; `fiber.error` names the key and the rule |
-| A read (`ctx[key]`, `ctx.get`, a mixin accessor) | `ReflectService.admit` from [Checked Get](completed/checked_get.md), at the def site, before the root shortcut | `CordisError` that names the service key and the rule; a mixin accessor names its source service (`timer`), not the accessor (`sleep`) |
+| A read (`ctx[key]`, `ctx.get`, an accessor) | One `ReflectService` check of the def site's read rule, that `read` (accessor and service branches) and `checked_get` call before the root shortcut (`def_site` returns `None` for a root-fiber context). `admit` and `locate` stay as they are | `CordisError` that names the key and the rule. A plain accessor is checked by its own name; a mixin accessor is checked by its source service (`timer`), not by its name (`sleep`), so `Accessor` records the source that `_forward` reads |
+| A write (`ctx[key] = value`) | `ReflectService.write`: the same check for an accessor setter; a service write already needs a provider on the writer's own fiber (`ReflectService.set`) | As for a read |
 | `provide`, `accessor`, `mixin` | The effect setup in `ReflectService.provide`, `accessor`, and `mixin` | The effect raises; in `apply` the fiber fails and reverts, as `LIFE-FAILURE` requires |
-| `ctx.root`, `ctx.reflect`, `ctx.registry`, `ctx.events` | Properties on `Context` | `CordisError` in a restricted context; no change in other contexts |
+| `ctx.root`, `ctx.reflect`, `ctx.registry`, `ctx.events` | Read-only properties on `Context`, checked against the def site's restriction | `CordisError` in a restricted context; no change in other contexts |
 | Paths that the audit finds | Per the audit (Appendix B) | Per the audit |
+
+The root shortcut has two parts, and the read rule comes before both: `def_site` gives `None`
+for a context on the root fiber (so `restrict(root, ...)` itself must be checked first), and
+`locate` admits a service that an ancestor provides (so a plugin cannot read a root-only
+service). A restricted root-fiber context whose read passes the rule keeps the unchecked read.
 
 `accessor` and `mixin` names are in the provide rule because an accessor takes precedence over a
 service of the same name: an accessor at a host key would replace every read of that key.
@@ -100,20 +119,28 @@ docs/
 - **Guard, not sandbox**: the `restrict` docstring has a `!!! warning` admonition that says the
   restriction does not stop hostile code, and that untrusted code must run in another process.
 - **No restriction, no change**: an unrestricted context keeps every result. The cost is one
-  `None` check at each enforcement point. The guarded attributes are properties; internal code
-  reads private names (`_root`, `_reflect`, `_registry`, `_events`), so the cost of a property
-  is only on a host or plugin read.
+  empty check at each enforcement point (no allocation on the read path). The guarded attributes
+  are instance attributes today and become read-only properties; internal code reads private
+  names (`_root`, `_reflect`, `_registry`, `_events`), so the cost of a property is only on a
+  host or plugin read. The `Attributes:` entries in the `Context` docstring move to the property
+  docstrings. Assignment to these names was never documented, so a read-only property is not a
+  breaking change.
 - **Inject check, not a wait**: a fiber with an inject key outside the rule goes to `FAILED`. It
   does not stay `PENDING`, because a fiber that waits for a key it can never use would wait with
-  no report. It loads again only through `update` or a replacement, as `LIFE-FAILURE` says.
+  no report. It loads again only through `update` or a replacement, as `LIFE-FAILURE` says. In
+  `_attach`, the check runs inside the existing `try`, before `_refresh`. In `_replace`, which
+  clears `_error`, the check runs after the clear and a rejection skips `_refresh`.
 - **Error content**: every error names the key and the rule (its names and prefixes), so a host
   status view shows the cause from `fiber.error` alone (the #8 feedback). These messages are new;
   no upstream text applies.
-- **Service calls**: a method of an allowed service reads at the service's def site, so it is
-  not restricted by the caller. A `provide`, `accessor`, or `mixin` call in a service method
-  registers on the calling fiber, so it follows the caller's provide rule.
-- **Root reads**: the read rule applies before the root shortcut of `admit`, so a restricted
-  plugin cannot read a service that only the root provides.
+- **Service calls**: a method of an allowed service reads, and reads the guarded attributes, at
+  the service's def site, so the caller's rule does not restrict it. A service that a restricted
+  plugin provides has a restricted def site, so its methods are restricted for every caller. A
+  `provide`, `accessor`, or `mixin` call in a service method registers on the calling fiber, so
+  it follows the caller's provide rule.
+- **Root reads**: the read rule applies before both parts of the root shortcut (see
+  [Enforcement points](#enforcement-points)), so a restricted plugin cannot read a service that
+  only the root provides.
 - **Events and other operations**: `on`, `emit`, `effect`, `use`, timers, and the scheduler are not
   restricted. The #8 feedback confirmed that event names need no rule in this spec.
 - **Audit gate**: a path that lets a restricted component register an effect that outlives the
@@ -128,7 +155,25 @@ docs/
     - global listeners (`options.is_global`) and listeners on internal events
     - `ctx.isolate(name, label)` with a label that the host uses
     - `ctx.scheduler.submit`: work that runs after the component is disposed
-    - `fiber.parent` and `fiber.children`
+    - `fiber.parent`, `fiber.ctx`, and `fiber.children`: `ctx.fiber.parent.fiber.ctx` reaches
+      the root context from any plugin, because the root fiber's `ctx` is the root itself. The
+      `host-introspection` row makes `parent` public, and a `Fiber` cannot tell which context
+      reads it, so a guard on `parent` or `ctx` also breaks the host's introspection of
+      restricted fibers. A plugin fiber's `parent` is the restricted context; the leak is
+      `.fiber` on that context, which gives the host's unrestricted fiber. Candidate fix: guard
+      `Context.fiber` only on a context where `restrict` crosses a fiber boundary, and leave
+      `Fiber.parent` and `Fiber.ctx` as they are (cost: internal reads of `ctx.fiber` move to a
+      private name). Rejected: a check at effect
+      registration against the fiber that runs the current step. A host listener that runs in a
+      plugin's `emit` would be rejected in one schedule and accepted in another
+      (`LIFE-CONFLUENT`), and the check would restrict events, which this spec does not do
+    - A host service method that registers an effect on its own root (`self.ctx.root.provide`)
+      when a restricted plugin calls it. The def site decides the guarded attributes, so this
+      path stays open. The audit gate covers the paths that pycordis gives a component, not
+      effects that a trusted host service registers, so the plan is "document"
+    - `Fiber` objects in internal event arguments (`internal/plugin`, `internal/status`,
+      `internal/replace`), whose `ctx` can be unrestricted
+    - `Context.with_shadow`, a public method that sets the def site that reads use
 
 ## Integration
 
@@ -158,10 +203,16 @@ docs/
 - ✅ Reads: `ctx[key]`, `ctx.get`, and a mixin accessor outside the rule raise, including a
   service that only the root provides; the mixin error names the source service (one
   parametrized test)
+- ✅ Arguments: a bare `str` raises `TypeError`, all four arguments `None` raise `ValueError`,
+  and a dimension with no rule admits every key (one parametrized test)
+- ✅ Reads: a plain accessor outside the rule raises by its own name; `restrict(root, ...)` used
+  directly (a root-fiber context) checks its reads; `ctx[key] = value` through an accessor
+  setter outside the rule raises (cases of the read test above)
 - ✅ Inheritance: a child fiber, an `isolate` context, and an `extend` context carry the
   restriction; a nested `restrict` admits only the intersection and cannot widen it
-- ✅ A method of an allowed service reads its own injected service when the caller's rule does
-  not list that service
+- ✅ A method of an allowed service reads its own injected service and `self.ctx.registry` when
+  the caller's rule does not list that service; its `self.ctx.provide` follows the caller's
+  provide rule
 - ✅ `divergence("context-restriction")`: `ctx.root`, `ctx.reflect`, `ctx.registry`, and
   `ctx.events` raise in a restricted context and work in an unrestricted one
 - ✅ Each effect path that the audit closes has a test that the restricted component cannot
@@ -187,10 +238,11 @@ docs/
 
 - **Sequence**: spec 4 of 4. The order is [Pump Budget](completed/pump_budget.md),
   [Step Reports](completed/step_reports.md), [Checked Get](completed/checked_get.md), Context Restriction.
-- **In parallel**: Increment 1 (the audit) is read-only and runs during
-  [Checked Get](completed/checked_get.md), so that a breaking change it finds can join `0.2.0`.
+- **In parallel**: Increment 1 (the audit) is read-only. It runs while `feature/checked-get` is
+  not merged to `develop`, and it is complete before `release/0.2.0` is cut, so that a breaking
+  change it finds can join `0.2.0`.
 - **Prerequisite**: [Checked Get](completed/checked_get.md) (`ReflectService.admit` and the checked
-  `ctx.get`). Increments 2 to 4 start after Checked Get merges.
+  `ctx.get`). Increments 2 to 5 start after Checked Get merges.
 - **Required by**: the later loader entry option.
 - **Runtime**: none.
 - **Dev**: none new.
@@ -206,7 +258,19 @@ the repository
 **Validation**: each candidate in Key Constraints has a row; each "effect outlives" row has a
 closing plan that needs no breaking change, or the maintainer has decided it
 **Docs**: Appendix B of this spec
-**Status**: ⏳ Not started
+**Status**: ✅ Completed
+**Changed**:
+- Appendix B: nine rows, one per candidate in Key Constraints plus `Loader`'s
+  `Tracker(no_shadow=True)`, found while tracing `ctx["loader"].ctx`
+**Tests**: None (read-only increment; no code changed)
+**Deviations**:
+- None
+**Manual validation**:
+- `uv run python -c`: a component that injects `loader` and reads `ctx["loader"].ctx`
+  gets a context whose `.fiber` is the loader's own fiber, not the component's; a
+  component that injects `timer` and reads `ctx["timer"].ctx` gets the use site, as
+  `Service`'s default `Tracker(property="ctx", ...)` intends. The contrast confirms the
+  `Loader` row of Appendix B
 
 ### Increment 2: Rule, restrict, and the inject check
 **Goal**: `restrict` returns a context whose restriction reaches every derived context, and a
@@ -216,7 +280,40 @@ fiber with an inject key outside the rule fails at attach.
 manual: in `uv run python`, restrict the root to `inject={"db"}`, use a component that injects
 `cache`, and read `fiber.state` and `fiber.error`
 **Docs**: the `restrict` and `Rule` docstrings
-**Status**: ⏳ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `context.py`: `Rule` (names and prefixes, `admits`, a sorted `__str__` for error
+  text), `Restriction` (one `Rule | None` per dimension), a `_restrictions` chain field
+  on `Context` (empty at the root, copied by `_derive`, so `use`, `inject`, `isolate`,
+  `intercept`, `extend`, and `with_shadow` all carry it), `Context._rejecting(name,
+  provide=)` (the first `Rule` in the chain that rejects `name`), and the `restrict`
+  function (validates its four arguments, builds one `Restriction`, and appends it to
+  the chain of a derived context)
+- `fiber.py`: `Fiber._check_inject` raises `CordisError` naming the key and the
+  rejecting `Rule` when `self.parent`'s chain rejects an inject key; `Fiber._fail`
+  records the error and calls `_update_state`, so `fiber.state` reports `FAILED` for
+  every exception the `try` in `_attach` catches, not only the new check; `_attach`
+  calls `_check_inject` before `_refresh`, inside its existing `try`; `_replace` calls
+  it after clearing `self._error` and returns before `_revision`/`_refresh` on
+  rejection
+**Tests**:
+- `tests/test_restrict.py` (20 cases): argument validation (`ValueError` for all four
+  `None`, `TypeError` for a bare `str` in each of the four, a dimension with no rule
+  admits every key, `Rule.admits` by exact name and by prefix); inject failure across
+  the four paths that set `Fiber.inject` (component `inject`, an `@inject` method,
+  `ctx.inject`, a replacement), checking `FAILED`, the error text, and those siblings
+  and the root staying `ACTIVE`; `inject_prefixes` admits a matching name and rejects
+  the rest; inheritance through a child fiber, `isolate`, and `extend`; a nested
+  `restrict` narrows but cannot widen
+- `uv run pytest tests/test_restrict.py tests/test_fiber.py tests/test_replace.py`:
+  65 passed
+- Regression: `uv run pytest` (full suite): 1453 passed, confirming the `_fail` fix
+  changes no existing test's expectation
+**Deviations**:
+- `Fiber._fail` is a new private helper, not named in the spec's **Files** line; it was
+  needed to make `fiber.state == FAILED` observable at all for the new check (see
+  **Changed**), and `_attach`'s pre-existing `except` had the same gap, so both call
+  sites use it
 
 ### Increment 3: Read and provide rules
 **Goal**: reads and `provide`, `accessor`, and `mixin` calls outside the rule fail, with the
@@ -228,15 +325,24 @@ and the error names `timer`
 **Docs**: the `restrict` docstring (each enforcement point)
 **Status**: ⏳ Not started
 
-### Increment 4: Close the escape paths and close out
-**Goal**: the guarded attributes raise in a restricted context, every "close" row of Appendix B
-is closed, and the divergence row is in place.
-**Files**: `context.py` (~40), internal callers in about 10 modules (~60 renames),
-`test_restrict.py` (~80), `architecture.md`
+### Increment 4: Guarded attributes
+**Goal**: `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise in a restricted
+context (by the def site) and work in every other context.
+**Files**: `context.py` (~40), internal callers in 13 modules (~70 renames to the private
+names), `test_restrict.py` (~50)
+**Validation**: `uv run pytest`; manual: in `uv run python`, a restricted plugin calls
+`ctx.root.provide(...)` and gets `CordisError`, and a host service method that reads
+`self.ctx.registry` works when that plugin calls it
+**Docs**: the docstrings of the guarded attributes and of `Context` (the `Attributes:` section)
+**Status**: ⏳ Not started
+
+### Increment 5: Close the escape paths and close out
+**Goal**: every "close" row of Appendix B is closed, and the divergence row is in place.
+**Files**: per Appendix B; `test_restrict.py` (~50), `architecture.md`
 **Validation**: `uv run pytest`; the full-suite unmarked slow tests section is empty; manual: in
-`uv run python`, a restricted plugin calls `ctx.root.provide(...)` and gets `CordisError`
-**Docs**: `docs/architecture.md` row; the docstrings of the guarded attributes; review of every
-docstring in `context.py` and `reflect.py`
+`uv run python`, each closed path in Appendix B gives `CordisError` from a restricted plugin
+**Docs**: `docs/architecture.md` row; review of every docstring in `context.py`, `reflect.py`,
+and `fiber.py`
 **Status**: ⏳ Not started
 
 ## Code Standards
@@ -256,16 +362,30 @@ introduced it.
 
 ## Appendix A: Divergences
 
-The maintainer approved this row on #8. It goes to the divergence table in
-`docs/architecture.md` in Increment 4.
+The maintainer approved this row on #8. The spec review added accessor reads and writes to the
+pycordis column, and #8 has a comment about it. The row goes to the divergence table in
+`docs/architecture.md` in Increment 5.
 
 | ID | Kind | Upstream | pycordis | Contract | Reason and evidence |
 |---|---|---|---|---|---|
-| `context-restriction` | improvement | No access rule; `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` are always public | `pycordis.context.restrict` gives a context whose inject, read, and provide keys follow data rules, for every derived context; in a restricted context, `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise `CordisError` | `LIFE-FAILURE`, `EFF-REVERT` | A host states which services a plugin can use or replace. A restricted plugin cannot register an effect on the root, which would outlive the plugin. A guard, not a sandbox. Test: `divergence("context-restriction")` in `tests/test_restrict.py` |
+| `context-restriction` | improvement | No access rule; `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` are always public | `pycordis.context.restrict` gives a context whose inject keys, service and accessor reads and writes, and provide keys follow data rules, for every derived context; in a restricted context, `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise `CordisError` | `LIFE-FAILURE`, `EFF-REVERT` | A host states which services a plugin can use or replace. A restricted plugin cannot register an effect on the root, which would outlive the plugin. A guard, not a sandbox. Test: `divergence("context-restriction")` in `tests/test_restrict.py` |
 
 ## Appendix B: Audit
 
-Increment 1 fills this table.
-
 | Path | Class | Plan |
 |---|---|---|
+| `Loader.cordis_tracker = Tracker(no_shadow=True)` (`loader/_service.py`): a plain read of `ctx["loader"].ctx` returns the real instance attribute, the loader's own unrestricted context, because `no_shadow=True` leaves `Tracker.property` at `None`, so `_read_attribute` never recognizes `"ctx"` as the tracked property and `TraceableView.__getattribute__` falls through to the stored value instead of `ctx.use_site` | effect outlives component: a restricted plugin that injects `loader` reaches `ctx["loader"].ctx.provide(...)`, `.use(...)`, or any other call on the host's own context, with no restriction at all | close: give `Loader` a `Tracker(property="ctx", ...)` like every other `Service`, so a read of `ctx["loader"].ctx` gives the use site, as `Hmr` already does; `Loader.locate` and `_on_plugin` keep reading the private `self.ctx` they already hold |
+| `pycordis.traceable.get_original(value)`: returns the service object itself, whose `ctx` attribute is the def-site context, unwrapped | effect outlives component: a restricted plugin with a reference to any service view (from an injected service, an event argument, or a mixin) calls `get_original(view).ctx` to read or register effects on the unrestricted def-site context directly | document: `get_original` is not in a public module (`pycordis.traceable`); the restriction warning in `restrict`'s docstring names it as a way that hostile code reaches other objects, matching the guard-not-sandbox position |
+| `internal/plugin`, `internal/status`, and `internal/replace` listeners (`Fiber.__init__`, `Fiber._left`, `Fiber._update_state`, `Fiber._replace`): each `ctx.emit(...)` call passes no `this` filter, so `EventsService._resolve` returns every listener of the name with no check of the registering context against the emitting one | read gap: a restricted plugin that does `ctx.on("internal/plugin", cb)` receives the `Fiber` of every component in the tree, including the host's, and `fiber.ctx`, `fiber.parent`, and `fiber.children` from it are unrestricted | document: the spec does not restrict event names or dispatch (`#8` feedback); closing this would restrict `emit`/`on`, which is explicitly out of scope |
+| `ctx.scheduler.submit(fn)`: `fn` is a bare callable with no fiber, no restriction check, and no tie to the registering fiber's lifecycle | effect outlives component: a restricted plugin closes over anything it can already reach and hands it to `submit`; the callable runs on the owner thread after the plugin that scheduled it is disposed, with none of the fiber-teardown ordering that `Fiber.effect` gives | document: `submit` is the one cross-thread primitive (`Scheduler.submit`), and restricting it would need a change to the `Scheduler` protocol, which is host-neutral and outside this spec; a host that must stop this gives a restricted plugin no scheduler reference of its own (it already shares `ctx.scheduler` with the whole tree) |
+| A host service method that runs with a shadow context whose def site is the service's own `ctx` (for example `Hmr.reconcile`, which reads `self.ctx.registry.replace` unchecked): `Context.with_shadow` resolves the guarded attributes at the def site, which is the host's context when the host provides the service | read gap, by design: a restricted plugin that merely injects `hmr` or `loader` can call a host-service method that reaches `ctx.registry`, `ctx.reflect`, or `ctx.root` at the host's own, unrestricted def site | document: this is the same path as `self.ctx.root.provide` in Key Constraints ("Service calls"); the def site decides the guarded attributes by design, so a host that provides such a service to a restricted plugin is trusting that service, not the plugin |
+| `ctx.fiber.runtime.fibers`: the sibling fibers of the same component | read gap, but narrow: `fiber.ctx` of a sibling fiber of a restricted plugin's own component carries the same restriction, because `bind_fiber` derives from `self.use_site`, which keeps the chain | reject: `runtime.fibers` never gives an unrestricted context for a restricted component's own siblings; it is in scope only if a host mixes a restricted and an unrestricted fiber under one `Runtime`, which `replace` cannot do (a component has one `inject`, so one restriction chain) |
+| `fiber.parent`, `fiber.ctx`, `fiber.children`: `ctx.fiber.parent.fiber.ctx` reaches the root context from any plugin, because the root fiber's `ctx` is the root itself | effect outlives component / read gap: confirmed, as Key Constraints describes; the leak is `Context.fiber` on a context that crosses a fiber boundary, not `Fiber.parent` or `Fiber.ctx` themselves | close (Increment 5, per Key Constraints): guard `Context.fiber` only where `restrict` crosses a fiber boundary; leave `Fiber.parent` and `Fiber.ctx` public, so the host's introspection of a restricted fiber's tree keeps working |
+| `ctx.isolate(name, label)` with a label the host uses: `Context.isolate` accepts any `label`, so a restricted plugin can join the host's realm for a service name if it can guess or obtain the host's label object | read gap, narrow: joining a realm only changes which provider a later `inject`/`ctx[key]` resolves to; the read itself still goes through the inject or provide rule at the fiber that uses the joined context | document: a label is an arbitrary object that the host must already hand out or construct predictably for this to matter; no enforcement point in this spec's design changes without widening `restrict` to cover isolation, which the spec does not do |
+| `Context.with_shadow`, a public method that sets the def site a read uses | reject as its own path: `with_shadow` only ever receives a `Context` that the caller already holds (a service's own stored `ctx`, in `_create_shadow`); it has no way to source an unrestricted context that the caller could not already read some other way | out of scope: covered by the "host service def site" row above, not a separate escape |
+| `Fiber` objects in internal event arguments outside `internal/plugin`/`internal/status`/`internal/replace` (`internal/update`, `internal/commit`, `internal/config`): same no-filter `emit`, but these fire on `fiber.ctx.emit(...)` for the fiber's own context, so a listener a restricted plugin's own `ctx.on` installs only ever receives its own fiber here, never the host's | reject: unlike `internal/plugin`/`internal/status`/`internal/replace`, which the registry and the fiber constructor emit for every fiber in the tree, these three emit only on the subject fiber's own context, so the listener and the subject share a restriction chain |
+
+Increments 2 through 5 act on the "close" rows; the "document" and "reject" rows need no
+code change. The `restrict` docstring's warning admonition (Key Constraints, "Guard, not
+sandbox") already covers every "document" row in general terms; Increment 5 adds the
+specific gaps as its own bullets there, per Integration.

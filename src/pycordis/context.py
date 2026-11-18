@@ -7,6 +7,7 @@ and meta tables. Start with `Context(scheduler)` to create a root context.
 
 from collections import ChainMap
 from collections.abc import Callable, Iterable, Iterator, Mapping
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -14,7 +15,7 @@ from pycordis.deferred import Deferred
 from pycordis.errors import CallSite
 from pycordis.events import EventName, EventOptions, EventsService, Listener
 from pycordis.fiber import EffectForm, EffectHandle, Fiber, resolve_config
-from pycordis.keys import Keyable
+from pycordis.keys import Keyable, key_name
 from pycordis.logger import LoggerService
 from pycordis.reflect import Accessor, ReflectService
 from pycordis.registry import Component, RegistryService
@@ -66,6 +67,57 @@ class InterceptLink(Mapping[str, object]):
         return len(self.target.intercepts)
 
 
+@dataclass(frozen=True, slots=True)
+class Rule:
+    """Which service names one dimension of a `restrict` call admits.
+
+    A `restrict` call builds one `Rule` for inject keys and reads, and one `Rule` for
+    provide keys. A name passes the rule when it is in `names`, or starts with one of
+    `prefixes`.
+
+    Attributes:
+        names: The admitted names, by exact match. A `Key[T]` passed to `restrict`
+            becomes its name.
+        prefixes: The admitted name prefixes, such as `"plugin."`.
+    """
+
+    names: frozenset[str]
+    prefixes: tuple[str, ...] = ()
+
+    def admits(self, name: str) -> bool:
+        """Return whether `name` passes this rule."""
+        return name in self.names or name.startswith(self.prefixes)
+
+    def __str__(self) -> str:
+        names = ", ".join(sorted(self.names))
+        prefixes = ", ".join(sorted(self.prefixes))
+        parts = [
+            part
+            for part in (
+                f"names: {names}" if names else "",
+                f"prefixes: {prefixes}" if prefixes else "",
+            )
+            if part
+        ]
+        return "; ".join(parts) if parts else "no names"
+
+
+@dataclass(frozen=True, slots=True)
+class Restriction:
+    """One `restrict` call's rules, carried in a context's restriction chain.
+
+    A context admits a key only when every `Restriction` in its chain admits it (see
+    `restrict`).
+
+    Attributes:
+        inject: The rule for inject keys and reads, or `None` to admit every key.
+        provide: The rule for provide keys, or `None` to admit every key.
+    """
+
+    inject: Rule | None
+    provide: Rule | None
+
+
 class Context:
     """The place from which code registers effects.
 
@@ -103,6 +155,7 @@ class Context:
         self._isolates: ChainMap[str, object] = ChainMap()
         self._intercepts: ChainMap[str, object] = ChainMap()
         self._meta: ChainMap[str, object] = ChainMap()
+        self._restrictions: tuple[Restriction, ...] = ()
         self._shadow: Context | None = None
         self._use_site: Context | None = None
         self.events = EventsService(scheduler)
@@ -675,6 +728,8 @@ class Context:
         intercepts: ChainMap[str, object],
         meta: ChainMap[str, object],
         fiber: Fiber | None = None,
+        *,
+        restrictions: tuple[Restriction, ...] | None = None,
     ) -> Self:
         child = object.__new__(type(self))
         child.scheduler = self.scheduler
@@ -686,6 +741,123 @@ class Context:
         child._isolates = isolates
         child._intercepts = intercepts
         child._meta = meta
+        child._restrictions = (
+            self._restrictions if restrictions is None else restrictions
+        )
         child._shadow = None
         child._use_site = None
         return child if self._shadow is None else child.with_shadow(self._shadow)
+
+    def _rejecting(self, name: str, *, provide: bool = False) -> Rule | None:
+        """Return the first `Rule` in this context's chain that rejects `name`.
+
+        Args:
+            name: The service name.
+            provide: Check the provide dimension of each `Restriction` instead of the
+                inject-and-reads dimension.
+        """
+        for restriction in self._restrictions:
+            rule = restriction.provide if provide else restriction.inject
+            if rule is not None and not rule.admits(name):
+                return rule
+        return None
+
+
+def _rule(
+    names: Iterable[Keyable[Any]] | None,
+    prefixes: Iterable[str] | None,
+    names_arg: str,
+    prefixes_arg: str,
+) -> Rule | None:
+    """Build the `Rule` of one dimension of `restrict`, or `None` for no rule."""
+    if names is None and prefixes is None:
+        return None
+    if isinstance(names, str):
+        raise TypeError(f"{names_arg} must be an iterable of keys, not a bare str")
+    if isinstance(prefixes, str):
+        raise TypeError(f"{prefixes_arg} must be an iterable of str, not a bare str")
+    return Rule(
+        frozenset() if names is None else frozenset(key_name(n) for n in names),
+        () if prefixes is None else tuple(prefixes),
+    )
+
+
+@owner_thread("scheduler")
+def restrict(
+    ctx: Context,
+    *,
+    inject: Iterable[Keyable[Any]] | None = None,
+    inject_prefixes: Iterable[str] | None = None,
+    provide: Iterable[Keyable[Any]] | None = None,
+    provide_prefixes: Iterable[str] | None = None,
+) -> Context:
+    """Return a context that admits only the given inject, read, and provide keys.
+
+    !!! warning "Guard, not sandbox"
+        This restriction stops accidental and undeclared access, and fails fast. It
+        does not stop hostile code, which can reach other objects through `gc`,
+        `sys._getframe`, or module globals. Run untrusted code in another process.
+
+    !!! warning "Experimental"
+        This API can change before `pycordis` exports it.
+
+    The restriction reaches every context that the result derives: a fiber's own
+    context, and a context from `use`, `inject`, `isolate`, `intercept`, `extend`, or a
+    further `restrict` call. A key is admitted only when every `restrict` call in the
+    chain admits it, so a later call can narrow the restriction, but never widen it.
+
+    `inject` and `provide` take exact service names or `Key` objects; a `Key[T]`
+    becomes its name. `inject_prefixes` and `provide_prefixes` admit any name that
+    starts with one of their strings. Leaving both arguments of a dimension `None`
+    admits every key for it; an explicit empty iterable admits none.
+
+    A fiber that a derived context creates fails to load when one of its `inject` keys
+    is outside the inject rule: it goes to `FAILED`, and `fiber.error` names the key
+    and the rejecting `Rule`.
+
+    Args:
+        ctx: The context to restrict.
+        inject: The exact names and keys that a fiber derived from the result can
+            declare in `inject`, and that a read (`ctx[key]`, `ctx.get`) can reach.
+            `None` together with `inject_prefixes` admits every key.
+        inject_prefixes: The name prefixes for the same dimension as `inject`.
+        provide: The exact names and keys that `ctx.provide`, `ctx.accessor`, and
+            `ctx.mixin` can register. `None` together with `provide_prefixes` admits
+            every key.
+        provide_prefixes: The name prefixes for the same dimension as `provide`.
+
+    Returns:
+        A context derived from `ctx` that carries the restriction.
+
+    Raises:
+        ValueError: If `inject`, `inject_prefixes`, `provide`, and `provide_prefixes`
+            are all `None`.
+        TypeError: If one of the four arguments is a bare `str` in place of an
+            iterable: its characters would become names.
+
+    Examples:
+        ```python
+        >>> plugin_ctx = restrict(root, inject=["db"], provide_prefixes=("plugin.",))
+        >>> fiber = plugin_ctx.use(a_plugin)
+        ```
+    """
+    if (
+        inject is None
+        and inject_prefixes is None
+        and provide is None
+        and provide_prefixes is None
+    ):
+        raise ValueError(
+            "restrict needs at least one of inject, inject_prefixes, provide, "
+            "provide_prefixes"
+        )
+    restriction = Restriction(
+        _rule(inject, inject_prefixes, "inject", "inject_prefixes"),
+        _rule(provide, provide_prefixes, "provide", "provide_prefixes"),
+    )
+    return ctx._derive(
+        ctx._isolates,
+        ctx._intercepts,
+        ctx._meta,
+        restrictions=(*ctx._restrictions, restriction),
+    )

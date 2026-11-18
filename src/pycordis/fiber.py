@@ -693,11 +693,28 @@ class Fiber:
         self.runtime.fibers.push(self)
         self.parent.fiber._children[self] = None
         try:
+            self._check_inject()
             self._refresh()
         except Exception as error:
-            self.logger.error("error while loading", exc_info=error)
-            self._error = error
+            self._fail(error)
         return self._leave
+
+    def _check_inject(self) -> None:
+        """Raise if a restriction on `self.parent` rejects one of `self.inject`.
+
+        `self.parent` is the context that created the fiber, which is the use site
+        for inject (see `restrict`).
+        """
+        for name in self.inject:
+            rule = self.parent._rejecting(name)
+            if rule is not None:
+                raise CordisError(f'cannot inject "{name}": {rule}')
+
+    def _fail(self, error: BaseException) -> None:
+        """Record `error` as the reason the fiber cannot run, and report `FAILED`."""
+        self.logger.error("error while loading", exc_info=error)
+        self._error = error
+        self._update_state(lambda: None)
 
     def _leave(self) -> Deferred[None]:
         with self._scheduler.call():
@@ -779,6 +796,11 @@ class Fiber:
         for name in self.inject:
             self._check_impl(name)
         self._error = None
+        try:
+            self._check_inject()
+        except Exception as error:
+            self._fail(error)
+            return
         self._revision += 1
         self._refresh()
 
