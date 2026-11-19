@@ -520,7 +520,7 @@ class Entry:
             name="loader:outer", inject=dict(self.inject), apply=_outer_apply
         )
         with self._scheduler.call():
-            self.outer_fiber = ctx.use(outer, self)
+            self.outer_fiber = ctx._use(outer, self)
 
     def _isolate(self, ctx: Context) -> Context:
         """Return `ctx` with the realm that each `isolate` option names.
@@ -572,5 +572,5 @@ class Entry:
         # the fiber is linked before its component can run
         with self._scheduler.call():
             inner = ctx.intercept_layer(self._intercept)
-            self.inner_fiber = inner.use(component, self.options.get("config"))
+            self.inner_fiber = inner._use(component, self.options.get("config"))
             self.loader._link(self.inner_fiber, self)

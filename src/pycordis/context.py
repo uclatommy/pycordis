@@ -9,12 +9,12 @@ from collections import ChainMap
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any, Self
+from typing import Any, Self, cast
 
 from pycordis.deferred import Deferred
 from pycordis.errors import CallSite, CordisError
 from pycordis.events import EventName, EventOptions, EventsService, Listener
-from pycordis.fiber import EffectForm, EffectHandle, Fiber, resolve_config
+from pycordis.fiber import EffectForm, EffectHandle, Fiber, FiberView, resolve_config
 from pycordis.keys import Keyable, key_name
 from pycordis.logger import LoggerService
 from pycordis.reflect import Accessor, ReflectService
@@ -166,6 +166,11 @@ class Context:
     def __repr__(self) -> str:
         return f"Context <{self._fiber.name}>"
 
+    @property
+    def _def_site(self) -> "Context":
+        """The context whose restrictions decide what this context can reach."""
+        return self if self._shadow is None else self._shadow
+
     def _check_guarded(self, name: str) -> None:
         """Raise if a restriction on the def site makes `name` unreadable.
 
@@ -173,23 +178,30 @@ class Context:
         context, or the services that store providers, listeners, or components,
         through it: each of those gives an unrestricted view of the whole tree.
         """
-        site = self if self._shadow is None else self._shadow
-        if site._restrictions:
+        if self._def_site._restrictions:
             raise CordisError(f'cannot read "{name}" in a restricted context')
+
+    def _view_of(self, fiber: Fiber) -> Fiber:
+        """Return `fiber`, or a `FiberView` of it when the def site is restricted.
+
+        The view is for the component of the def site: its fiber and its restriction
+        chain. `FiberView` has the type of `Fiber` for a caller, which gets a view
+        only in a restricted context.
+        """
+        site = self._def_site
+        if not site._restrictions:
+            return fiber
+        return cast(Fiber, FiberView(fiber, site._fiber, site._restrictions))
 
     @property
     def fiber(self) -> Fiber:
         """The fiber that owns the effects that this context registers.
 
-        Raises:
-            CordisError: If `restrict` added a restriction to this context without
-                binding it to a new fiber, so that this attribute would give the
-                fiber of a less-restricted ancestor. `use`, `inject`, and the other
-                methods that create a fiber do not trip this guard.
+        In a restricted context the result is a `FiberView` of the fiber: it gives no
+        context, parent, or provider record, and it ends only the fibers that the
+        component owns.
         """
-        if self._restrictions is not self._fiber.ctx._restrictions:
-            raise CordisError('cannot read "fiber" in a restricted context')
-        return self._fiber
+        return self._view_of(self._fiber)
 
     @property
     def root(self) -> Self:
@@ -486,7 +498,8 @@ class Context:
             config: The raw config. The component's `Config` validates it.
 
         Returns:
-            The new fiber. A task can `await` it.
+            The new fiber, or a `FiberView` of it in a restricted context. A task can
+            `await` it.
 
         Raises:
             TypeError: If `component` is not a valid component.
@@ -503,9 +516,18 @@ class Context:
             bye world
             ```
         """
+        return self._view_of(self._use(component, config, skip=2))
+
+    def _use(self, component: Component, config: object, skip: int = 1) -> Fiber:
+        """Create the real fiber that `use` gives, with the call site of the caller.
+
+        Code in pycordis that creates a fiber calls this method, so that it holds a
+        `Fiber` in a restricted context. `skip` is the number of frames between the
+        caller to record and this method.
+        """
         with self.scheduler.call():
             return self._registry.use(
-                self.use_site, component, config, CallSite.capture(skip=1)
+                self.use_site, component, config, CallSite.capture(skip=skip)
             )
 
     @owner_thread("scheduler")
@@ -519,11 +541,13 @@ class Context:
                 can return an effect.
 
         Returns:
-            The new fiber.
+            The new fiber, or a `FiberView` of it in a restricted context.
         """
         with self.scheduler.call():
-            return self._registry.inject(
-                self.use_site, deps, callback, CallSite.capture(skip=1)
+            return self._view_of(
+                self._registry.inject(
+                    self.use_site, deps, callback, CallSite.capture(skip=1)
+                )
             )
 
     def __getitem__(self, key: Keyable[Any]) -> Any:
@@ -866,20 +890,16 @@ def restrict(
         `pycordis.traceable.get_original`, and pycordis does not run plugins in another
         process.
 
-        A `Fiber` gives its context, its parent, and its lifecycle methods with no
-        check, so these paths stay open to a restricted component:
+        `Context.use`, `inject`, and `fiber` give a restricted component a `FiberView`,
+        which hides the context, the parent, and the provider records of a fiber, and
+        ends only the fibers that the component owns. These paths stay open:
 
-        - `fiber.committed[name].ctx`: the context of the provider of an injected
-          service, which is the root when the host provides it.
-        - `fiber.runtime.fibers`: the other fibers of the same component, which can
-          belong to an unrestricted context.
         - The `Fiber` argument of the `internal/plugin`, `internal/status`, and
-          `internal/replace` events, which can be a host fiber.
-        - `dispose`, `restart`, and `update` on a fiber that the component does not
-          own.
-
-        A host service that returns fibers or contexts, such as `Loader.resolve`, gives
-        a restricted caller the same authority as those objects.
+          `internal/replace` events, which can be a host fiber. It gives its context,
+          its parent, `committed`, `runtime`, and its lifecycle methods with no
+          check.
+        - A host service that returns fibers or contexts, such as `Loader.resolve`,
+          gives a restricted caller the same authority as those objects.
 
     !!! warning "Experimental"
         This API can change before `pycordis` exports it.
@@ -904,9 +924,11 @@ def restrict(
     in its own setup fails to load with no effect installed. `ctx.root`, `ctx.reflect`,
     `ctx.registry`, and `ctx.events` raise `CordisError` on the result, and on every
     context it derives, because each of them gives an unrestricted view of the whole
-    tree. `ctx.fiber` raises on the result itself, until a call such as `use` or
-    `inject` binds it to a fiber of its own: before that, the attribute would give the
-    fiber of the unrestricted or less-restricted context that `ctx` derives from.
+    tree. `ctx.fiber`, `use`, and `inject` give a `FiberView` of the fiber: it names
+    only `name`, `uid`, `state`, `error`, `children`, and `get_effects()`, and
+    `dispose`, `restart`, and `update` raise unless the component owns the fiber (it
+    created the fiber, or the fiber descends from one that it created). A host that
+    holds an unrestricted context gets the real fiber from `FiberView.unwrap`.
 
     Args:
         ctx: The context to restrict.

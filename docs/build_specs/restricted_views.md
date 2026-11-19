@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: ⬜ Not started — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
+**Status**: 🟡 In progress (Increment 1 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15)
 
@@ -395,7 +395,24 @@ plugin, dispose a sibling under the same `restrict` result, and `unwrap` the vie
 `ctx.fiber` sentence of the body and the warning bullets for `fiber.committed`,
 `fiber.runtime.fibers`, and lifecycle methods (they stay open only through event arguments
 and services)
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `fiber.py`: `owns(scope, chain, target)` and `FiberView` (allow-list, `__getattr__` error, equality and hash, owned-only `dispose`/`restart`/`update`, `wait`/`await` that resolve with the view, `unwrap`)
+- `context.py`: `Context._def_site`, `_view_of`, and the private `_use`; `use`, `inject`, and `fiber` give a view when the def site is restricted; the `fiber` guard is removed; `Context.use`, `inject`, `fiber`, and `restrict` docstrings
+- `loader/_entry.py`: `Entry` creates its fibers through `ctx._use`
+- `tests/test_restrict.py`: view allow-list (with the dunder probe), `wait`/`await`, ownership, equality, and `unwrap` tests; four tests that read `.ctx` of a restricted `use` or the old `fiber` guard now use `unwrap` and the view
+**Tests**:
+- `uv run pytest tests/test_restrict.py tests/test_fiber.py tests/test_invariants.py tests/test_loader.py tests/test_docstrings.py`: 386 passed
+- `uv run pytest` (full suite): 1478 passed; `ruff check` and `ruff format --check` clean
+**Deviations**:
+- `use`, `inject`, and `fiber` call a private `Context._view_of` that builds the view directly; Increment 2 replaces it with `expose`
+- `FiberView.__getattr__` raises `AttributeError` for dunder names (protocol probes such as `copy`); every other missing name raises `CordisError`
+- Ownership tests build the views of foreign fibers with `ctx._view_of`, because no public path gives them until the event arguments change in Increment 2
+- `Context.fiber` of a shadow with an unrestricted def site and a restricted use site gives the real fiber (D9); a test that expected `CordisError` changed
+- `ReflectService`'s `ctx.inject` call for `@inject` methods is unchanged: it drops the result, so a restricted context builds one unused view
+**Manual validation**:
+- Confirmed in `uv run python`: `a.committed` raises `CordisError`, and `a.unwrap(root)` gives the `Fiber`. Two views from one unbound `restrict` result have the root fiber as scope, so each owns the other; the sibling rule applies between plugins that run in their own fibers, and the ownership tests check it
+
 
 ### Increment 2: Exposure rule and listener arguments
 **Goal**: `expose` owns the rule, and every listener that a restricted context registers gets

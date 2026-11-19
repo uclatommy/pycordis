@@ -6,9 +6,10 @@ import pytest
 
 from pycordis.context import Context, Rule, restrict
 from pycordis.errors import CordisError
-from pycordis.fiber import Fiber, FiberState
+from pycordis.fiber import Fiber, FiberState, FiberView
 from pycordis.loader import Loader
 from pycordis.registry import inject as inject_method
+from pycordis.scheduler import start
 
 
 def _no_deps(ctx: Context, config: object) -> None:
@@ -230,7 +231,10 @@ class TestReads:
         assert shadowed["db"] == 1
 
         restricted_service = (
-            restrict(root, inject=["other"]).inject(["other"], lambda ctx: None).ctx
+            restrict(root, inject=["other"])
+            .inject(["other"], lambda ctx: None)
+            .unwrap(root)
+            .ctx
         )
 
         # the def site rejects "db" even though the caller (root) has no restriction
@@ -331,15 +335,16 @@ def test_a_guarded_attribute_is_checked_at_the_def_site(root: Context) -> None:
     shadowed = restricted_caller.with_shadow(unrestricted_service)
     assert shadowed.root is root
 
-    # `fiber` follows the caller, because the caller's fiber owns the effects of a
-    # service call: a bound caller reads its own fiber, and an unbound one raises
-    caller_fiber = restrict(root, inject=["other"]).use(_no_deps)
+    # `fiber` follows the def site too: an unrestricted def site gives real fibers
+    caller_fiber = restrict(root, inject=["other"]).use(_no_deps).unwrap(root)
     assert caller_fiber.ctx.with_shadow(unrestricted_service).fiber is caller_fiber
-    with pytest.raises(CordisError, match="restricted context"):
-        _ = shadowed.fiber
+    assert shadowed.fiber is root.fiber
 
     restricted_service = (
-        restrict(root, inject=["other"]).inject(["other"], lambda ctx: None).ctx
+        restrict(root, inject=["other"])
+        .inject(["other"], lambda ctx: None)
+        .unwrap(root)
+        .ctx
     )
 
     # the def site is restricted even though the caller (root) has no restriction
@@ -357,24 +362,110 @@ def test_on_and_emit_are_not_restricted(root: Context) -> None:
     assert received == ["world"]
 
 
-def test_fiber_raises_when_restrict_has_not_bound_a_new_fiber(root: Context) -> None:
-    """`restrict` adds a restriction without creating a fiber of its own, so this
-    context's `fiber` would otherwise give the fiber of a less-restricted ancestor."""
-    restricted = restrict(root, inject=["other"])
-    with pytest.raises(CordisError, match="restricted context"):
-        _ = restricted.fiber
-
-
 @pytest.mark.divergence("context-restriction")
-def test_fiber_closes_the_leak_to_an_unrestricted_ancestor(root: Context) -> None:
-    """A restricted component reads its own fiber; `fiber.parent.fiber`, which would
-    give the host's unrestricted fiber, raises."""
+def test_a_restricted_fiber_is_a_view_that_gives_only_the_allow_list(
+    root: Context,
+) -> None:
+    """The view has no `ctx` or `parent`, so `fiber.parent.fiber` and the host's
+    unrestricted contexts are out of reach."""
     restricted = restrict(root, inject=["other"])
-    fiber = restricted.use(_no_deps)
+    host = root.use(_no_deps)
+    view = restricted.fiber
 
-    assert fiber.ctx.fiber is fiber
+    assert isinstance(view, FiberView) and not isinstance(view, Fiber)
+    assert (view.name, view.uid, view.state) == ("root", 0, FiberState.ACTIVE)
+    assert view.error is None
+    assert all(isinstance(child, FiberView) for child in view.children)
+    assert host.uid in [child.uid for child in view.children]
+    assert view.get_effects() == root.fiber.get_effects()
+    for name in ("ctx", "parent", "committed", "runtime", "logger"):
+        with pytest.raises(CordisError, match=f'"{name}"'):
+            getattr(view, name)
+    # a protocol probe is a missing attribute, not a rule violation
+    assert not hasattr(view, "__deepcopy__")
+
+
+@pytest.mark.parametrize("fails", [False, True], ids=["resolves", "rejects"])
+def test_wait_and_await_on_a_view_settle_with_the_view(
+    root: Context, fails: bool
+) -> None:
+    view = restrict(root, inject=["other"]).use(_needs_db if fails else _no_deps)
+
+    async def awaited() -> object:
+        return await view
+
+    for run in (
+        lambda: view.wait().result(),
+        lambda: start(root.scheduler, awaited()).result(),
+    ):
+        if fails:
+            with pytest.raises(CordisError) as excinfo:
+                run()
+            assert excinfo.value is view.error
+        else:
+            assert run() == view
+
+
+@pytest.mark.parametrize(
+    "act",
+    [
+        lambda view: view.dispose(),
+        lambda view: view.restart(),
+        lambda view: view.update(None),
+    ],
+    ids=["dispose", "restart", "update"],
+)
+def test_a_view_acts_only_on_a_fiber_that_the_component_owns(
+    root: Context, act: Callable[[FiberView], object]
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    sibling = restricted.use(_no_deps).unwrap(root)
+    host = root.use(_no_deps)
+    seen: dict[str, FiberView] = {}
+
+    def plugin(ctx: Context, config: object) -> None:
+        seen["own"] = ctx.use(_no_deps)
+        seen["grandchild"] = restrict(ctx, inject=["other"]).use(_no_deps)
+        # views of fibers outside the subtree, for the scope of this plugin
+        seen["sibling"] = ctx._view_of(sibling)
+        seen["host"] = ctx._view_of(host)
+        seen["root"] = ctx._view_of(root.fiber)
+
+    assert restricted.use(plugin).state == FiberState.ACTIVE
+
+    for name in ("own", "grandchild"):
+        act(seen[name])
+    for name in ("sibling", "host", "root"):
+        with pytest.raises(CordisError, match="does not own"):
+            act(seen[name])
+
+
+def test_a_view_equals_a_view_of_the_same_fiber_for_the_same_scope(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    other_scope = restrict(root, inject=["other"])
+    view = restricted.use(_no_deps)
+    fiber = view.unwrap(root)
+
+    assert restricted._view_of(fiber) == view
+    assert hash(restricted._view_of(fiber)) == hash(view)
+    assert view in {restricted._view_of(fiber)}
+    assert view != fiber and fiber != view
+    assert other_scope._view_of(fiber) != view
+
+
+def test_unwrap_needs_an_unrestricted_def_site(root: Context) -> None:
+    restricted = restrict(root, inject=["other"])
+    view = restricted.use(_no_deps)
+    restricted_ctx = restricted.use(_no_deps).unwrap(root).ctx
+
+    assert view.unwrap(root) is root.fiber.children[0]
+    assert view.unwrap(restricted_ctx.with_shadow(root)) is view.unwrap(root)
     with pytest.raises(CordisError, match="restricted context"):
-        _ = fiber.parent.fiber
+        view.unwrap(restricted_ctx)
+    with pytest.raises(CordisError, match="restricted context"):
+        view.unwrap(root.with_shadow(restricted_ctx))
 
 
 @pytest.mark.divergence("context-restriction")
