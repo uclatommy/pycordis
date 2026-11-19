@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🔄 Reopened — Increments 1 to 6 are done. Increments 7 to 12 replace the filter at each exit with one boundary that every crossing uses. Every decision is accepted, and Increment 7 is ready to start (see [Decisions](#decisions))
+**Status**: 🔄 Reopened — Increments 1 to 7 are done. Increments 8 to 12 replace the filter at each exit with one boundary that every crossing uses. Every decision is accepted, and Increment 8 is ready to start (see [Decisions](#decisions))
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15), [#19 Restricted context: make an unfiltered boundary impossible by construction](https://github.com/uclatommy/pycordis/issues/19)
 
@@ -830,7 +830,25 @@ argument, gives a `FiberView` result. If the last check fails, the bound-method 
 classify it with the [Gap policy](#gap-policy) before Increment 8 starts
 **Docs**: `expose` (the sentence about one scheduler step changes), `receive`, `Exposure`,
 `Scheduler.is_owner`
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `scheduler.py`: `Scheduler.is_owner()` is the one owner-thread check, and `assert_owner` calls it
+- `traceable.py`: `_cross_deferred` settles at once on the owner thread (also for a done source) and uses `Scheduler.submit` on another thread
+- `traceable.py`: `_cross_later` gives a wrapper for a `Deferred`, a coroutine, a generator, or an async generator, in both directions; `_expose` and `_receive` call it
+- `traceable.py`: `_ExposedView` forwards `len`, `bool`, `in`, `[]`, and iteration (the last two filter through `_read_exit`), and two views of one target for one scope are equal and hash alike
+- `traceable.py`: the `expose`, `receive`, and `Exposure` docstrings state the new rules
+- `tests/test_restrict.py`: callable object and `async def` keep their form, settled `Deferred`, coroutine, generator, and async generator in both directions (items, sent values, return value, errors, `throw`/`close`, `athrow`/`aclose`), bound method of a marked object, protocol operations of an exposed view
+- `tests/test_threading.py`: `is_owner` on the owner thread and on a worker thread
+**Tests**:
+- `uv run pytest tests/test_restrict.py tests/test_traceable.py tests/test_threading.py tests/test_scheduler.py tests/test_invariants.py tests/test_hmr.py tests/test_loader.py tests/test_docstrings.py`: 667 passed (with `tests/test_conformance.py`); `ruff check` and `ruff format` clean; 9 of the new tests fail against the code before the increment
+**Deviations**:
+- The `is_owner` test is in `test_threading.py`, not `test_scheduler.py`, because the thread helper is there
+- A value that a caller sends into a wrapped generator goes through the inbound crossing (`receive` for `expose`), as an argument of a wrapped function does; the plan names only `send`, `throw`, and `close`
+- The bound method of a marked class is not a gap: `expose` wraps it as a function form, and a test confirms that its result is a `FiberView`
+- A callable attribute of a tracked service still becomes a function at `_finish` (an existing rule for unrestricted callers too), so the "callable object keeps its type" check holds for `expose` and for marked objects, not for a tracked service attribute
+- `weakref.ref` of a wrapper and `copy` of a `Hidden` are tested in the previous increment, so this increment adds no case for them
+**Manual validation**:
+- Confirmed in `uv run python`: an exposed settled `Deferred` is `done()` at once and holds a `FiberView`, and an exposed generator gives a `FiberView` item
 
 ### Increment 8: The context view
 **Goal**: `ContextView` and its member table cover every public member of `Context`, every

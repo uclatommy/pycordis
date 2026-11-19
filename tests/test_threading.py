@@ -105,6 +105,16 @@ def test_the_scheduler_drivers_reject_a_second_thread(any_scheduler: Scheduler) 
 
 
 @pytest.mark.divergence("owner-thread")
+def test_is_owner_is_true_on_the_owner_thread_and_false_on_a_second_thread(
+    any_scheduler: Scheduler,
+) -> None:
+    result, error = call_on_thread(any_scheduler.is_owner)
+
+    assert error is None and result is False
+    assert any_scheduler.is_owner() is True
+
+
+@pytest.mark.divergence("owner-thread")
 def test_submit_from_a_second_thread_runs_on_the_owner_thread(
     any_scheduler: Scheduler,
 ) -> None:

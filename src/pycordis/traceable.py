@@ -31,9 +31,16 @@ returns or passes on.
 
 import functools
 import inspect
-from collections.abc import Callable
+from collections.abc import AsyncGenerator, Callable, Coroutine, Generator, Iterator
 from dataclasses import dataclass
-from types import BuiltinFunctionType, FunctionType, MethodType
+from types import (
+    AsyncGeneratorType,
+    BuiltinFunctionType,
+    CoroutineType,
+    FunctionType,
+    GeneratorType,
+    MethodType,
+)
 from typing import TYPE_CHECKING, Any
 
 from pycordis.deferred import Deferred
@@ -41,6 +48,8 @@ from pycordis.errors import CordisError
 
 if TYPE_CHECKING:
     from pycordis.context import Context
+
+type _Cross = Callable[["Context", Any], Any]
 
 _MISSING: Any = object()
 _slot = object.__getattribute__
@@ -153,9 +162,10 @@ def _cross_deferred(
 ) -> Deferred[Any]:
     """Return a `Deferred` that settles with `cross` applied to the result of `source`.
 
-    `source` can complete on any thread. The crossing runs on the owner thread, in a
-    scheduler step after `source` completes, also when `source` completes on the owner
-    thread: one path for every thread keeps the crossing off the completing thread.
+    `source` can complete on any thread. On the owner thread the crossing runs when
+    `source` completes, or at once when `source` is done. On another thread the
+    crossing runs on the owner thread in a later scheduler step, so a crossing never
+    runs on a foreign thread.
     """
     settled = Deferred[Any]()
 
@@ -167,12 +177,99 @@ def _cross_deferred(
         else:
             settled.resolve(cross(scope, result))
 
-    source.add_done_callback(lambda _: scope.scheduler.submit(complete))
+    def on_done(_: Deferred[Any]) -> None:
+        scheduler = scope.scheduler
+        if scheduler.is_owner():
+            complete()
+        else:
+            scheduler.submit(complete)
+
+    source.add_done_callback(on_done)
     return settled
+
+
+async def _cross_coroutine(
+    scope: "Context", source: Coroutine[Any, Any, Any], outbound: _Cross
+) -> Any:
+    """Await `source` and give its result through `outbound`."""
+    return outbound(scope, await source)
+
+
+def _cross_generator(
+    scope: "Context",
+    source: Generator[Any, Any, Any],
+    inbound: _Cross,
+    outbound: _Cross,
+) -> Generator[Any, Any, Any]:
+    """Give each item and the return value of `source` through `outbound`.
+
+    A value sent in goes through `inbound`. `throw` and `close` reach `source`.
+    """
+    try:
+        item = source.send(None)
+        while True:
+            try:
+                sent = yield outbound(scope, item)
+            except GeneratorExit:
+                source.close()
+                raise
+            except BaseException as error:
+                item = source.throw(error)
+            else:
+                item = source.send(inbound(scope, sent))
+    except StopIteration as stop:
+        return outbound(scope, stop.value)
+
+
+async def _cross_async_generator(
+    scope: "Context",
+    source: AsyncGenerator[Any, Any],
+    inbound: _Cross,
+    outbound: _Cross,
+) -> AsyncGenerator[Any, Any]:
+    """Give each item of `source` through `outbound`.
+
+    A value sent in goes through `inbound`. `athrow` and `aclose` reach `source`.
+    """
+    try:
+        item = await source.asend(None)
+        while True:
+            try:
+                sent = yield outbound(scope, item)
+            except GeneratorExit:
+                await source.aclose()
+                raise
+            except BaseException as error:
+                item = await source.athrow(error)
+            else:
+                item = await source.asend(inbound(scope, sent))
+    except StopAsyncIteration:
+        return
+
+
+def _cross_later(scope: "Context", value: Any, to_host: bool) -> Any:
+    """Return the wrapper of a value that gives its results later, or `_MISSING`.
+
+    A `Deferred`, a coroutine, a generator, and an async generator give the values that
+    they produce through `receive` when `to_host` is true, and through `expose`
+    otherwise.
+    """
+    outbound, inbound = (_receive, _expose) if to_host else (_expose, _receive)
+    kind = type(value)
+    if kind is Deferred:
+        return _cross_deferred(scope, value, outbound)
+    if kind is CoroutineType:
+        return _cross_coroutine(scope, value, outbound)
+    if kind is GeneratorType:
+        return _cross_generator(scope, value, inbound, outbound)
+    if kind is AsyncGeneratorType:
+        return _cross_async_generator(scope, value, inbound, outbound)
+    return _MISSING
 
 
 _FUNCTION_FORMS = (FunctionType, MethodType, BuiltinFunctionType, functools.partial)
 _CONTAINERS = (tuple, list, set, frozenset)
+_LATER_FORMS = (Deferred, CoroutineType, GeneratorType, AsyncGeneratorType)
 
 
 class _Crossing:
@@ -251,11 +348,17 @@ def expose[T](receiver: "Context", value: T) -> T:
       same type, with each element, key, and value exposed. A change to the new
       container is not visible through the old one.
     - A `Deferred` gives a new `Deferred` that settles with the exposed result, or with
-      the same error. It settles one scheduler step after `value`, so code that awaits
-      it resumes after code that awaits `value` directly.
+      the same error. On the owner thread it settles when `value` completes, and at
+      once when `value` is done. When `value` completes on another thread, it settles
+      on the owner thread in a later scheduler step.
+    - A coroutine gives a coroutine whose result is exposed. A generator gives a
+      generator, and an async generator gives an async generator: each item (and the
+      return value of a generator) is exposed, a value that the caller sends in goes
+      through `receive`, and `throw` and `close` reach the source.
     - A view, a `Hidden`, and a function that `expose` made are unchanged. A function
       that `receive` made gives the function that it wraps.
-    - Any other object is returned unchanged.
+    - Any other object, also a callable object that is not a function, is returned
+      unchanged, so its type, its attributes, and its identity stay the same.
 
     The result has the type of `value` for a caller: a `FiberView` and a `Hidden` are
     not instances of that type. Call this function on the owner thread.
@@ -290,8 +393,8 @@ def _expose(scope: "Context", value: Any) -> Any:
         return {
             _expose(scope, key): _expose(scope, item) for key, item in value.items()
         }
-    if kind is Deferred:
-        return _cross_deferred(scope, value, _expose)
+    if kind in _LATER_FORMS:
+        return _cross_later(scope, value, to_host=False)
     if isinstance(value, _FUNCTION_FORMS):
         return _Crossing(scope, value, to_host=False)
     return value
@@ -312,8 +415,9 @@ def receive[T](scope: "Context", value: T) -> T:
       `expose` and gives the result through `receive`.
     - A `tuple`, `list`, `dict`, `set`, or `frozenset` gives a new container of the
       same type, with each element, key, and value received.
-    - A `Deferred` gives a new `Deferred` that settles with the received result, or with
-      the same error.
+    - A `Deferred`, a coroutine, a generator, and an async generator give the same
+      kind of object, with each result, item, and return value received and each value
+      that is sent in exposed (the `Deferred` rule of `expose` applies to threads).
     - Any other object is returned unchanged.
 
     Call this function on the owner thread.
@@ -354,8 +458,8 @@ def _receive(scope: "Context", value: Any) -> Any:
         return {
             _receive(scope, key): _receive(scope, item) for key, item in value.items()
         }
-    if kind is Deferred:
-        return _cross_deferred(scope, value, _receive)
+    if kind in _LATER_FORMS:
+        return _cross_later(scope, value, to_host=True)
     if isinstance(value, _FUNCTION_FORMS):
         return _Crossing(scope, value, to_host=True)
     return value
@@ -374,6 +478,12 @@ class Exposure:
     that forwards reads to the object. A method of the object runs on the object
     itself, so the object reads its own data without the filter. Only what the
     restricted component reads from the view is filtered.
+
+    The view also forwards `len`, iteration, `[]`, `in`, and `bool` to the object, and
+    filters the items that iteration and `[]` give. Two views of the same object for
+    the same scope are equal. A bound method of the object that the component gets from
+    a listener argument receives its arguments through `receive` and gives its result
+    through `expose`.
 
     Each value that leaves the view goes through `expose`, so a `Fiber` is a
     `FiberView`, a foreign `Context` or a provider record is a `Hidden`, a container is
@@ -814,6 +924,38 @@ class _ExposedView(_Forwarder):
 
     def __delattr__(self, name: str) -> None:
         raise CordisError(f'cannot delete "{name}" in a restricted context')
+
+    # Protocol operations are read from the class, so `__getattribute__` does not see
+    # them. Each one reads the object and filters what it gives.
+
+    def __len__(self) -> int:
+        return len(_slot(self, "_target"))
+
+    def __bool__(self) -> bool:
+        return bool(_slot(self, "_target"))
+
+    def __contains__(self, item: object) -> bool:
+        ctx = _slot(self, "_ctx")
+        return receive(ctx, item) in _slot(self, "_target")
+
+    def __getitem__(self, key: object) -> Any:
+        ctx = _slot(self, "_ctx")
+        return _read_exit(ctx, "__getitem__", _slot(self, "_target")[receive(ctx, key)])
+
+    def __iter__(self) -> Iterator[Any]:
+        ctx = _slot(self, "_ctx")
+        return (_read_exit(ctx, "__iter__", item) for item in _slot(self, "_target"))
+
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not _ExposedView:
+            return NotImplemented
+        return (
+            _slot(self, "_target") is _slot(other, "_target")
+            and _slot(self, "_ctx")._def_site is _slot(other, "_ctx")._def_site
+        )
+
+    def __hash__(self) -> int:
+        return hash((id(_slot(self, "_target")), id(_slot(self, "_ctx")._def_site)))
 
     def __repr__(self) -> str:
         return repr(_slot(self, "_target"))

@@ -6,7 +6,7 @@ import inspect
 import logging
 import pickle
 import weakref
-from collections.abc import Callable
+from collections.abc import AsyncGenerator, Callable, Generator, Iterator
 from pathlib import Path
 
 import pytest
@@ -20,7 +20,7 @@ from pycordis.hmr import Hmr, HmrConfig, ReloadResult
 from pycordis.loader import Loader
 from pycordis.reflect import Impl
 from pycordis.registry import inject as inject_method
-from pycordis.scheduler import start
+from pycordis.scheduler import ImmediateScheduler, start
 from pycordis.service import Service
 from pycordis.traceable import (
     Exposure,
@@ -912,6 +912,246 @@ def test_expose_of_a_deferred_settles_with_the_exposed_value_or_the_same_error(
         assert excinfo.value is error
     else:
         assert isinstance(exposed.result(), FiberView)
+
+
+class _CallableObject:
+    """A callable object that is not a function form."""
+
+    marker = "kept"
+
+    def __call__(self) -> str:
+        return "called"
+
+
+async def _host_fiber_later(fiber: Fiber) -> Fiber:
+    return fiber
+
+
+def test_a_callable_object_and_an_async_function_keep_their_form(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    callable_object = _CallableObject()
+
+    exposed = expose(restricted, _host_fiber_later)
+
+    assert expose(restricted, callable_object) is callable_object
+    assert receive(restricted, callable_object) is callable_object
+    assert inspect.iscoroutinefunction(exposed) and exposed == _host_fiber_later
+    assert inspect.iscoroutinefunction(receive(restricted, _host_fiber_later))
+
+
+def test_expose_of_a_settled_deferred_is_done_at_once() -> None:
+    restricted = restrict(Context(ImmediateScheduler()), inject=["other"])
+    fiber = restricted._fiber
+
+    exposed = expose(restricted, Deferred.resolved(fiber))
+
+    assert exposed.done() and isinstance(exposed.result(), FiberView)
+    assert receive(restricted, exposed).result() is fiber
+
+
+def _item_pair(
+    direction: str, root: Context, restricted: Context
+) -> tuple[Callable[..., object], object, object, type, type]:
+    """Return the crossing, the source item, the item to send, and their two types.
+
+    A source of the `expose` direction yields host objects and takes a view back. A
+    source of the `receive` direction yields views and takes a host object back.
+    """
+    view = expose(restricted, root.fiber)
+    if direction == "expose":
+        return expose, root.fiber, view, FiberView, Fiber
+    return receive, view, root.fiber, Fiber, FiberView
+
+
+def _generator_source(
+    item: object, log: list[object]
+) -> Generator[object, object, str]:
+    try:
+        log.append((yield item))
+        log.append((yield item))
+    except CordisError as error:
+        log.append(f"thrown {error}")
+        raise
+    finally:
+        log.append("closed")
+    return "done"
+
+
+async def _async_generator_source(
+    item: object, log: list[object]
+) -> AsyncGenerator[object, object]:
+    try:
+        log.append((yield item))
+        log.append((yield item))
+    except CordisError as error:
+        log.append(f"thrown {error}")
+        raise
+    finally:
+        log.append("closed")
+
+
+async def _coroutine_source(item: object, fails: bool) -> object:
+    if fails:
+        raise CordisError("failed")
+    return item
+
+
+@pytest.mark.parametrize("direction", ["expose", "receive"])
+@pytest.mark.parametrize("fails", [False, True], ids=["result", "error"])
+def test_a_coroutine_gives_a_crossed_result_or_the_same_error(
+    root: Context, direction: str, fails: bool
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    cross, item, _, crossed_type, _ = _item_pair(direction, root, restricted)
+
+    task = start(root.scheduler, cross(restricted, _coroutine_source(item, fails)))
+
+    if fails:
+        with pytest.raises(CordisError, match="failed"):
+            task.result()
+    else:
+        assert type(task.result()) is crossed_type
+
+
+@pytest.mark.parametrize("direction", ["expose", "receive"])
+def test_a_generator_crosses_items_sent_values_and_the_return_value(
+    root: Context, direction: str
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    cross, item, back, crossed_type, source_type = _item_pair(
+        direction, root, restricted
+    )
+    log: list[object] = []
+    wrapper = cross(restricted, _generator_source(item, log))
+
+    first = next(wrapper)
+    second = wrapper.send(back)
+    with pytest.raises(StopIteration) as stop:
+        wrapper.send(back)
+
+    assert type(first) is crossed_type and type(second) is crossed_type
+    assert [type(sent) for sent in log[:2]] == [source_type, source_type]
+    assert stop.value.value == "done" and log[2] == "closed"
+
+
+@pytest.mark.parametrize("operation", ["throw", "close"])
+def test_a_generator_forwards_throw_and_close_to_its_source(
+    root: Context, operation: str
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    log: list[object] = []
+    wrapper = expose(restricted, _generator_source(root.fiber, log))
+    next(wrapper)
+
+    if operation == "throw":
+        with pytest.raises(CordisError, match="stop"):
+            wrapper.throw(CordisError("stop"))
+        assert log == ["thrown stop", "closed"]
+    else:
+        wrapper.close()
+        assert log == ["closed"]
+
+
+@pytest.mark.parametrize("direction", ["expose", "receive"])
+def test_an_async_generator_crosses_items_and_sent_values(
+    root: Context, direction: str
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    cross, item, back, crossed_type, source_type = _item_pair(
+        direction, root, restricted
+    )
+    log: list[object] = []
+
+    async def consume() -> list[object]:
+        wrapper = cross(restricted, _async_generator_source(item, log))
+        items = [await wrapper.asend(None), await wrapper.asend(back)]
+        with pytest.raises(StopAsyncIteration):
+            await wrapper.asend(back)
+        return items
+
+    items = start(root.scheduler, consume()).result()
+
+    assert [type(crossed) for crossed in items] == [crossed_type, crossed_type]
+    assert [type(sent) for sent in log[:2]] == [source_type, source_type]
+    assert log[2] == "closed"
+
+
+@pytest.mark.parametrize("operation", ["athrow", "aclose"])
+def test_an_async_generator_forwards_athrow_and_aclose_to_its_source(
+    root: Context, operation: str
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    log: list[object] = []
+
+    async def consume() -> None:
+        wrapper = expose(restricted, _async_generator_source(root.fiber, log))
+        await wrapper.asend(None)
+        if operation == "athrow":
+            with pytest.raises(CordisError, match="stop"):
+                await wrapper.athrow(CordisError("stop"))
+        else:
+            await wrapper.aclose()
+
+    start(root.scheduler, consume()).result()
+
+    assert log == (["thrown stop", "closed"] if operation == "athrow" else ["closed"])
+
+
+def test_a_bound_method_of_a_marked_object_crosses_its_arguments_and_result(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    marked = _Marked(root.fiber)
+
+    result = expose(restricted, marked.fibers)()
+
+    assert expose(restricted, marked.fibers) == marked.fibers
+    assert _is_view(result) and result == expose(restricted, [root.fiber])
+
+
+def test_an_exposed_view_forwards_the_protocol_operations_and_filters_them(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    foreign = Context(ImmediateScheduler())
+    target = _Sequence([root.fiber, 3, foreign])
+    view = expose(restricted, target)
+
+    assert len(view) == 3 and bool(view) and not expose(restricted, _Sequence([]))
+    assert type(view[0]) is FiberView and view[1] == 3
+    assert expose(restricted, root.fiber) in view and 4 not in view
+    assert view == expose(restricted, target) and view != 3
+    assert hash(view) == hash(expose(restricted, target))
+    assert [type(item) for item in expose(restricted, _Sequence([root.fiber]))] == [
+        FiberView
+    ]
+    with pytest.raises(CordisError, match="hidden Context"):
+        _ = view[2]
+    with pytest.raises(CordisError, match="hidden Context"):
+        list(view)
+
+
+class _Sequence:
+    """A marked object with the protocol operations."""
+
+    cordis_expose = Exposure()
+
+    def __init__(self, items: list[object]) -> None:
+        self.items = items
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __iter__(self) -> Iterator[object]:
+        return iter(self.items)
+
+    def __getitem__(self, index: int) -> object:
+        return self.items[index]
+
+    def __contains__(self, item: object) -> bool:
+        return item in self.items
 
 
 def test_a_restricted_once_listener_gets_exposed_arguments(root: Context) -> None:

@@ -108,6 +108,20 @@ class Scheduler(ABC):
         self._observers: dict[object, Callable[[StepReport], None]] = {}
         self._step: _Step | None = None
 
+    def is_owner(self) -> bool:
+        """Return whether the calling thread is the owner thread.
+
+        Any thread can call it. It does not raise, and it does not check for a running
+        step observer (see `assert_owner`).
+
+        Examples:
+            ```python
+            >>> ImmediateScheduler().is_owner()
+            True
+            ```
+        """
+        return threading.get_ident() == self._owner
+
     def assert_owner(self) -> None:
         """Check that the calling thread is the owner thread.
 
@@ -116,7 +130,7 @@ class Scheduler(ABC):
                 while step observers run, or with a message that says that a step
                 observer cannot call pycordis when a step observer calls.
         """
-        if threading.get_ident() != self._owner:
+        if not self.is_owner():
             raise CordisError("WRONG_THREAD")
         if self._observing:
             raise CordisError("a step observer cannot call pycordis")
