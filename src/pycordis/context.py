@@ -5,11 +5,12 @@ the fiber and the scheduler of their parent, and carry their own isolation, inte
 and meta tables. Start with `Context(scheduler)` to create a root context.
 """
 
+import inspect
 from collections import ChainMap
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any, Self
+from typing import Any, Literal, Self, overload
 
 from pycordis.deferred import Deferred
 from pycordis.errors import CallSite, CordisError
@@ -27,7 +28,14 @@ from pycordis.logger import LoggerService
 from pycordis.reflect import Accessor, ReflectService
 from pycordis.registry import Component, RegistryService
 from pycordis.scheduler import Scheduler, owner_thread
-from pycordis.traceable import Hidden, expose, get_traceable, screen
+from pycordis.traceable import (
+    Hidden,
+    _read_exit,
+    expose,
+    get_traceable,
+    receive,
+    screen,
+)
 
 
 def _run_update_hooks(fiber: Fiber, config: object, next_: Callable[[], Any]) -> Any:
@@ -188,20 +196,20 @@ class Context:
         if self._def_site._restrictions:
             raise CordisError(f'cannot read "{name}" in a restricted context')
 
-    def cordis_expose(self, receiver: "Context") -> "Context | Hidden":
-        """Return this context when the component of `receiver` owns it, else `Hidden`.
+    def cordis_expose(self, receiver: "Context") -> "ContextView | Hidden":
+        """Return a `ContextView` of this context if `receiver`'s component owns it.
 
         `expose` calls this hook when the def site of `receiver` is restricted. A
         component owns a context when the restriction chain of the context's def site
         starts with the chain of the component, and the context's fiber is a fiber that
-        the component owns.
+        the component owns. Any other context gives a `Hidden`.
         """
         scope = receiver._def_site
         chain = scope._restrictions
         if extends(self._def_site._restrictions, chain) and owns(
             scope._fiber, chain, self._fiber
         ):
-            return self
+            return ContextView(self)
         return Hidden("Context", self)
 
     @property
@@ -875,6 +883,188 @@ class Context:
         return None
 
 
+type _MemberKind = Literal["cross", "guard", "pass"]
+
+_MEMBER_KINDS: Mapping[str, _MemberKind] = MappingProxyType(
+    {
+        "accessor": "cross",
+        "bail": "cross",
+        "bind_fiber": "guard",
+        "cordis_expose": "guard",
+        "declare_realm": "guard",
+        "effect": "cross",
+        "emit": "cross",
+        "events": "guard",
+        "extend": "cross",
+        "fiber": "cross",
+        "get": "cross",
+        "inject": "cross",
+        "intercept": "cross",
+        "intercept_layer": "guard",
+        "intercept_layers": "cross",
+        "intercept_through": "guard",
+        "intercepts": "cross",
+        "isolate": "cross",
+        "isolated_since": "guard",
+        "isolates": "pass",
+        "logger": "cross",
+        "meta": "cross",
+        "mixin": "cross",
+        "on": "cross",
+        "once": "cross",
+        "parallel": "cross",
+        "provide": "cross",
+        "reflect": "guard",
+        "registry": "guard",
+        "root": "guard",
+        "scheduler": "pass",
+        "serial": "cross",
+        "set": "cross",
+        "shadow": "guard",
+        "use": "cross",
+        "use_site": "guard",
+        "waterfall": "cross",
+        "with_shadow": "guard",
+    }
+)
+"""The kind of each public member of `Context`, for `ContextView`."""
+
+# The number of leading positional arguments of a member that cross unchanged.
+_UNCHANGED_LEADING = {"use": 1}
+_DISPATCH_MEMBERS = frozenset({"emit", "bail", "serial", "parallel", "waterfall"})
+
+
+def _cross_member(
+    target: Context, name: str, method: Callable[..., Any]
+) -> Callable[..., Any]:
+    """Return the function that a `ContextView` gives for the method `name` of `target`.
+
+    Each argument goes through `receive` and the result through `_read_exit`. A
+    dispatch member refuses an `internal/` event name: pycordis emits those events on
+    the real context.
+    """
+    unchanged = _UNCHANGED_LEADING.get(name, 0)
+    dispatch = name in _DISPATCH_MEMBERS
+
+    def member(*args: Any, **kwargs: Any) -> Any:
+        if dispatch:
+            event = args[0] if args else kwargs.get("name")
+            if isinstance(event, str) and event.startswith("internal/"):
+                raise CordisError(f'cannot dispatch "{event}" in a restricted context')
+        result = method(
+            *args[:unchanged],
+            *[receive(target, arg) for arg in args[unchanged:]],
+            **{key: receive(target, arg) for key, arg in kwargs.items()},
+        )
+        return _read_exit(target, name, result)
+
+    return member
+
+
+class ContextView:
+    """The context that a restricted component holds in place of a `Context`.
+
+    `Context.cordis_expose` gives a view for each context that the component owns (see
+    `restrict`). The view forwards the members of `Context` that `ContextView.members`
+    lists, and each one has one kind:
+
+    - `cross`: the member of the context. Each argument goes through `receive`, and
+      the result goes through `expose`, so a callback of the component is called with
+      views, and a value that the component reads is a view or raises. `use` passes its
+      `component` argument unchanged. `emit`, `bail`, `serial`, `parallel`, and
+      `waterfall` raise `CordisError` for an event name that starts with `internal/`.
+    - `guard`: raises `CordisError`. These are `root`, `reflect`, `registry`, and
+      `events`, which give the whole application, `intercept_layer` and
+      `intercept_through`, and the members that only pycordis calls.
+    - `pass`: the member of the context, unchanged (`isolates` and `scheduler`).
+
+    Any other name raises `CordisError` that names it, so a public member that
+    `Context` gains later stays closed until it has a kind. A write or delete of an
+    attribute raises `CordisError`.
+
+    A view is not a `Context`: `isinstance(view, Context)` is `False`. Two views of the
+    same context are equal. Use `real_context` to get the context of a view.
+
+    Examples:
+        ```python
+        >>> view = ContextView(ctx)
+        >>> view.isolates == ctx.isolates
+        True
+        >>> view.root
+        Traceback (most recent call last):
+        pycordis.errors.CordisError: cannot read "root" in a restricted context
+        ```
+    """
+
+    __slots__ = ("_target",)
+
+    members = _MEMBER_KINDS
+    """The kind of each public member of `Context`, by name."""
+
+    # `receive` reads the real context from this slot (see `pycordis.traceable.receive`)
+    cordis_view = "_target"
+
+    def __init__(self, target: Context) -> None:
+        """Create the view of `target`. Its scope is `target`."""
+        object.__setattr__(self, "_target", target)
+
+    def __getattribute__(self, name: str) -> Any:
+        if name.startswith("__") and name.endswith("__"):
+            return object.__getattribute__(self, name)  # a protocol name
+        kind = _MEMBER_KINDS.get(name, "guard")
+        if kind == "guard":
+            raise CordisError(f'cannot read "{name}" in a restricted context')
+        target = object.__getattribute__(self, "_target")
+        value = getattr(target, name)
+        if kind == "pass":
+            return value
+        if inspect.ismethod(value):
+            return _cross_member(target, name, value)
+        return _read_exit(target, name, value)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise CordisError(f'cannot set "{name}" in a restricted context')
+
+    def __delattr__(self, name: str) -> None:
+        raise CordisError(f'cannot delete "{name}" in a restricted context')
+
+    def __getitem__(self, key: Keyable[Any]) -> Any:
+        target = object.__getattribute__(self, "_target")
+        return _read_exit(target, key_name(key), target[key])
+
+    def __setitem__(self, key: Keyable[Any], value: Any) -> None:
+        target = object.__getattribute__(self, "_target")
+        target[key] = receive(target, value)
+
+    def __copy__(self) -> Self:
+        return self  # a read-only view is its own copy
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> Self:
+        return self
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, ContextView) and object.__getattribute__(
+            self, "_target"
+        ) is object.__getattribute__(other, "_target")
+
+    def __hash__(self) -> int:
+        return hash(object.__getattribute__(self, "_target"))
+
+    def __repr__(self) -> str:
+        return f"ContextView of {object.__getattribute__(self, '_target')!r}"
+
+
+def real_context(ctx: Context | ContextView) -> Context:
+    """Return the context that `ctx` is, or that a `ContextView` shows.
+
+    pycordis code that gets a context from a restricted component calls this function,
+    so it works with a `Context` or with a `ContextView`.
+    """
+    if type(ctx) is ContextView:
+        return object.__getattribute__(ctx, "_target")
+    return ctx  # type: ignore[return-value]
+
+
 def _rule(
     names: Iterable[Keyable[Any]] | None,
     prefixes: Iterable[str] | None,
@@ -894,7 +1084,7 @@ def _rule(
     )
 
 
-@owner_thread("scheduler")
+@overload
 def restrict(
     ctx: Context,
     *,
@@ -902,7 +1092,29 @@ def restrict(
     inject_prefixes: Iterable[str] | None = None,
     provide: Iterable[Keyable[Any]] | None = None,
     provide_prefixes: Iterable[str] | None = None,
-) -> Context:
+) -> Context: ...
+
+
+@overload
+def restrict(
+    ctx: ContextView,
+    *,
+    inject: Iterable[Keyable[Any]] | None = None,
+    inject_prefixes: Iterable[str] | None = None,
+    provide: Iterable[Keyable[Any]] | None = None,
+    provide_prefixes: Iterable[str] | None = None,
+) -> ContextView: ...
+
+
+@owner_thread("scheduler")
+def restrict(
+    ctx: Context | ContextView,
+    *,
+    inject: Iterable[Keyable[Any]] | None = None,
+    inject_prefixes: Iterable[str] | None = None,
+    provide: Iterable[Keyable[Any]] | None = None,
+    provide_prefixes: Iterable[str] | None = None,
+) -> Context | ContextView:
     """Return a context that admits only the given inject, read, and provide keys.
 
     !!! warning "Guard, not sandbox"
@@ -970,8 +1182,13 @@ def restrict(
     created the fiber, or the fiber descends from one that it created). A host that
     holds an unrestricted context gets the real fiber from `FiberView.unwrap`.
 
+    A context that the component owns reaches it as a `ContextView` (see `ContextView`).
+    Through a view, `root`, `reflect`, `registry`, `events`, `intercept_layer`, and
+    `intercept_through` raise `CordisError`, and so does a dispatch (`emit`, `bail`,
+    `serial`, `parallel`, `waterfall`) of an event name that starts with `internal/`.
+
     Args:
-        ctx: The context to restrict.
+        ctx: The context to restrict. A `ContextView` is also valid.
         inject: The exact names and keys that a fiber derived from the result can
             declare in `inject`, and that a read (`ctx[key]`, `ctx.get`) can reach.
             `None` together with `inject_prefixes` admits every key.
@@ -982,7 +1199,8 @@ def restrict(
         provide_prefixes: The name prefixes for the same dimension as `provide`.
 
     Returns:
-        A context derived from `ctx` that carries the restriction.
+        A context derived from `ctx` that carries the restriction. When `ctx` is a
+        `ContextView`, the result is a `ContextView` of the derived context.
 
     Raises:
         ValueError: If `inject`, `inject_prefixes`, `provide`, and `provide_prefixes`
@@ -1010,9 +1228,11 @@ def restrict(
         _rule(inject, inject_prefixes, "inject", "inject_prefixes"),
         _rule(provide, provide_prefixes, "provide", "provide_prefixes"),
     )
-    return ctx._derive(
-        ctx._isolates,
-        ctx._intercepts,
-        ctx._meta,
-        restrictions=(*ctx._restrictions, restriction),
+    target = real_context(ctx)
+    derived = target._derive(
+        target._isolates,
+        target._intercepts,
+        target._meta,
+        restrictions=(*target._restrictions, restriction),
     )
+    return ContextView(derived) if isinstance(ctx, ContextView) else derived

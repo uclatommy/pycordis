@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from loader_fakes import RecordingLoader
 
-from pycordis.context import Context, Rule, restrict
+from pycordis.context import Context, ContextView, Rule, real_context, restrict
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.fiber import Fiber, FiberState, FiberView
@@ -513,7 +513,7 @@ def test_a_restricted_plugin_reading_loader_ctx_gets_the_use_site(
     fiber = restricted.use(component)
 
     assert fiber.state == FiberState.ACTIVE
-    assert captured["loader_ctx"] is captured["own"]
+    assert real_context(captured["loader_ctx"]) is captured["own"]
 
 
 def test_a_restricted_fibers_provide_notifies_an_existing_dependent(
@@ -612,8 +612,8 @@ def test_a_restricted_listener_gets_the_contexts_that_its_component_owns(
 
     restrict(root, inject=["other"]).use(plugin)
 
-    assert seen[0] is own[0]
-    assert len(seen) == 2 and type(seen[1]) is Context
+    assert type(seen[0]) is ContextView and real_context(seen[0]) is own[0]
+    assert len(seen) == 2 and type(seen[1]) is ContextView
 
 
 class _Plain:
@@ -680,9 +680,7 @@ def test_expose_gives_a_placeholder_for_a_provider_and_a_method_of_a_fiber(
     assert not hasattr(hidden_impl, "__fspath__")
 
 
-def test_expose_hides_a_context_method_only_when_it_hides_the_context(
-    root: Context,
-) -> None:
+def test_expose_hides_the_method_of_every_context(root: Context) -> None:
     exposed: dict[str, object] = {}
 
     def plugin(ctx: Context, config: object) -> None:
@@ -691,10 +689,10 @@ def test_expose_hides_a_context_method_only_when_it_hides_the_context(
 
     restrict(root, inject=["other"]).use(plugin)
 
-    assert type(exposed["own"]) is not Hidden and callable(exposed["own"])
-    assert type(exposed["host"]) is Hidden
-    with pytest.raises(CordisError, match="hidden method of Context"):
-        exposed["host"]()  # type: ignore[operator]
+    for hidden in exposed.values():
+        assert type(hidden) is Hidden
+        with pytest.raises(CordisError, match="hidden method of Context"):
+            hidden()  # type: ignore[operator]
 
 
 def test_expose_returns_an_object_that_it_does_not_recognize_unchanged(
@@ -1545,3 +1543,194 @@ def test_a_reload_result_gives_a_restricted_caller_fiber_views(
     assert isinstance(exposed, ReloadResult)
     assert [type(item) for item in exposed.settled] == [FiberView]
     assert exposed.settled[0].unwrap(root) is fiber
+
+
+class TestContextView:
+    """`ContextView`: the member table and the crossing of each kind."""
+
+    @staticmethod
+    def _view(root: Context) -> tuple[ContextView, Context]:
+        """A view of the context of a restricted component, and that context."""
+        held: list[Context] = []
+        restrict(root, inject=["other", "mine"]).use(
+            lambda ctx, config: held.append(ctx)
+        )
+        return ContextView(held[0]), held[0]
+
+    def test_the_member_table_has_exactly_the_public_members_of_context(
+        self, root: Context
+    ) -> None:
+        public = {name for name in dir(Context) if not name.startswith("_")}
+        public |= {name for name in vars(root) if not name.startswith("_")}
+
+        assert set(ContextView.members) == public
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "root",
+            "reflect",
+            "registry",
+            "events",
+            "intercept_layer",
+            "intercept_through",
+            "bind_fiber",
+            "with_shadow",
+            "not_a_member",
+        ],
+    )
+    def test_a_guarded_or_unknown_name_raises(self, root: Context, name: str) -> None:
+        view, _ = self._view(root)
+
+        with pytest.raises(CordisError, match=f'cannot read "{name}"'):
+            getattr(view, name)
+
+    def test_a_write_or_delete_of_an_attribute_raises(self, root: Context) -> None:
+        view, _ = self._view(root)
+
+        with pytest.raises(CordisError, match='cannot set "meta"'):
+            view.meta = {}  # type: ignore[misc]
+        with pytest.raises(CordisError, match='cannot delete "meta"'):
+            del view.meta  # type: ignore[misc]
+
+    def test_a_pass_member_gives_the_member_of_the_context(self, root: Context) -> None:
+        view, ctx = self._view(root)
+
+        assert view.scheduler is ctx.scheduler
+        assert view.isolates == ctx.isolates
+
+    @pytest.mark.parametrize(
+        "member", ["emit", "bail", "serial", "parallel", "waterfall"]
+    )
+    @pytest.mark.parametrize("how", ["positional", "keyword"])
+    def test_a_dispatch_of_an_internal_event_raises(
+        self, root: Context, member: str, how: str
+    ) -> None:
+        view, _ = self._view(root)
+        call = getattr(view, member)
+
+        with pytest.raises(CordisError, match='cannot dispatch "internal/plugin"'):
+            if how == "positional":
+                call("internal/plugin")
+            else:
+                call(name="internal/plugin")
+
+    def test_a_listener_gets_exposed_arguments_and_its_result_is_received(
+        self, root: Context
+    ) -> None:
+        view, ctx = self._view(root)
+        seen: list[object] = []
+
+        def listener(fiber: object, *rest: object) -> object:
+            seen.append(fiber)
+            return fiber
+
+        view.on("probe", listener)
+
+        result = view.bail("probe", root.fiber)
+
+        assert type(result) is FiberView and receive(ctx, result) is root.fiber
+        assert type(seen[0]) is FiberView
+        with pytest.raises(CordisError):
+            seen[0].dispose()  # type: ignore[attr-defined]
+
+    @pytest.mark.parametrize(
+        "derive",
+        [
+            lambda view: view.extend(key=1),
+            lambda view: view.isolate("svc"),
+            lambda view: view.intercept("svc", {}),
+        ],
+        ids=["extend", "isolate", "intercept"],
+    )
+    def test_a_derived_context_is_a_view(
+        self, root: Context, derive: Callable[[ContextView], object]
+    ) -> None:
+        view, ctx = self._view(root)
+
+        derived = derive(view)
+
+        assert type(derived) is ContextView
+        assert real_context(derived) is not ctx
+        assert real_context(derived)._restrictions == ctx._restrictions
+
+    def test_a_property_read_gives_an_exposed_value(self, root: Context) -> None:
+        view, ctx = self._view(root)
+
+        assert type(view.fiber) is FiberView
+        assert view.extend(key=1).meta["key"] == 1
+        assert view.intercept("svc", "cfg").intercepts["svc"] == "cfg"
+
+    def test_an_effect_of_a_view_reverts_with_its_fiber(self, root: Context) -> None:
+        view, ctx = self._view(root)
+        log: list[str] = []
+
+        view.effect(lambda: lambda: log.append("reverted"))
+        ctx.fiber.dispose()
+
+        assert log == ["reverted"]
+
+    def test_an_accessor_of_a_view_gets_a_hidden_host_context(
+        self, root: Context
+    ) -> None:
+        view, ctx = self._view(root)
+        seen: list[object] = []
+        view.accessor("probe", lambda reader, receiver: seen.append(reader) or 1)
+
+        assert root["probe"] == 1
+        assert type(seen[0]) is Hidden  # the host context is not the component's
+
+    def test_use_gives_a_fiber_view_and_passes_the_component_unchanged(
+        self, root: Context
+    ) -> None:
+        view, _ = self._view(root)
+        got: list[object] = []
+
+        def component(ctx: Context, config: object) -> None:
+            got.append(config)
+
+        fiber = view.use(component, {"a": 1})
+
+        assert type(fiber) is FiberView and fiber.state == FiberState.ACTIVE
+        assert got == [{"a": 1}]
+        assert fiber.name == "component"  # a wrapper would not carry the name
+
+    def test_item_access_crosses_in_both_directions(self, root: Context) -> None:
+        view, ctx = self._view(root)
+        ctx.provide("mine", {"fiber": ctx.fiber})
+
+        assert type(view["mine"]["fiber"]) is FiberView
+        view["mine"] = view.fiber  # a FiberView crosses as the real fiber
+        assert root["mine"] is receive(ctx, ctx.fiber)
+
+    def test_a_context_that_the_component_does_not_own_is_hidden(
+        self, root: Context
+    ) -> None:
+        view, _ = self._view(root)
+        root.provide("other", root)
+
+        with pytest.raises(CordisError, match="hidden Context"):
+            view["other"]
+
+    def test_restrict_of_a_view_gives_a_view_that_narrows(self, root: Context) -> None:
+        view, ctx = self._view(root)
+
+        narrowed = restrict(view, inject=[])
+
+        assert type(narrowed) is ContextView
+        assert real_context(narrowed)._restrictions[: len(ctx._restrictions)] == (
+            ctx._restrictions
+        )
+        assert len(real_context(narrowed)._restrictions) == len(ctx._restrictions) + 1
+
+    def test_views_equal_by_context_and_receive_gives_the_context(
+        self, root: Context
+    ) -> None:
+        view, ctx = self._view(root)
+
+        assert view == ContextView(ctx) and hash(view) == hash(ContextView(ctx))
+        assert view != ContextView(root)
+        assert not isinstance(view, Context)
+        assert receive(ctx, view) is ctx
+        assert real_context(ctx) is ctx and real_context(view) is ctx
+        assert copy.deepcopy(view) is view

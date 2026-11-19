@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🔄 Reopened — Increments 1 to 7 are done. Increments 8 to 12 replace the filter at each exit with one boundary that every crossing uses. Every decision is accepted, and Increment 8 is ready to start (see [Decisions](#decisions))
+**Status**: 🔄 Reopened — Increments 1 to 8 are done. Increments 9 to 12 replace the filter at each exit with one boundary that every crossing uses. Every decision is accepted, and Increment 9 is ready to start (see [Decisions](#decisions))
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15), [#19 Restricted context: make an unfiltered boundary impossible by construction](https://github.com/uclatommy/pycordis/issues/19)
 
@@ -866,7 +866,24 @@ its own context; `view.isolates` and `view.scheduler` work; `view.root` and
 completeness test fail
 **Docs**: `ContextView`; `real_context`; `restrict` (the signature, the `internal/` rule, and
 the two intercept guards)
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `context.py`: `ContextView` (slot `_target`, `cordis_view`, `members`, equality and hash by target, `[]` and `[]=` cross, writes and deletes raise, copies are the view) and the member table `_MEMBER_KINDS`, with `cross`, `guard`, and `pass` kinds; a `cross` method gives a function that receives each argument and reads the result through `_read_exit` (`_cross_member`)
+- `context.py`: `use` passes its `component` unchanged; `emit`, `bail`, `serial`, `parallel`, and `waterfall` raise for an `internal/` event name
+- `context.py`: `real_context`; `Context.cordis_expose` gives a `ContextView` for an owned context; `restrict` has two overloads and gives a `ContextView` for a `ContextView`; the `restrict` docstring states the view rules
+- `traceable.py`: the `expose` docstring names `ContextView`, and a method of any `Context` gives a `Hidden`
+- `tests/test_restrict.py`: `TestContextView` (completeness, guard and unknown names, writes and deletes, `pass` members, `internal/` refusal for each dispatch member by position and by keyword, listener arguments and results, derived contexts (`extend`, `isolate`, `intercept`), property reads, `effect`, `accessor`, `use`, `[]` and `[]=`, hidden foreign context, `restrict` of a view, equality, `receive`, `real_context`); three existing tests change: two expect a `ContextView` or a `Hidden` where they expected a `Context`, and one expects a `Hidden` for the method of an owned context
+**Tests**:
+- `uv run pytest tests/test_restrict.py tests/test_context.py tests/test_events.py tests/test_invariants.py tests/test_docstrings.py`: passed (the new `TestContextView` tests and the three changed tests included)
+- `uv run pytest` (full suite): 1626 passed; `ruff check` and `ruff format --check` clean
+**Deviations**:
+- `receive` reads the target of a `ContextView` from the `cordis_view` slot, as for `FiberView`, in place of a call to `real_context` (the code of `receive` does not change); `real_context` stays the conversion for pycordis code in Increment 9
+- `shadow`, `use_site`, and `isolated_since` are `guard` members, with `bind_fiber`, `with_shadow`, `declare_realm`, and `cordis_expose`: only pycordis code calls them, on real contexts
+- A bound method of any `Context`, also an owned one, is a `Hidden`: its hook result is a view, so the "hook replaces the object" rule applies. A `cross` member is the way to call a context method
+- The call-site skip for `use`, `inject`, and `effect` (the frames of `ContextView`) is in Increment 9, as planned: a component holds no view yet
+- `ctx.use`, `inject`, and `fiber` of a view call the real `Context` filters too, so a value crosses twice until Increment 11; the second crossing changes nothing
+**Manual validation**:
+- Confirmed in `uv run python`: a restricted `internal/listener` listener gets a `ContextView`; `view.isolates` and `view.scheduler` work; `view.root`, `view.emit("internal/plugin")`, and `view.intercept_layer({})` raise `CordisError`; `restrict(view, inject=[])` gives a `ContextView`. The completeness test is the check for a new `Context` member
 
 ### Increment 9: Components hold the view
 **Goal**: every restricted component, `inject` callback, and `@inject` method gets a

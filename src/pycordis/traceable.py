@@ -334,13 +334,13 @@ def expose[T](receiver: "Context", value: T) -> T:
     returned unchanged. Otherwise:
 
     - An object whose class has a `cordis_expose(value, receiver)` hook gives the
-      result of the hook: a `Fiber` gives a `FiberView`, and a `Context` that the
-      scope does not own, or a provider record, gives a `Hidden`.
+      result of the hook: a `Fiber` gives a `FiberView`, a `Context` that the scope
+      owns gives a `ContextView`, and a `Context` that the scope does not own, or a
+      provider record, gives a `Hidden`.
     - A service view gives the view of the same service for `receiver`, so an effect
       that the component registers through it belongs to the component's fiber.
     - A method of an object that its hook replaces gives a `Hidden`: a method of a
-      `Fiber` or of a provider record always, and a method of a `Context` that the
-      scope does not own.
+      `Fiber`, of a provider record, or of a `Context`.
     - A function, a bound or builtin method, or a `functools.partial` gives a function
       that equals it. A call of that function passes each argument through `receive`
       and gives the result through `expose`.
