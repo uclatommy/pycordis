@@ -6,10 +6,12 @@ from typing import Any
 
 import pytest
 
-from pycordis.context import Context
+from pycordis.context import Context, restrict
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
+from pycordis.fiber import Fiber, FiberView
 from pycordis.scheduler import FramePumpScheduler, ImmediateScheduler, Scheduler, spawn
+from pycordis.traceable import expose
 
 JOIN_TIMEOUT = 5
 
@@ -103,6 +105,16 @@ def test_the_scheduler_drivers_reject_a_second_thread(any_scheduler: Scheduler) 
 
 
 @pytest.mark.divergence("owner-thread")
+def test_is_owner_is_true_on_the_owner_thread_and_false_on_a_second_thread(
+    any_scheduler: Scheduler,
+) -> None:
+    result, error = call_on_thread(any_scheduler.is_owner)
+
+    assert error is None and result is False
+    assert any_scheduler.is_owner() is True
+
+
+@pytest.mark.divergence("owner-thread")
 def test_submit_from_a_second_thread_runs_on_the_owner_thread(
     any_scheduler: Scheduler,
 ) -> None:
@@ -143,3 +155,22 @@ def test_a_deferred_completed_on_a_worker_resumes_its_task_on_the_owner_thread(
 
     assert task.result() == "done"
     assert resumed_on == [threading.get_ident()]
+
+
+@pytest.mark.divergence("context-restriction")
+def test_an_exposed_deferred_that_completes_on_a_worker_settles_on_the_owner_thread(
+    any_scheduler: Scheduler,
+) -> None:
+    restricted = restrict(Context(any_scheduler), inject=["other"])
+    source = Deferred[Fiber]()
+    exposed = expose(restricted, source)
+    settled_on: list[int] = []
+    exposed.add_done_callback(lambda _: settled_on.append(threading.get_ident()))
+
+    _, error = call_on_thread(lambda: source.resolve(restricted._fiber))
+    assert error is None
+    assert not exposed.done()
+    drain(any_scheduler)
+
+    assert isinstance(exposed.result(), FiberView)
+    assert settled_on == [threading.get_ident()]

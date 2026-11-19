@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from pycordis.context import Context
+from pycordis.context import Context, ContextView, restrict
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.fiber import Fiber
@@ -372,6 +372,47 @@ def test_a_sleep_of_zero_is_due_now(plugin: Fiber, manual: ManualClock) -> None:
 
 def failing() -> None:
     raise RuntimeError("boom")
+
+
+def test_a_restricted_timer_service_runs_with_a_context_view(
+    root: Context, caplog: pytest.LogCaptureFixture
+) -> None:
+    clock = ManualClock()
+    root.provide(CLOCK, clock)
+    held: list[object] = []
+
+    class Timer(TimerService):
+        def __init__(self, ctx: ContextView, config: object = None) -> None:
+            super().__init__(ctx)  # type: ignore[arg-type]
+            held.append(ctx)
+
+    restricted = restrict(
+        root,
+        inject=["clock", "timer"],
+        provide=[
+            "timer",
+            "timeout",
+            "sleep",
+            "interval",
+            "ticks",
+            "throttle",
+            "debounce",
+        ],
+    )
+    service = restricted.use(Timer)
+
+    def plugin(ctx: ContextView, config: object) -> None:
+        ctx["timeout"](failing, 1.0)
+
+    plugin.inject = ["timer"]  # type: ignore[attr-defined]
+    user = restricted.use(plugin)
+
+    with caplog.at_level(logging.ERROR, logger="pycordis"):
+        clock.advance(1.0)
+
+    assert type(held[0]) is ContextView and service.error is None
+    [record] = [r for r in caplog.records if r.exc_info]
+    assert record.name == f"pycordis.{user.name}"
 
 
 @pytest.mark.divergence("timer-callback-errors")

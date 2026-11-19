@@ -53,6 +53,13 @@ class Loader(EntryTree, Service):
 
     Call every method on the owner thread.
 
+    The loader runs in an unrestricted context. A restricted component can use it
+    when its rules admit `loader`, and then it has the authority of the loader over
+    the tree: it can create, update, and remove entries. What it reads from the loader
+    is filtered: a fiber is a `FiberView`, and a context that it does not own raises
+    `CordisError`. A loader that is provided in a restricted context is not supported,
+    because its own listeners read the parent of a fiber, which a view does not give.
+
     Args:
         ctx: The context of the component.
         config: The `LoaderConfig`, or `None` for the default.

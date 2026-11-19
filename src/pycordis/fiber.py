@@ -24,10 +24,10 @@ from pycordis.deferred import Deferred
 from pycordis.disposables import DisposableList
 from pycordis.errors import CallSite, CordisError, Issue, ValidationError
 from pycordis.scheduler import Scheduler, owner_thread, spawn, start
-from pycordis.traceable import get_traceable
+from pycordis.traceable import expose, get_traceable
 
 if TYPE_CHECKING:
-    from pycordis.context import Context
+    from pycordis.context import Context, Restriction
     from pycordis.logger import Logger
     from pycordis.reflect import Impl
     from pycordis.registry import Runtime
@@ -358,6 +358,14 @@ class Fiber:
         """The lifecycle state of the fiber."""
         return self._state
 
+    def cordis_expose(self, receiver: "Context") -> "FiberView":
+        """Return the `FiberView` of this fiber for the component of `receiver`.
+
+        `expose` calls this hook when the def site of `receiver` is restricted.
+        """
+        site = receiver._def_site
+        return FiberView(self, site._fiber, site._restrictions)
+
     @property
     def children(self) -> tuple["Fiber", ...]:
         """The live fibers that this fiber's context created, in creation order.
@@ -673,9 +681,12 @@ class Fiber:
         assert self.runtime is not None
         callback = self.runtime.callback
         config = self._resolve(self.config)
+        # A restricted component holds a view of its context; an unrestricted one
+        # holds the context itself.
+        ctx = expose(self.ctx, self.ctx)
         if not inspect.isclass(callback):
-            return callback(self.ctx, config)
-        instance = callback(self.ctx, config)
+            return callback(ctx, config)
+        instance = callback(ctx, config)
         self.ctx._registry.run_inject_methods(self.ctx, instance)
         init = getattr(instance, "cordis_init", None)
         return None if init is None else init()
@@ -935,3 +946,204 @@ class Fiber:
 
         self._release = release
         return gate
+
+
+def extends(held: tuple["Restriction", ...], chain: tuple["Restriction", ...]) -> bool:
+    """Return whether `held` starts with `chain`, compared by identity.
+
+    Two `Restriction` objects that are equal are not the same restriction.
+    """
+    return len(held) >= len(chain) and all(
+        a is b for a, b in zip(held, chain, strict=False)
+    )
+
+
+def owns(scope: Fiber, chain: tuple["Restriction", ...], target: Fiber) -> bool:
+    """Return whether a component with this `scope` and `chain` owns `target`.
+
+    A component owns a fiber when the fiber is `scope` or one of its descendants, and
+    the context of the fiber carries `chain` as the start of its restriction chain.
+    The chain is compared element by element by identity: two `Restriction` objects
+    that are equal are not the same restriction, so sibling components that share one
+    chain through a `restrict` result do not own each other's fibers.
+
+    Both facts are fixed when `target` is created.
+
+    Args:
+        scope: The fiber that the component runs in.
+        chain: The restriction chain of the component.
+        target: The fiber to test.
+    """
+    if not extends(target.ctx._restrictions, chain):
+        return False
+    fiber = target
+    while fiber is not scope:
+        parent = fiber.parent._fiber
+        if parent is fiber:
+            return False
+        fiber = parent
+    return True
+
+
+class FiberView:
+    """A restricted component's read-only view of a fiber.
+
+    `Context.use`, `inject`, and `fiber` give a view in place of a `Fiber` in a
+    restricted context. The view gives only `name`, `uid`, `state`, `error`,
+    `children`, and `get_effects()`; every other public name raises `CordisError`, so
+    a public attribute that `Fiber` gains later stays hidden. The view gives no `ctx`,
+    `parent`, `committed`, or `runtime`. A write or delete of any attribute raises
+    `CordisError`.
+
+    `dispose`, `restart`, and `update` work only on a fiber that the component owns:
+    a fiber that the component created, or a descendant of one (see `owns`). On any
+    other fiber they raise `CordisError`.
+
+    A view is not a `Fiber`: `isinstance(view, Fiber)` is `False`. Two views are equal
+    when they have the same fiber, the same scope, and the same restriction chain, so
+    use `==`, not `is`, to compare them. A view is never equal to its `Fiber`.
+    `copy.copy` and `copy.deepcopy` of a view give the same view.
+
+    Examples:
+        ```python
+        >>> view = ContextView(restrict(root, inject=["db"])).use(plugin)
+        >>> view.name, view.state
+        ('plugin', <FiberState.ACTIVE: 2>)
+        >>> view.dispose()
+        ```
+    """
+
+    __slots__ = ("_target", "_scope", "_chain", "_owned")
+
+    # `receive` reads the real fiber from this slot (see `pycordis.traceable.receive`)
+    cordis_view = "_target"
+
+    def __init__(
+        self, target: Fiber, scope: Fiber, chain: tuple["Restriction", ...]
+    ) -> None:
+        """Create the view of `target` for the component of `scope` and `chain`."""
+        init = object.__setattr__
+        init(self, "_target", target)
+        init(self, "_scope", scope)
+        init(self, "_chain", chain)
+        init(self, "_owned", owns(scope, chain, target))
+
+    def __getattr__(self, name: str) -> Any:
+        # Only a name that is missing from the class reaches this method.
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(name)  # a protocol probe, such as `copy`
+        raise CordisError(f'cannot read "{name}" of a fiber view')
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise CordisError(f'cannot set "{name}" of a fiber view')
+
+    def __delattr__(self, name: str) -> None:
+        raise CordisError(f'cannot delete "{name}" of a fiber view')
+
+    def __copy__(self) -> Self:
+        return self  # a read-only view is its own copy
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> Self:
+        return self
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, FiberView)
+            and self._target is other._target
+            and self._scope is other._scope
+            and self._chain is other._chain
+        )
+
+    def __hash__(self) -> int:
+        return hash((self._target, self._scope, id(self._chain)))
+
+    def __repr__(self) -> str:
+        return f"FiberView <{self._target.name}>"
+
+    @property
+    def uid(self) -> int | None:
+        """The number of the fiber: `0` for the root, `None` once disposed."""
+        return self._target.uid
+
+    @property
+    def state(self) -> FiberState:
+        """The lifecycle state of the fiber."""
+        return self._target.state
+
+    @property
+    def error(self) -> BaseException | None:
+        """The error that failed the fiber, or `None`."""
+        return self._target.error
+
+    @property
+    def name(self) -> str:
+        """The name of the fiber."""
+        return self._target.name
+
+    @property
+    def children(self) -> tuple["FiberView", ...]:
+        """Views, for the same component, of the live child fibers."""
+        return tuple(
+            FiberView(child, self._scope, self._chain)
+            for child in self._target.children
+        )
+
+    def get_effects(self) -> list[EffectMeta]:
+        """Return the metadata of the effects of the fiber, in registration order."""
+        return self._target.get_effects()
+
+    def wait(self) -> Deferred["FiberView"]:
+        """Wait until no load or unload of the fiber is in progress.
+
+        Returns:
+            A `Deferred` that resolves with this view, or rejects with the error that
+            failed the fiber.
+        """
+        settled = Deferred["FiberView"]()
+
+        def complete(source: Deferred[Fiber]) -> None:
+            try:
+                source.result()
+            except BaseException as error:
+                settled.reject(error)
+            else:
+                settled.resolve(self)
+
+        self._target.wait().add_done_callback(complete)
+        return settled
+
+    def __await__(self) -> Generator[Deferred["FiberView"], None, "FiberView"]:
+        return self.wait().__await__()
+
+    def dispose(self) -> Deferred[None]:
+        """End the fiber, as `Fiber.dispose` does.
+
+        Raises:
+            CordisError: If the component does not own the fiber.
+        """
+        self._require_owned("dispose")
+        return self._target.dispose()
+
+    def restart(self) -> Deferred[None]:
+        """Revert the effects of the fiber and run it again, as `Fiber.restart` does.
+
+        Raises:
+            CordisError: If the component does not own the fiber.
+        """
+        self._require_owned("restart")
+        return self._target.restart()
+
+    def update(self, config: object, no_save: bool = False) -> Deferred[None]:
+        """Give the fiber a new config, as `Fiber.update` does.
+
+        Raises:
+            CordisError: If the component does not own the fiber.
+        """
+        self._require_owned("update")
+        return self._target.update(config, no_save)
+
+    def _require_owned(self, operation: str) -> None:
+        if not self._owned:
+            raise CordisError(
+                f"cannot {operation} a fiber that this component does not own"
+            )

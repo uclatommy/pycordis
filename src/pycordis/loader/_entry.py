@@ -17,6 +17,7 @@ from pycordis.errors import CordisError, Issue, ValidationError
 from pycordis.fiber import Fiber, FiberState
 from pycordis.registry import resolve_inject
 from pycordis.scheduler import Scheduler, spawn, start
+from pycordis.traceable import Exposure
 
 if TYPE_CHECKING:
     from pycordis.loader._group import EntryGroup
@@ -257,6 +258,10 @@ class Entry:
     the running component. A move that keeps the fiber gives the component the
     intercept layers of its new group.
 
+    A restricted component gets a read-only view of an entry. A fiber that the view
+    gives is a `FiberView`, and a context that the component does not own raises
+    `CordisError`.
+
     Attributes:
         loader: The loader that owns the tree.
         parent: The group that holds the entry.
@@ -269,6 +274,8 @@ class Entry:
         subgroup: The group that the component of the entry holds, or `None`.
         subtree: The tree that the component of the entry holds, or `None`.
     """
+
+    cordis_expose = Exposure()
 
     def __init__(self, loader: "Loader", parent: "EntryGroup") -> None:
         self.loader = loader

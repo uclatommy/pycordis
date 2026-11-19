@@ -17,7 +17,7 @@ import logging
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from pycordis.service import Service
-from pycordis.traceable import Tracker
+from pycordis.traceable import Exposure, Tracker
 
 if TYPE_CHECKING:
     from pycordis.context import Context
@@ -167,6 +167,10 @@ class Logger(logging.LoggerAdapter[logging.Logger]):
     A call with an exception as the only argument logs it with its traceback. An
     `ExceptionGroup` logs each of its members as a record of its own.
 
+    A restricted component gets a read-only view of the logger. Its methods log as the
+    fiber that the logger holds, and `extra`, which holds that fiber, raises
+    `CordisError`.
+
     Args:
         logger: The standard logger that receives the records.
         fiber: The fiber that logs.
@@ -176,6 +180,8 @@ class Logger(logging.LoggerAdapter[logging.Logger]):
         >>> ctx.logger("worker").warning("queue is full")
         ```
     """
+
+    cordis_expose = Exposure(hidden=frozenset({"extra"}))
 
     def __init__(self, logger: logging.Logger, fiber: "Fiber") -> None:
         super().__init__(logger, {_FIBER_ATTRIBUTE: fiber})
@@ -220,7 +226,9 @@ class LoggerService(Service[LoggerIntercept]):
 
     The service keeps the newest records of its root context in `buffer`, as long as
     the root context exists. The library adds no handler: a `Logger` copies each record
-    to the buffer before the handlers of the host see it.
+    to the buffer before the handlers of the host see it. `buffer` and `exporter` give
+    access to the records and the handlers of the whole root context, so they raise
+    `CordisError` for a restricted component. Such a component can still log.
 
     Attributes:
         ctx: The root context.
@@ -236,6 +244,8 @@ class LoggerService(Service[LoggerIntercept]):
         'connected'
         ```
     """
+
+    cordis_expose = Exposure(hidden=frozenset({"buffer", "exporter"}))
 
     def __init__(self, ctx: "Context") -> None:
         # The service is not provided under a name: `Context.logger` reads it. It

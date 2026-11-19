@@ -21,7 +21,12 @@ from pycordis.errors import CordisError
 from pycordis.fiber import EffectHandle, Fiber, FiberState
 from pycordis.keys import Keyable, key_name
 from pycordis.scheduler import Scheduler, owner_thread, start
-from pycordis.traceable import Overlay, get_traceable, get_with_receiver
+from pycordis.traceable import (
+    Hidden,
+    Overlay,
+    get_traceable,
+    get_with_receiver,
+)
 
 if TYPE_CHECKING:
     from pycordis.context import Context
@@ -75,6 +80,10 @@ class Impl:
     dependents: set[Any] = field(default_factory=set)
     release: Callable[[], None] | None = None
     check: Callable[[Any], bool] | None = None
+
+    def cordis_expose(self, receiver: "Context") -> Hidden:
+        """Return a `Hidden`: a restricted scope never sees a provider record."""
+        return Hidden("Impl", self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -500,10 +509,11 @@ class ReflectService:
 
     @owner_thread("scheduler")
     def bind[**P, R](self, ctx: "Context", callback: Callable[P, R]) -> Callable[P, R]:
-        """Return a function that calls `callback` with its arguments traced for `ctx`.
+        """Return a function that calls `callback` with arguments prepared for `ctx`.
 
         An argument that has a `Tracker` reaches `callback` as its view for `ctx`, so an
         effect that `callback` registers through it belongs to the fiber of `ctx`.
+
         """
 
         @functools.wraps(callback)

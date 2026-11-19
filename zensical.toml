@@ -59,6 +59,7 @@ nav = [
       { "Module Reload" = "build_specs/completed/module_reload.md" },
       { "Pages And Ci" = "build_specs/completed/pages_and_ci.md" },
       { "Pump Budget" = "build_specs/completed/pump_budget.md" },
+      { "Restricted Views" = "build_specs/completed/restricted_views.md" },
       { "Step Reports" = "build_specs/completed/step_reports.md" },
       { "Timer Service" = "build_specs/completed/timer_service.md" },
     ]},
