@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: ✅ Completed (Increments 1 to 5 done, with the PR #18 review fixes recorded as deviations) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
+**Status**: 🔄 Reopened — Increments 1 to 5 are done; Increments 6 to 9 close the exits that the PR #18 follow-up review found. D1, D2, D7, and D9 to D12 are accepted; D13 to D18 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15)
 
@@ -60,8 +60,8 @@ that exit is the one place that converts a `Hidden` to an error.
 ```mermaid
 flowchart LR
     subgraph boundaries["Boundaries (each calls expose)"]
-        A["Context.use / inject / fiber"]
-        B["ReflectService.bind<br/>(listener arguments)"]
+        A["Context.use / inject / fiber<br/>ctx[key] / get / meta / intercepts<br/>bail / serial / waterfall"]
+        B["ReflectService.bind<br/>(listener, accessor, and callback arguments)"]
         C["TraceableView read<br/>(attribute value, method result)"]
         D["FiberView navigation<br/>(children)"]
     end
@@ -197,6 +197,65 @@ class Exposure:                                    # pycordis.traceable
   and fail. The spec does not support that case; the `restrict` warning and the `Loader` and
   `Hmr` docstrings say so.
 
+### Event results and context data
+
+Values that go **to** restricted code through a `Context` method, other than a read of a key:
+
+- **Event results** (D13): `Context.bail`, `serial`, and `waterfall` pass their result through
+  `screen` with the event name, so a `Hidden` result raises at the call, as for `ctx[key]`.
+  `EventsService` does not filter, because a host listener and a host emitter get real objects.
+  Internal callers that need the unfiltered result call `ctx._events.waterfall(...)`:
+  `ReflectService.read` and `ReflectService.write` (the `internal/get` and `internal/set`
+  chains) and `Fiber` (the `internal/update` and `internal/config` chains). Then the public
+  method is the only exit, a read is not screened twice, and the config of a restricted
+  component is not filtered (D18).
+- **Context data** (D14): in a restricted context, `meta` and `intercepts` give a read-only
+  mapping whose item read passes the value through `screen` with the key as the name, and
+  `intercept_layers` passes its list through `screen`. An unrestricted context keeps
+  `MappingProxyType` and the plain list. Internal readers use private paths, so a service reads
+  its own intercept configuration unfiltered: `resolve_intercept` in `service.py`,
+  `InterceptLink`, and `_same_scope` in `loader/_entry.py`.
+
+### Calls into restricted code
+
+Values that go **into** a function of the restricted component, when host code calls it. The
+one enforcement point is `ReflectService.bind`, as for a listener (D15):
+
+- `Context.accessor` binds `get` and `set` with `site=self` when the def site is restricted. A
+  host read gives the `get` function a `Hidden` for the host context; a read by the component
+  itself gives its own context, which it owns. Thus an accessor that uses its context argument
+  raises `CordisError` when the host reads it, as a listener does. `mixin` registers its
+  accessors through `ReflectService.accessor` and is not bound.
+- A call of a service-view method by a restricted caller binds each callable argument that is
+  not a type and not a view, with the caller as the site. This happens at the two call exits:
+  the wrapper of `_screen_result` and `CallableTraceableView.__call__`.
+- The bound callable compares equal to, and hashes as, its callback, so a service that removes a
+  callback by equality (`unsubscribe(cb)`) finds the entry that `subscribe(cb)` added. `is` does
+  not hold; the `restrict` warning says so. The bound callable of an `async def` callback is
+  marked with `inspect.markcoroutinefunction`.
+
+### Filter forms
+
+The filter keeps the behavior of each value that it passes (D16):
+
+- **Function forms only**: `_screen` wraps a `FunctionType`, `MethodType`,
+  `BuiltinFunctionType`, or `functools.partial`. Any other callable object passes as `expose`
+  gives it (unchanged, or its exposed view), so `isinstance`, attributes, and identity hold.
+  The wrapper of an `async def` function is marked with `inspect.markcoroutinefunction`.
+- **Results that arrive later**: a coroutine gives a wrapper coroutine that screens its result;
+  a generator and an async generator give a wrapper that screens each item and forwards `send`,
+  `throw`, and `close`.
+- **Protocol operations**: `_ExposedView` defines `__len__`, `__iter__`, `__getitem__`,
+  `__contains__`, and `__bool__`, and each one returns through the same filter as an attribute
+  read. Two exposed views of the same target for the same scope are equal, with equal hashes
+  (the D10 rule of `FiberView`); a view of an unhashable target is unhashable. `target == view`
+  is decided by the `__eq__` of the target, which the view cannot change.
+- **Completion on the owner thread** (D17): the done callback of the source settles the exposed
+  `Deferred` at once when it runs on the owner thread, also for a source that is already done.
+  A completion on another thread hands the exposure to the owner thread with
+  `Scheduler.submit`. Thus `done()` and the order of resumption agree for a restricted and an
+  unrestricted caller on the owner thread.
+
 ## File Structure
 
 ```
@@ -206,8 +265,10 @@ src/pycordis/
 │                       #         _Shadow reads the unfiltered path
 ├── events.py           # MODIFY: on/once take the keyword-only site for bind
 ├── context.py          # MODIFY: use/inject/fiber through expose; private use path; Context.cordis_expose
-│                       #         (calls owns); on/once pass site=self; remove the fiber guard; restrict warning
-├── reflect.py          # MODIFY: bind exposes arguments for a restricted scope; Impl.cordis_expose
+│                       #         (calls owns); on/once pass site=self; remove the fiber guard; restrict warning;
+│                       #         bail/serial/waterfall/meta/intercepts screened; accessor binds get/set
+├── reflect.py          # MODIFY: bind exposes arguments for a restricted scope; Impl.cordis_expose;
+│                       #         read calls _events.waterfall; the bound callable equals its callback
 ├── logger.py           # MODIFY: Exposure on LoggerService (buffer, exporter) and Logger (extra)
 ├── loader/_entry.py, _group.py, _tree.py, _service.py   # MODIFY: Exposure declarations; Entry uses the
 │                       #         private use path; entry_of/locate accept a view; Loader docstring (D12)
@@ -241,7 +302,8 @@ docs/
 ## Decisions
 
 The maintainer accepted D1, D2, D7, and D9 to D12. D3 to D6 and D8 are proposed on #14 and
-#15; they are confirmed or changed before the increment that uses them starts.
+#15. The maintainer accepted D13 to D18, which answer the PR #18 follow-up review. Each proposed
+decision is confirmed or changed before the increment that uses it starts.
 
 | ID | Question | Decision | Reason |
 |---|---|---|---|
@@ -257,6 +319,12 @@ The maintainer accepted D1, D2, D7, and D9 to D12. D3 to D6 and D8 are proposed 
 | D10 | View identity | Equality and hash by (target, scope fiber, chain object); no cache | A cache on the target is never dropped for the root fiber, so each disposed plugin scope would stay in memory |
 | D11 | How `expose` recognizes `Fiber`, `Context`, and `Impl` | A `cordis_expose(value, receiver)` hook on each class, read from `type(value)` | `fiber.py` and `reflect.py` import `traceable.py`, and the module rules permit no import back; the rule for each type stays in its module. A new type adds a hook and does not change `expose` |
 | D12 | `Loader` and `Hmr` in a restricted context | Not supported; documented | Their own listeners read `fiber.parent`. The use case is a host service, which runs unrestricted |
+| D13 | Event results (review Must fix 1) | Screened at `Context.bail`, `serial`, and `waterfall`; the four internal callers (`internal/get`, `internal/set`, `internal/update`, `internal/config`) use `ctx._events.waterfall` | The public method is then the one exit; a filter in `EventsService` would also filter host listeners |
+| D14 | `meta`, `intercepts`, `intercept_layers` (review Must fix 2) | Screened in a restricted context; internal readers use private paths | Each gives a value that the host supplies, as a provided value is. A service reads its own intercept configuration unfiltered |
+| D15 | Calls into restricted code (review Must fix 3, 4) | `bind` for accessor `get`/`set` and for callable arguments of a service-view call; the bound callable is equal to its callback (not identical) and keeps the coroutine-function mark | `bind` is the existing inbound enforcement point. Without equality, a subscription API cannot remove a bound callback |
+| D16 | Filter forms (review Must fix 5, 6, 7) | Wrap function forms only; wrap coroutines and generators; forward protocol operations of an exposed view; `target == view` stays with the target | A value that is read must behave as the value; the wrapper of a callable object gave stale attributes with no error |
+| D17 | A settled `Deferred` (review Should fix 8) | The done callback settles at once on the owner thread; a completion on another thread uses `Scheduler.submit` | The step exists only to keep `expose` off a foreign thread, and `expose` has no side effects. This replaces the answer to Question 1 of the first review |
+| D18 | Paths that stay open in this spec (review Should fix 9, Questions 11 to 13) | A subclass of a filtered container, a bound method of a class with an `Exposure`, and the config that the host gives to `use` stay unfiltered and are listed in the `restrict` warning; `declare_realm` does not change | A subclass needs a rebuild rule and the method rule needs a design: both go to the follow-up issue. The host chooses the config explicitly. A default realm is the same object for every caller that declares it, so it is not an effect of the plugin |
 
 ## Key Constraints
 
@@ -348,6 +416,20 @@ The maintainer accepted D1, D2, D7, and D9 to D12. D3 to D6 and D8 are proposed 
 - ✅ `divergence("context-restriction")`: #15 acceptance (`live_fiber()`, `inner_fiber`,
   `outer_fiber`, the `ctx` of an entry's group) and `Hmr.reconcile(...).result().settled`; a
   restricted plugin still reads entry IDs, names, and states
+- ⬜ One boundary test in `tests/test_restrict.py`, parametrized with one case for each
+  boundary: the exits that give a value (`fiber`, `use`, `inject`, `ctx[key]`, `get`, `meta`,
+  `intercepts`, `intercept_layers`, `bail`, `serial`, `waterfall`, a mixin, an accessor value, a
+  service-view method result as a plain value, a coroutine, a generator, and an async generator)
+  and the calls into restricted code (a listener, an accessor `get` and `set`, a callback
+  argument of a service-view method). Each case gives the same host fiber and host context, and
+  asserts a `FiberView`, a `Hidden`, or `CordisError`, and that no provider stays after dispose.
+  The existing direct-read cases merge into it
+- ⬜ Filter forms: a callable object read in a restricted context is the object itself; an
+  `async def` value stays a coroutine function; `len`, `iter`, `[]`, `in`, `bool`, and `==` of
+  an exposed view work and filter their results; a settled `Deferred` is `done()` for a
+  restricted caller; a bound callback is equal to its callback (one parametrized test where the
+  shape fits)
+- ⬜ The seeded schedules of `tests/test_invariants.py` pass with the new filters
 - ✅ `uv run pytest`, `uv run ruff check .`, and `uv run ruff format --check .` pass; the
   unmarked slow tests section of the full suite is empty
 
@@ -363,6 +445,11 @@ The maintainer accepted D1, D2, D7, and D9 to D12. D3 to D6 and D8 are proposed 
   context, D12), and the body states each boundary. Each increment removes the warning
   bullets and the body sentences that its change makes false, in the same increment; the
   last increment reviews the whole docstring.
+- Docstrings for the review exits: `Context.bail`, `serial`, `waterfall`, `meta`, `intercepts`,
+  `intercept_layers`, and `accessor` (the result or the arguments in a restricted context);
+  `ReflectService.bind` (equality of the bound callable); `expose` and `screen` (function forms,
+  later results, the settled `Deferred`); `Exposure` (protocol operations of the view). The
+  `restrict` warning lists the paths of D18 and nothing that Increments 6 to 8 close.
 - `docs/architecture.md`: the `context-restriction` row (see [Appendix A](#appendix-a-divergence-row)).
 - `docs/user_guide.md`: none. The feature is behind a flag; the section comes with the
   promotion of `restrict`.
@@ -371,7 +458,7 @@ The maintainer accepted D1, D2, D7, and D9 to D12. D3 to D6 and D8 are proposed 
 
 ## Dependencies
 
-- **Prerequisite**: none in code. [Context Restriction](context_restriction.md)
+- **Prerequisite**: none in code. [Context Restriction](completed/context_restriction.md)
   is merged.
 - **Open defect (maintainer decision)**: an error from any `internal/status` listener leaves
   `Fiber._update_state` before `reflect.announce`. Reproduced at `develop`: when a listener of
@@ -381,6 +468,10 @@ The maintainer accepted D1, D2, D7, and D9 to D12. D3 to D6 and D8 are proposed 
   [#16](https://github.com/uclatommy/pycordis/issues/16), not fixed in this spec. This spec makes it more likely, because accesses that
   succeed today will raise in restricted listeners.
 - **Required by**: the promotion of `restrict`, and the loader entry option for a restriction.
+- **Follow-up**: the boundaries in this spec are placed by hand, one call of `screen` or `bind`
+  for each exit. The design that makes an unfiltered exit impossible, and the paths of D18, are
+  in [#19 Restricted context: make an unfiltered boundary impossible by construction](https://github.com/uclatommy/pycordis/issues/19);
+  its build spec is written after this spec merges.
 - **Runtime**: none. **Dev**: none new.
 
 ## Migration Strategy
@@ -539,12 +630,65 @@ with no drift
 - `uv run python scripts/gen_ref_pages.py`: the only change is the nav entry that moves to Completed
 **Deviations**:
 - The review of the docstrings in `fiber.py`, `traceable.py`, `reflect.py`, and `logger.py` found no stale sentence, so none changed
+- The PR #18 follow-up review found exits with no filter, so the spec moved back to the top level and Increments 6 to 9 are added
+
+### Increment 6: Event results and context data
+**Goal**: `bail`, `serial`, `waterfall`, `meta`, `intercepts`, and `intercept_layers` give a
+restricted context views or `CordisError`, and the boundary test lists every exit that gives a
+value (D13, D14).
+**Files**: `context.py` (~50), `reflect.py` (~6), `fiber.py` (~4), `service.py` (~2),
+`test_restrict.py` (~80, the boundary test, with the existing direct-read cases merged into it)
+**Validation**: `uv run pytest tests/test_restrict.py tests/test_events.py tests/test_reflect.py tests/test_fiber.py tests/test_invariants.py`;
+manual: in `uv run python`, the reproductions of review Must fix 1 and 2 raise `CordisError`,
+and `root.get("leak")` is `None` after dispose
+**Docs**: `Context.bail`, `serial`, `waterfall`, `meta`, `intercepts`, `intercept_layers`; the
+`restrict` docstring body names the exits
+**Status**: ⬜ Not started
+
+### Increment 7: Calls into restricted code
+**Goal**: an accessor `get` and `set` of a restricted component, and a callback that it gives
+to a service method, get their arguments through `bind`, and the bound callable is equal to its
+callback (D15).
+**Files**: `context.py` (~10), `reflect.py` (~25, the bound callable), `traceable.py` (~20, the
+callable arguments at the two call exits), `test_restrict.py` (~40, cases of the boundary test
+and the equality case)
+**Validation**: `uv run pytest tests/test_restrict.py tests/test_reflect.py tests/test_events.py tests/test_traceable.py`;
+manual: in `uv run python`, the reproductions of review Must fix 3 and 4 leave no provider, and
+a test service with `subscribe(cb)` and `unsubscribe(cb)` removes the callback
+**Docs**: `Context.accessor`, `ReflectService.bind`; the `restrict` warning loses the callback
+path if it lists it
+**Status**: ⬜ Not started
+
+### Increment 8: Filter forms
+**Goal**: the filter keeps the behavior of each value that it passes: callable objects, `async`
+functions, coroutines, generators, the protocol operations of an exposed view, and a settled
+`Deferred` (D16, D17).
+**Files**: `traceable.py` (~80), `test_restrict.py` (~60), `test_threading.py` (~10, the
+owner-thread and worker-thread completion of an exposed `Deferred`)
+**Validation**: `uv run pytest tests/test_restrict.py tests/test_traceable.py tests/test_threading.py tests/test_hmr.py tests/test_loader.py`;
+manual: in `uv run python`, the `Counter`, `len(bag)`, `Deferred.resolved`, and generator
+reproductions of review Must fix 5 to 7 and Should fix 8 give the unrestricted result
+**Docs**: `expose`, `screen`, `Exposure`; the module docstring of `pycordis.traceable` if it
+names the forms
+**Status**: ⬜ Not started
+
+### Increment 9: Close-out of the review exits
+**Goal**: the `restrict` warning, the divergence row, and the docstrings agree with the code,
+and #19 holds the work that this spec does not do.
+**Files**: `context.py` (~15, the `restrict` warning), `architecture.md` (~2)
+**Validation**: `uv run pytest` (full suite, the unmarked slow tests section is empty),
+`uv run ruff check .`, `uv run ruff format --check .`,
+`uv run python scripts/gen_ref_pages.py && uv run zensical build` with no issues
+**Docs**: the `restrict` warning lists the paths of D18; `docs/architecture.md` (the row names
+event results and context data); a review of the docstrings in `context.py`, `traceable.py`,
+and `reflect.py`; this spec moves to `completed/`
+**Status**: ⬜ Not started
 
 ## Code Standards
 
-- [Contributing](../../contributing.md) and [Developer Guide](../../developer_guide.md): the pull
+- [Contributing](../contributing.md) and [Developer Guide](../developer_guide.md): the pull
   request checklist, branches, and slow tests
-- [Architecture](../../architecture.md): the semantic contract and the divergence table
+- [Architecture](../architecture.md): the semantic contract and the divergence table
 - The instruction files in `.github/instructions/`: Python Coding Standards (enforcement points,
   fail fast, the "re-implements a rule another component owns" check), Docstrings & Markdown
   Style, Testing Standards (coverage without proliferation, seeded schedules, traceability
@@ -557,11 +701,12 @@ introduced it.
 ## Appendix A: Divergence Row
 
 The row extends the existing `context-restriction` improvement; it is not a new divergence. It
-replaces the row in `docs/architecture.md` in Increment 5.
+replaces the row in `docs/architecture.md` in Increment 5, and Increment 9 replaces it again
+with the text that names the exits of Increments 6 to 8.
 
 | ID | Kind | Upstream | pycordis | Contract | Reason and evidence |
 |---|---|---|---|---|---|
-| `context-restriction` | improvement | No access rule; `ctx.root`, `ctx.reflect`, `ctx.registry`, `ctx.events`, and `ctx.fiber` are always public | `pycordis.context.restrict` gives a context whose inject keys, service and accessor reads and writes, and provide keys follow data rules, for every derived context; in a restricted context, `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise `CordisError`; `ctx.fiber`, `ctx.use`, `ctx.inject`, listener arguments, the values of a service view, and the values that `ctx[key]` and `ctx.get` read give a `FiberView` in place of a `Fiber`, and no context, provider record, or lifecycle method of a fiber that the component does not own | `LIFE-FAILURE`, `EFF-REVERT`, `LIFE-CONFLUENT` | A host states which services a plugin can use or replace, and a restricted plugin cannot register an effect that outlives it or end a fiber that it does not own. The ownership rule uses only facts fixed at fiber creation. A guard, not a sandbox: an object that is not recognized and not marked passes unchanged, as the `restrict` warning lists. Test: `divergence("context-restriction")` in `tests/test_restrict.py` |
+| `context-restriction` | improvement | No access rule; `ctx.root`, `ctx.reflect`, `ctx.registry`, `ctx.events`, and `ctx.fiber` are always public | `pycordis.context.restrict` gives a context whose inject keys, service and accessor reads and writes, and provide keys follow data rules, for every derived context; in a restricted context, `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise `CordisError`; `ctx.fiber`, `ctx.use`, `ctx.inject`, the values that `ctx[key]`, `ctx.get`, `meta`, `intercepts`, and `intercept_layers` give, the results of `bail`, `serial`, and `waterfall`, the values of a service view (also the later results of a coroutine or generator), and the arguments of a listener, of an accessor `get` or `set`, and of a callback given to a service method give a `FiberView` in place of a `Fiber`, and no context, provider record, or lifecycle method of a fiber that the component does not own | `LIFE-FAILURE`, `EFF-REVERT`, `LIFE-CONFLUENT` | A host states which services a plugin can use or replace, and a restricted plugin cannot register an effect that outlives it or end a fiber that it does not own. The ownership rule uses only facts fixed at fiber creation. A guard, not a sandbox: an object that is not recognized and not marked passes unchanged, as the `restrict` warning lists. Test: `divergence("context-restriction")` in `tests/test_restrict.py` |
 
 ## Appendix B: Corrections to the Issues and the Audit
 
