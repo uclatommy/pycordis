@@ -123,6 +123,9 @@ class Service[T]:
 
         An `emit` that passes a service as `this` calls only the listeners of contexts
         that use the same provider of the service name.
+
+        When restricted code defines the service or dispatches the event, `ctx` is a
+        `RealmView` of the listener context: it gives `isolates` and nothing else.
         """
         return ctx.isolates.get(self.name) is self.ctx.isolates.get(self.name)
 

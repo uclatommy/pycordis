@@ -25,9 +25,11 @@ from pycordis.service import Service
 from pycordis.traceable import (
     Exposure,
     Hidden,
+    RealmView,
     Tracker,
     expose,
     get_traceable,
+    realm_filter,
     receive,
     screen,
 )
@@ -1836,3 +1838,266 @@ def _all_fibers(fiber: Fiber) -> Iterator[Fiber]:
     for child in fiber.children:
         yield child
         yield from _all_fibers(child)
+
+
+class _Vault(Service):
+    """A service that a restricted plugin provides."""
+
+    provide = "vault"
+
+    def __init__(self, ctx: object, config: object = None) -> None:
+        super().__init__(ctx, "vault")  # type: ignore[arg-type]
+        self.seen: list[object] = []
+        self.callbacks: list[Callable[..., object]] = []
+
+    def register(self, item: object) -> object:
+        self.seen.append(item)
+        return item
+
+    def context_type(self) -> type:
+        return type(self.ctx)
+
+    def subscribe(self, callback: Callable[..., object]) -> None:
+        self.callbacks.append(callback)
+
+    def unsubscribe(self, callback: Callable[..., object]) -> None:
+        self.callbacks.remove(callback)
+
+    def fire(self, item: object) -> None:
+        for callback in self.callbacks:
+            callback(item)
+
+    def cordis_invoke(self, *items: object, **named: object) -> type:
+        self.seen.extend([*items, *named.values()])
+        return type(self.ctx)
+
+
+class _PlainVault(_Vault):
+    """A restricted service whose methods run with the view as `self`."""
+
+    def __init__(self, ctx: object, config: object = None) -> None:
+        super().__init__(ctx, config)
+        self.cordis_tracker = Tracker(property="ctx", no_shadow=True)
+
+
+class _HostEcho(Service):
+    """A callable host service that returns its arguments."""
+
+    provide = "echo"
+
+    def __init__(self, ctx: Context, config: object = None) -> None:
+        super().__init__(ctx, "echo")
+        self.received: list[object] = []
+
+    def cordis_invoke(self, *items: object, **named: object) -> list[object]:
+        self.received.extend([*items, *named.values()])
+        return [*items, *named.values()]
+
+
+class _HostBus(Service):
+    """A host service that stores the callbacks that it gets."""
+
+    provide = "bus"
+
+    def __init__(self, ctx: Context, config: object = None) -> None:
+        super().__init__(ctx, "bus")
+        self.callbacks: list[Callable[..., object]] = []
+
+    def subscribe(self, callback: Callable[..., object]) -> None:
+        self.callbacks.append(callback)
+
+    def unsubscribe(self, callback: Callable[..., object]) -> None:
+        self.callbacks.remove(callback)
+
+    def fire(self, *args: object, **kwargs: object) -> list[object]:
+        return [callback(*args, **kwargs) for callback in self.callbacks]
+
+
+class TestServiceDirections:
+    """A service view crosses in the direction that its restricted side decides."""
+
+    @pytest.mark.divergence("context-restriction")
+    @pytest.mark.parametrize(
+        "read",
+        [
+            lambda vault: vault.context_type(),
+            lambda vault: vault(),
+        ],
+        ids=["method", "cordis_invoke"],
+    )
+    @pytest.mark.parametrize("service", [_Vault, _PlainVault])
+    def test_a_method_of_a_restricted_service_gets_a_context_view(
+        self,
+        root: Context,
+        service: type[_Vault],
+        read: Callable[[_Vault], type],
+    ) -> None:
+        restrict(root, provide=["vault"]).use(service)
+
+        assert read(root["vault"]) is ContextView
+
+    @pytest.mark.divergence("context-restriction")
+    def test_a_host_reader_exposes_its_arguments_and_receives_the_results(
+        self, root: Context
+    ) -> None:
+        restrict(root, provide=["vault"]).use(_Vault)
+        vault = root["vault"]
+
+        result = vault.register(root.fiber)
+
+        assert result is root.fiber
+        (seen,) = vault.cordis_original.seen
+        assert type(seen) is FiberView
+
+    @pytest.mark.divergence("context-restriction")
+    def test_a_restricted_reader_of_a_host_service_gives_callbacks_both_ways(
+        self, root: Context
+    ) -> None:
+        root.use(_HostBus)
+        received: list[object] = []
+
+        def callback(item: object) -> None:
+            received.append(item)
+
+        def component(ctx: ContextView, config: object) -> None:
+            bus = ctx["bus"]
+            bus.subscribe(callback)
+            bus.fire(ctx.fiber)  # the callback is called with a view
+            bus.unsubscribe(callback)  # a wrapper equals its function
+            bus.fire(item=ctx.fiber)
+
+        component.inject = ["bus"]  # type: ignore[attr-defined]
+        restrict(root, inject=["bus"]).use(component)
+
+        assert [type(item) for item in received] == [FiberView]
+        assert root["bus"].callbacks == []
+
+    @pytest.mark.divergence("context-restriction")
+    def test_a_restricted_reader_gets_its_own_context_as_the_caller(
+        self, root: Context
+    ) -> None:
+        root.use(_HostBus)
+        held: dict[str, object] = {}
+
+        def component(ctx: ContextView, config: object) -> None:
+            held["own"] = ctx
+            held["caller"] = ctx["bus"].cordis_caller
+            try:
+                _ = ctx["bus"].cordis_caller.root
+            except CordisError as error:
+                held["error"] = error
+
+        component.inject = ["bus"]  # type: ignore[attr-defined]
+        restrict(root, inject=["bus"]).use(component)
+
+        assert held["caller"] == held["own"]
+        assert 'cannot read "root"' in str(held["error"])
+
+    @pytest.mark.contract("EFF-ISOLATE")
+    @pytest.mark.divergence("context-restriction")
+    def test_a_restricted_service_as_this_reaches_only_the_listeners_of_its_realm(
+        self, root: Context
+    ) -> None:
+        restrict(root, provide=["vault"]).use(_Vault)
+        calls: list[str] = []
+        root.on("ping", lambda: calls.append("root"))
+        root.isolate("vault").on("ping", lambda: calls.append("isolated"))
+
+        root.emit("ping", this=root["vault"])
+
+        assert calls == ["root"]
+
+    @pytest.mark.divergence("context-restriction")
+    def test_a_restricted_filter_gets_realm_views(self, root: Context) -> None:
+        seen: list[object] = []
+        errors: list[CordisError] = []
+
+        class Filter:
+            def cordis_filter(self, ctx: object) -> bool:
+                seen.append(ctx.isolates)  # type: ignore[attr-defined]
+                try:
+                    _ = ctx.provide  # type: ignore[attr-defined]
+                except CordisError as error:
+                    errors.append(error)
+                return True
+
+        def component(ctx: ContextView, config: object) -> None:
+            ctx.emit("ping", this=Filter())
+
+        root.on("ping", lambda: None)
+        restrict(root, inject=["x"]).use(component)
+
+        assert seen == [root.isolates]
+        assert 'cannot read "provide" of a realm view' in str(errors[0])
+        assert type(realm_filter(root, Filter())) is Filter  # unrestricted: unchanged
+
+    @pytest.mark.divergence("context-restriction")
+    def test_two_restricted_scopes_compose(self, root: Context) -> None:
+        restrict(root, provide=["vault"]).use(_Vault)
+        held: dict[str, object] = {}
+
+        def component(ctx: ContextView, config: object) -> None:
+            own = ctx.fiber
+            held["own"] = own
+            held["result"] = ctx["vault"].register(own)
+
+        component.inject = ["vault"]  # type: ignore[attr-defined]
+        restrict(root, inject=["vault"]).use(component)
+
+        (seen,) = root["vault"].cordis_original.seen
+        assert type(seen) is FiberView and seen != held["own"]  # one view per scope
+        assert held["result"] == held["own"]
+
+    @pytest.mark.divergence("context-restriction")
+    def test_a_call_of_a_restricted_service_exposes_positional_and_keyword_arguments(
+        self, root: Context
+    ) -> None:
+        restrict(root, provide=["vault"]).use(_Vault)
+        vault = root["vault"]
+
+        vault(root.fiber, item=root.fiber)
+
+        assert [type(item) for item in vault.cordis_original.seen] == [FiberView] * 2
+
+    @pytest.mark.divergence("context-restriction")
+    def test_a_call_of_a_host_service_receives_arguments_and_exposes_results(
+        self, root: Context
+    ) -> None:
+        root.use(_HostEcho)
+        held: list[object] = []
+
+        def component(ctx: ContextView, config: object) -> None:
+            held.extend(ctx["echo"](ctx.fiber, item=ctx.fiber))
+
+        component.inject = ["echo"]  # type: ignore[attr-defined]
+        fiber = restrict(root, inject=["echo"]).use(component)
+
+        assert [type(item) for item in root["echo"].received] == [Fiber] * 2
+        assert [type(item) for item in held] == [FiberView] * 2
+        assert held[0].name == fiber.name  # type: ignore[attr-defined]
+
+    @pytest.mark.divergence("context-restriction")
+    @pytest.mark.parametrize(
+        "action",
+        [
+            lambda view: setattr(view, "isolates", {}),
+            lambda view: delattr(view, "isolates"),
+            lambda view: view.provide,
+            lambda view: view.fiber,
+        ],
+        ids=["set", "delete", "provide", "fiber"],
+    )
+    def test_a_realm_view_gives_isolates_and_refuses_everything_else(
+        self, root: Context, action: Callable[[RealmView], object]
+    ) -> None:
+        view = RealmView(root)
+
+        assert view.isolates == root.isolates
+        with pytest.raises(CordisError, match="realm view"):
+            action(view)
+
+    def test_realm_filter_keeps_a_this_without_a_filter(self, root: Context) -> None:
+        scope = restrict(root, inject=["x"])
+        this = object()
+
+        assert realm_filter(scope, this) is this

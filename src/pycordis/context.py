@@ -34,6 +34,7 @@ from pycordis.traceable import (
     _read_exit,
     expose,
     get_traceable,
+    realm_filter,
     receive,
     screen,
 )
@@ -967,10 +968,13 @@ def _cross_member(
             event = args[0] if args else kwargs.get("name")
             if isinstance(event, str) and event.startswith("internal/"):
                 raise CordisError(f'cannot dispatch "{event}" in a restricted context')
+        received = {key: receive(target, arg) for key, arg in kwargs.items()}
+        if dispatch and "this" in received:
+            received["this"] = realm_filter(target, received["this"])
         result = method(
             *args[:unchanged],
             *[receive(target, arg) for arg in args[unchanged:]],
-            **{key: receive(target, arg) for key, arg in kwargs.items()},
+            **received,
         )
         return _read_exit(target, name, result)
 

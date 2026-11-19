@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🔄 Reopened — Increments 1 to 9 are done. Increments 10 to 12 replace the filter at each exit with one boundary that every crossing uses. Every decision is accepted, and Increment 10 is ready to start (see [Decisions](#decisions))
+**Status**: 🔄 Reopened — Increments 1 to 10 are done. Increments 11 and 12 remove the filters of the real `Context` and close out. Every decision is accepted, and Increment 11 is ready to start (see [Decisions](#decisions))
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15), [#19 Restricted context: make an unfiltered boundary impossible by construction](https://github.com/uclatommy/pycordis/issues/19)
 
@@ -943,7 +943,31 @@ restricted caller gives a callback to a host service with `subscribe(cb)` and
 `unsubscribe(cb)`, and the service removes it
 **Docs**: `TraceableView`; `Exposure`; `RealmView`; `realm_filter`; `Service.cordis_filter`;
 the module docstring of `pycordis.traceable`
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `traceable.py`: `TraceableView` has a `_service` slot that holds the restricted def site of the service, or `None`, read once at creation (`_service_site`); a read or call applies the direction table, and `_inward` gives a value of a restricted service through `receive` before it is traced
+- `traceable.py`: `CallableTraceableView.__call__` receives the arguments of a restricted reader and exposes them for a restricted service; the result goes the other way
+- `traceable.py`: a method of a restricted service gets a `ContextView` of the use site with the def site as its context, in `_create_shadow` and `_interior` (`no_shadow`), and `cordis_invoke` uses the same `self` (`_method_self`)
+- `traceable.py`: `cordis_caller` crosses the exit (`_PASS_NAMES` has `cordis_original` and `__class__` only); a hook that pycordis calls on a view of a restricted side runs with the shadow as `self` (`_hook_self`), so its own `cordis_caller` read is interior
+- `traceable.py`: `RealmView`, `realm_filter`; the `cordis_filter` read of a restricted service gives a function that passes a `RealmView`
+- `traceable.py`: `expose` unwraps a function that `receive` made only for the same scope; for another scope it wraps it, so two restricted scopes keep both crossings
+- `context.py`: the dispatch members of `ContextView` pass `this` through `realm_filter`
+- `service.py`, `traceable.py`: the `Service.cordis_filter`, `TraceableView`, `expose`, and module docstrings state the new rules
+- `tests/test_restrict.py`: `TestServiceDirections` (method, `no_shadow` method, and `cordis_invoke` get a `ContextView`; host reader arguments and results; callbacks of a restricted reader, positional and keyword, with `subscribe` and `unsubscribe`; `cordis_caller` and its `root`; `EFF-ISOLATE` with a restricted service as `this`; a restricted filter gets `RealmView` objects; two restricted scopes)
+**Tests**:
+- `uv run pytest` (validation files, `test_docstrings.py`, `test_conformance.py`, `test_invariants.py`, `test_context.py`, `test_shadow.py`): 827 passed
+- `uv run pytest` (full suite): 1650 passed, no unmarked slow tests; `ruff check` and `ruff format --check` clean
+- Test review added: a call of a restricted service and of a host service with positional and keyword arguments, `RealmView` refusals (one parametrized test), and `realm_filter` with a `this` that has no filter
+- Against the code before the increment the new test module fails at import (`realm_filter` does not exist)
+**Deviations**:
+- A hook that the machinery calls on a view (`cordis_check` of `Loader`) runs with the shadow as `self` when either side is restricted. With `cordis_caller` crossing the exit, a view as `self` made `self.cordis_caller` raise inside pycordis code. Unrestricted calls keep the view as `self`
+- `expose` wraps a function that `receive` made for another scope (the plan stated only the unwrap rule); without it, `expose(A, receive(B, f))` gave `f` and skipped the crossing of B
+- The `cordis_caller` case gives no non-owned context: the exit scope is the reader's own def site, so the caller is always owned. The test checks the `ContextView` and the `root` guard
+- `Exposure.hidden` and `safe` apply only when the reader is restricted; a host reader of a restricted service reads every name
+- The associated-accessor read (`ctx["svc.name"]` through a view) does not go through `receive` of the service: an accessor value is a context read and crosses at `ctx[...]`
+- The crossing test of the plan (one parametrized test) is not written yet; this increment adds `TestServiceDirections`, and the cases merge into the crossing test later
+**Manual validation**:
+- Confirmed in `uv run python`: a host reader of a restricted service passes a fiber that the service sees as a `FiberView` and gets the real fiber back, and its method has a `ContextView` as `self.ctx`; a restricted service as `this` reaches only the root listener; a restricted reader of a host service gets its own context as `cordis_caller`, `.root` raises, and a callback is called with a `FiberView` and removed by `unsubscribe`
 
 ### Increment 11: The real context filters nothing
 **Goal**: pycordis code holds only real objects, so the filters, guards, and private paths on
