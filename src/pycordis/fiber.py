@@ -738,7 +738,8 @@ class Fiber:
         if not len(runtime.fibers):
             self.ctx._registry.unregister(runtime)
         self._set_epoch(INACTIVE)
-        # `_reload` and `_unload` log their own errors, so `_inertia` never rejects
+        # `_reload` and `_unload` log their own errors, and `emit` contains the errors
+        # of notification listeners, so `_inertia` never rejects
         while self._inertia is not None:
             await self._inertia
         # `_set_epoch` returns early for a fiber that was not ACTIVE, so the state is

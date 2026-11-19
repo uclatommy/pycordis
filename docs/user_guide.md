@@ -131,6 +131,11 @@ If `apply` raises, the fiber goes to `FAILED`, pycordis reverts the effects that
 registered, and `fiber.error` holds the exception. The error does not reach the parent or the
 siblings. The fiber does not load again until its component or configuration changes.
 
+An error in a listener of a notification event (`internal/plugin`, `internal/replace`,
+`internal/status`, `internal/service`, `internal/commit`, or `internal/dispatch`) does not
+change the fiber that the event reports. pycordis logs the error with the logger of the
+listener's fiber, and calls the next listener.
+
 ### Configuration
 
 A component can have a `Config` attribute: an object with `model_validate`, or a function from

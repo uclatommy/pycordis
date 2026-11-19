@@ -18,6 +18,14 @@ The five dispatch modes differ in how they treat the listeners and their results
 - `waterfall` gives each listener a `next` function that runs the rest of the chain.
 
 A result bails when it is neither `None` nor `False`.
+
+Listeners of the core services follow one of two error rules. An interceptor event
+(`internal/config`, `internal/update`, `internal/get`, `internal/set`,
+`internal/listener`) lets a listener take part in an operation, so a listener error goes
+to the caller. A notification event (see `InternalEventName`) reports a change that
+another component makes, so `emit` logs a listener error with the logger of the
+listener's fiber and calls the next listener. The change that the event reports always
+completes. Every other event name follows the interceptor rule.
 """
 
 import inspect
@@ -56,7 +64,25 @@ type InternalEventName = Literal[
     "internal/listener",
     "internal/dispatch",
 ]
-"""The names of the events that the core services dispatch."""
+"""The names of the events that the core services dispatch.
+
+`internal/plugin`, `internal/replace`, `internal/status`, `internal/service`,
+`internal/commit`, and `internal/dispatch` are notification events: they report a
+change, and a listener only observes it. `emit` contains the errors of their listeners.
+The other names are interceptor events: a listener takes part in the operation, and its
+error goes to the caller.
+"""
+
+_NOTIFICATION_EVENTS: frozenset[EventName] = frozenset(
+    {
+        "internal/plugin",
+        "internal/replace",
+        "internal/status",
+        "internal/service",
+        "internal/commit",
+        "internal/dispatch",
+    }
+)
 
 
 def is_bailed(value: object) -> bool:
@@ -145,10 +171,24 @@ class EventsService:
         """Call every listener of `name` with `args`, and ignore the results.
 
         An error that a listener raises stops the dispatch and goes to the caller.
+        The exception is a notification event (see `InternalEventName`): `emit` logs
+        an `Exception` from a listener with the logger of the fiber that owns the
+        listener, and calls the next listener. A `BaseException` that is not an
+        `Exception` always goes to the caller.
         """
+        contain = name in _NOTIFICATION_EVENTS
         for hook in self._resolve("emit", name, args, this):
-            if not hook.removed:
+            if hook.removed:
+                continue
+            if not contain:
                 hook.callback(*args)
+                continue
+            try:
+                hook.callback(*args)
+            except Exception as error:
+                hook.ctx._fiber.logger.error(
+                    "error in a listener of event %s", name, exc_info=error
+                )
 
     @owner_thread("scheduler")
     def bail(self, name: EventName, *args: Any, this: object = None) -> Any:

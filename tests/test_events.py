@@ -1,5 +1,6 @@
 """Ported upstream event cases that need only the root context."""
 
+import logging
 from collections.abc import Callable, Coroutine
 from typing import Any
 
@@ -19,7 +20,8 @@ from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.events import EventOptions
-from pycordis.fiber import Fiber
+from pycordis.fiber import Fiber, FiberState
+from pycordis.scheduler import ImmediateScheduler
 
 Run = Callable[[Coroutine[Any, Any, Any]], Deferred[Any]]
 MODES = ("emit", "parallel", "serial", "bail")
@@ -756,3 +758,197 @@ def test_a_listener_gets_a_traced_argument_for_its_own_context(root: Context) ->
     # the effect belongs to the fiber of the listener, not to the root
     fiber.dispose()
     assert counter.value == 0
+
+
+class Setup:
+    """A root with a watcher plugin whose listeners of one event run after `arm`.
+
+    The first listener of the watcher raises when `raises` and `arm` has been called.
+    The second listener records its calls.
+    """
+
+    def __init__(self, event_name: str, raises: bool) -> None:
+        self.root = Context(ImmediateScheduler())
+        self.error = RuntimeError(f"listener bug on {event_name}")
+        self.later = Recorder()
+        self._raises = raises
+        self._armed = False
+
+        def watcher(ctx: Context, config: Any) -> None:
+            def listener(*args: Any) -> None:
+                if self._armed and self._raises:
+                    raise self.error
+
+            ctx.on(event_name, listener)
+            ctx.on(event_name, self.later)
+
+        self.watcher = self.root.use(watcher)
+
+    def arm(self) -> None:
+        self._armed = True
+
+
+def site_plugin_dispose(setup: Setup) -> tuple[Any, ...]:
+    reverted: list[int] = []
+
+    def target(ctx: Context, config: Any) -> None:
+        ctx.effect(lambda: lambda: reverted.append(1))
+
+    fiber = setup.root.use(target)
+    setup.arm()
+    fiber.dispose()
+    return (reverted, fiber.state, [c.name for c in setup.root.fiber.children])
+
+
+def site_plugin_use(setup: Setup) -> tuple[Any, ...]:
+    ran: list[int] = []
+    setup.arm()
+    fiber = setup.root.use(lambda ctx, config: ran.append(1))
+    return (ran, fiber.state, [c.name for c in setup.root.fiber.children])
+
+
+def site_status(setup: Setup) -> tuple[Any, ...]:
+    root = setup.root
+    dependent = root.inject(["svc"], lambda ctx, config: None)
+
+    def provider(ctx: Context, config: Any) -> None:
+        ctx.provide("svc", 1)
+
+    setup.arm()
+    fiber = root.use(provider)
+    return (fiber.state, fiber.error, dependent.state, root.get("svc"))
+
+
+def site_service(setup: Setup) -> tuple[Any, ...]:
+    def provider(ctx: Context, config: Any) -> None:
+        ctx.provide("a", 1)
+        ctx.provide("b", 2)
+
+    setup.arm()
+    fiber = setup.root.use(provider)
+    return (fiber.state, fiber.error, sorted(call[0] for call in setup.later.calls))
+
+
+def site_replace(setup: Setup) -> tuple[Any, ...]:
+    def old(ctx: Context, config: Any) -> None:
+        return None
+
+    def new(ctx: Context, config: Any) -> None:
+        return None
+
+    first = setup.root.use(old, 1)
+    second = setup.root.use(old, 2)
+    setup.arm()
+    setup.root.registry.replace(old, new)
+    return (
+        [f.state for f in (first, second)],
+        [f.runtime is setup.root.registry.get(new) for f in (first, second)],
+        [f.config for f in (first, second)],
+    )
+
+
+def site_commit(setup: Setup) -> tuple[Any, ...]:
+    fiber = setup.root.use(lambda ctx, config: None, "old")
+    setup.arm()
+    fiber.update("new").result()
+    return (fiber.state, fiber.config)
+
+
+def site_dispatch(setup: Setup) -> tuple[Any, ...]:
+    seen = Recorder()
+    setup.root.on("user", seen)
+    setup.arm()
+    setup.root.emit("user", 1)
+    return (seen.calls,)
+
+
+SITES = [
+    ("internal/plugin", site_plugin_dispose),
+    ("internal/plugin", site_plugin_use),
+    ("internal/status", site_status),
+    ("internal/service", site_service),
+    ("internal/replace", site_replace),
+    ("internal/commit", site_commit),
+    ("internal/dispatch", site_dispatch),
+]
+
+
+@pytest.mark.divergence("notification-errors")
+@pytest.mark.parametrize(
+    ("event_name", "site"),
+    SITES,
+    ids=[site.__name__ for _, site in SITES],
+)
+def test_a_notification_listener_error_is_logged_and_the_change_completes(
+    event_name: str,
+    site: Callable[[Setup], tuple[Any, ...]],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    baseline = Setup(event_name, raises=False)
+    expected = site(baseline)
+    failing = Setup(event_name, raises=True)
+
+    with caplog.at_level(logging.ERROR, logger="pycordis"):
+        actual = site(failing)
+
+    assert actual == expected
+    assert len(failing.later.calls) == len(baseline.later.calls) > 0
+    records = [
+        r for r in caplog.records if r.exc_info and r.exc_info[1] is failing.error
+    ]
+    assert records
+    assert {r.name for r in records} == {"pycordis.watcher"}
+    assert all(event_name in r.getMessage() for r in records)
+
+
+@pytest.mark.parametrize(
+    ("event_name", "error"),
+    [("user", RuntimeError("bug")), ("internal/status", KeyboardInterrupt())],
+    ids=["user_event", "base_exception_of_a_notification"],
+)
+def test_an_uncontained_listener_error_goes_to_the_caller(
+    root: Context, event_name: str, error: BaseException
+) -> None:
+    def fail(*args: Any) -> None:
+        raise error
+
+    root.on(event_name, fail)
+
+    with pytest.raises(type(error)):
+        root.emit(event_name, None)
+
+
+def test_an_interceptor_listener_error_fails_the_fiber(root: Context) -> None:
+    def fail(*args: Any) -> None:
+        raise RuntimeError("bug")
+
+    root.on("internal/config", fail)
+
+    fiber = root.use(lambda ctx, config: None)
+
+    assert (fiber.state, repr(fiber.error)) == (
+        FiberState.FAILED,
+        "RuntimeError('bug')",
+    )
+
+
+@pytest.mark.divergence("notification-errors")
+def test_an_installed_listener_error_is_logged_by_the_root_fiber(
+    root: Context, caplog: pytest.LogCaptureFixture
+) -> None:
+    error = RuntimeError("bug")
+    seen = Recorder()
+
+    def fail(*args: Any) -> None:
+        raise error
+
+    root.events.install(root, "internal/status", fail)
+    root.events.install(root, "internal/status", seen)
+
+    with caplog.at_level(logging.ERROR, logger="pycordis"):
+        root.emit("internal/status", None)
+
+    assert len(seen.calls) == 1
+    assert [(r.name, r.exc_info and r.exc_info[1]) for r in caplog.records] == [
+        ("pycordis.root", error)
+    ]
