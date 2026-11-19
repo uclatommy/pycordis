@@ -8,7 +8,7 @@ from typing import Any
 from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.events import EventOptions
-from pycordis.fiber import Fiber, FiberState, FiberView
+from pycordis.fiber import Fiber, FiberState
 from pycordis.loader._entry import Entry, is_outer, own_options, run
 from pycordis.loader._tree import (
     EntryChange,
@@ -174,23 +174,21 @@ class Loader(EntryTree, Service):
                 except Exception:
                     pass  # the fiber or the entry has logged its own failure
 
-    def entry_of(self, fiber: Fiber | FiberView) -> Entry | None:
+    def entry_of(self, fiber: Fiber) -> Entry | None:
         """Return the entry whose component runs in `fiber`, or `None`.
 
         Only the fiber of the component itself has an entry: a fiber that the
-        component creates has none. A restricted component can pass the `FiberView`
-        that it holds.
+        component creates has none.
         """
-        return self._links.get(self._real(fiber))
+        return self._links.get(fiber)
 
-    def locate(self, fiber: Fiber | FiberView | None = None) -> str | None:
+    def locate(self, fiber: Fiber | None = None) -> str | None:
         """Return the id of the entry that `fiber` runs under, or `None`.
 
         Args:
-            fiber: The fiber to start from, or a `FiberView` of it. The default is the
-                fiber of the loader.
+            fiber: The fiber to start from. The default is the fiber of the loader.
         """
-        fiber = self.ctx._fiber if fiber is None else self._real(fiber)
+        fiber = self.ctx._fiber if fiber is None else fiber
         while True:
             entry = self._links.get(fiber)
             if entry is not None:
@@ -199,10 +197,6 @@ class Loader(EntryTree, Service):
             if parent is fiber:
                 return None
             fiber = parent
-
-    def _real(self, fiber: Fiber | FiberView) -> Fiber:
-        """Return the real fiber: the loader has the authority to read it."""
-        return fiber.unwrap(self.ctx) if isinstance(fiber, FiberView) else fiber
 
     def _link(self, fiber: Fiber, entry: Entry) -> None:
         self._links[fiber] = entry

@@ -24,8 +24,7 @@ service class can declare an `Exposure` to hide or to pass members. When the ser
 is restricted and the reader is not, the arguments of a call go through `expose` and
 the results through `receive`; when both are restricted, the two rules apply in turn.
 The methods of the service read the unfiltered values. A method of a restricted service
-gets a `ContextView` as its context. `screen` applies the same filter to a value that
-`ctx[key]` or `ctx.get(key)` reads.
+gets a `ContextView` as its context.
 
 `RealmView` and `realm_filter` give a `cordis_filter` hook of restricted code the realm
 labels of listener contexts and nothing else.
@@ -540,29 +539,6 @@ def _exposure_of(target: object) -> Exposure | None:
 def _hidden_error(name: str, hidden: Hidden) -> CordisError:
     kind = object.__getattribute__(hidden, "_kind")
     return CordisError(f'"{name}" gives a hidden {kind} in a restricted context')
-
-
-def screen[T](receiver: "Context", name: str, value: T) -> T:
-    """Return what a read of `name` gives to code in the context `receiver`.
-
-    `Context.__getitem__` and `Context.get` pass the value that they read through this
-    function, so a provided value or an accessor value is filtered as a value that
-    leaves a service view is. When the def site of `receiver` carries no restriction,
-    `value` is returned unchanged. Otherwise `value` goes through `expose`, and a
-    `Hidden` result raises `CordisError`. When `value` is a function, the result of a
-    call of the function that this function gives raises in the same way. Call this
-    function on the owner thread.
-
-    Args:
-        receiver: The context that reads.
-        name: The service or accessor name, for the error message.
-        value: The value that the read gives.
-
-    Raises:
-        CordisError: If the value is a context that the scope does not own, a provider
-            record, or a method that `expose` hides.
-    """
-    return _read_exit(receiver, name, value)
 
 
 def _read_exit(scope: "Context", name: str, value: Any) -> Any:

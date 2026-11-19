@@ -1006,11 +1006,10 @@ class FiberView:
 
     Examples:
         ```python
-        >>> view = restrict(root, inject=["db"]).use(plugin)
+        >>> view = ContextView(restrict(root, inject=["db"])).use(plugin)
         >>> view.name, view.state
         ('plugin', <FiberState.ACTIVE: 2>)
-        >>> view.unwrap(root) is root.fiber.children[0]
-        True
+        >>> view.dispose()
         ```
     """
 
@@ -1142,21 +1141,6 @@ class FiberView:
         """
         self._require_owned("update")
         return self._target.update(config, no_save)
-
-    def unwrap(self, ctx: "Context") -> Fiber:
-        """Return the real fiber, for a host that holds an unrestricted context.
-
-        Args:
-            ctx: The context that proves the authority. Its def site (`ctx.shadow`,
-                or `ctx`) must carry no restriction. A host service method passes
-                its own context.
-
-        Raises:
-            CordisError: If the def site of `ctx` is restricted.
-        """
-        if ctx._def_site._restrictions:
-            raise CordisError("cannot unwrap a fiber view in a restricted context")
-        return self._target
 
     def _require_owned(self, operation: str) -> None:
         if not self._owned:

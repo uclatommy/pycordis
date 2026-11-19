@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🔄 Reopened — Increments 1 to 10 are done. Increments 11 and 12 remove the filters of the real `Context` and close out. Every decision is accepted, and Increment 11 is ready to start (see [Decisions](#decisions))
+**Status**: 🔄 Reopened — Increments 1 to 11 are done. Increment 12 closes out. Every decision is accepted (see [Decisions](#decisions))
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15), [#19 Restricted context: make an unfiltered boundary impossible by construction](https://github.com/uclatommy/pycordis/issues/19)
 
@@ -575,7 +575,7 @@ this table before the code changes. A new gap is decided with the [Gap policy](#
   restricted fiber (cases of existing tests in `test_service.py`, `test_timer.py`, and
   `test_logger.py` in a restricted context where the shape fits)
 - ⬜ The seeded schedules of `tests/test_invariants.py` pass with views and the D17 settlement
-- ⬜ Tests of removed behavior are deleted or changed in Increment 11: `unwrap`,
+- ✅ Tests of removed behavior are deleted or changed in Increment 11: `unwrap`,
   `bind(site=...)`, and a view argument of `entry_of` are deleted; a test that expects a real
   restricted `Context` to raise for `root`, `reflect`, `registry`, or `events` becomes a
   `guard` case of a `ContextView`; a test that expects the host to get a `FiberView` from
@@ -985,7 +985,25 @@ plugin raises
 `serial`, `waterfall`, `meta`, `intercepts`, `intercept_layers`, `root`, `reflect`,
 `registry`, `events`; `ReflectService.bind`; `EventsService.on` and `once`; `FiberView`;
 `Loader.entry_of` and `locate`
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `context.py`: `_check_guarded`, `_use`, and the `screen` and `expose` calls are removed; `root`, `reflect`, `registry`, `events`, `fiber`, `use`, `inject`, `ctx[key]`, and `get` give real objects; `on` and `once` have no `site`; `use` records the call site itself; the docstrings of these members and of `restrict` state that the host gets real objects and a component gets views
+- `reflect.py`: `ReflectService.bind(ctx, callback)` traces arguments only (no `site`, no `expose` or `receive`)
+- `events.py`: `EventsService.on` and `once` lose `site`
+- `traceable.py`: `screen` is removed; `_read_exit` is the one read exit
+- `fiber.py`: `FiberView.unwrap` is removed; the `FiberView` example uses a `ContextView`
+- `loader/_service.py`: `entry_of` and `locate` take a `Fiber` only; `_real` is removed
+- `loader/_entry.py`: `Entry` calls the public `use`
+- `tests/test_restrict.py`: the `unwrap`, `screen`, and def-site guard tests are deleted; the guard test is a case of a `ContextView` and a real `Context`; the listener, `once`, `waterfall`, and fiber-view tests register through `ContextView(restricted)`; one parametrized test checks that a restricted `Context` gives the host real objects and a `ContextView` gives views
+**Tests**:
+- `uv run pytest` (full suite): 1655 passed, no unmarked slow tests; `ruff check .` and `ruff format --check .` clean
+- The new host-side test fails against the code before the increment (`restricted.use` gave a `FiberView`)
+- Test review added `test_a_listener_of_a_restricted_context_gets_real_objects` (`on` and `once`); the guard test keeps only the real-context half, because `TestContextView` covers the `ContextView` guards
+**Deviations**:
+- A `get` of a hidden context through a view names the member in its error (`"get" gives a hidden Context`), where `get` on a restricted real `Context` named the key; `ctx[key]` still names the key. The member table names the member (D25)
+- `test_a_guarded_attribute_is_checked_at_the_def_site` is deleted, not changed: a real `Context` has no guard and no def-site rule for `root` or `fiber`
+**Manual validation**:
+- Confirmed in `uv run python`: `restrict(root, inject=["svc"]).use(p)` gives a `Fiber`; the plugin gets a `ContextView` and a `FiberView` from `ctx.fiber`; `ctx["svc"].cordis_caller.root` raises `CordisError`
 
 ### Increment 12: Close-out
 **Goal**: the `restrict` docstring, the divergence row, and the docstrings agree with the code,

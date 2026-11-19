@@ -31,7 +31,6 @@ from pycordis.traceable import (
     get_traceable,
     realm_filter,
     receive,
-    screen,
 )
 
 
@@ -254,10 +253,7 @@ class TestReads:
         assert shadowed["db"] == 1
 
         restricted_service = (
-            restrict(root, inject=["other"])
-            .inject(["other"], lambda ctx: None)
-            .unwrap(root)
-            .ctx
+            restrict(root, inject=["other"]).inject(["other"], lambda ctx: None).ctx
         )
 
         # the def site rejects "db" even though the caller (root) has no restriction
@@ -338,41 +334,24 @@ def test_provide_accessor_or_mixin_outside_the_rule_fails_the_fiber(
     ids=["root", "reflect", "registry", "events"],
 )
 @pytest.mark.divergence("context-restriction")
-def test_a_guarded_attribute_raises_in_a_restricted_context_and_works_in_others(
+def test_a_restricted_context_gives_the_host_the_real_services_of_the_application(
     root: Context, read: Callable[[Context], object]
 ) -> None:
-    value = read(root)
-    assert value is read(root)
-
     restricted = restrict(root, inject=["other"])
-    with pytest.raises(CordisError, match="restricted context"):
-        read(restricted)
+
+    assert read(restricted) is read(root)
 
 
-def test_a_guarded_attribute_is_checked_at_the_def_site(root: Context) -> None:
-    unrestricted_service = root.inject(["db"], lambda ctx: None).ctx
-    restricted_caller = restrict(root, inject=["other"])
+@pytest.mark.parametrize("register", ["on", "once"])
+def test_a_listener_of_a_restricted_context_gets_real_objects(
+    root: Context, register: str
+) -> None:
+    received: list[object] = []
+    getattr(restrict(root, inject=["other"]), register)("greet", received.append)
 
-    # the def site (the service's own context) is unrestricted: the caller's
-    # restriction does not apply
-    shadowed = restricted_caller.with_shadow(unrestricted_service)
-    assert shadowed.root is root
+    root.emit("greet", root.fiber)
 
-    # `fiber` follows the def site too: an unrestricted def site gives real fibers
-    caller_fiber = restrict(root, inject=["other"]).use(_no_deps).unwrap(root)
-    assert caller_fiber.ctx.with_shadow(unrestricted_service).fiber is caller_fiber
-    assert shadowed.fiber is root.fiber
-
-    restricted_service = (
-        restrict(root, inject=["other"])
-        .inject(["other"], lambda ctx: None)
-        .unwrap(root)
-        .ctx
-    )
-
-    # the def site is restricted even though the caller (root) has no restriction
-    with pytest.raises(CordisError, match="restricted context"):
-        _ = root.with_shadow(restricted_service).root
+    assert received == [root.fiber] and type(received[0]) is Fiber
 
 
 def test_on_and_emit_are_not_restricted(root: Context) -> None:
@@ -393,7 +372,7 @@ def test_a_restricted_fiber_is_a_view_that_gives_only_the_allow_list(
     unrestricted contexts are out of reach."""
     restricted = restrict(root, inject=["other"])
     host = root.use(_no_deps)
-    view = restricted.fiber
+    view = ContextView(restricted).fiber
 
     assert isinstance(view, FiberView) and not isinstance(view, Fiber)
     assert (view.name, view.uid, view.state) == ("root", 0, FiberState.ACTIVE)
@@ -418,7 +397,9 @@ def test_a_restricted_fiber_is_a_view_that_gives_only_the_allow_list(
 def test_wait_and_await_on_a_view_settle_with_the_view(
     root: Context, fails: bool
 ) -> None:
-    view = restrict(root, inject=["other"]).use(_needs_db if fails else _no_deps)
+    view = ContextView(restrict(root, inject=["other"])).use(
+        _needs_db if fails else _no_deps
+    )
 
     async def awaited() -> object:
         return await view
@@ -448,7 +429,7 @@ def test_a_view_acts_only_on_a_fiber_that_the_component_owns(
     root: Context, act: Callable[[FiberView], object]
 ) -> None:
     restricted = restrict(root, inject=["other"])
-    sibling = restricted.use(_no_deps).unwrap(root)
+    sibling = restricted.use(_no_deps)
     host = root.use(_no_deps)
     seen: dict[str, FiberView] = {}
 
@@ -470,32 +451,44 @@ def test_a_view_acts_only_on_a_fiber_that_the_component_owns(
             act(seen[name])
 
 
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize(
+    "read",
+    [
+        lambda ctx: ctx.use(_no_deps),
+        lambda ctx: ctx.inject([], lambda inner: None),
+        lambda ctx: ctx.fiber,
+        lambda ctx: ctx["svc"],
+        lambda ctx: ctx.get("svc"),
+        lambda ctx: ctx.bail("probe"),
+    ],
+    ids=["use", "inject", "fiber", "item", "get", "bail"],
+)
+def test_a_restricted_context_gives_the_host_real_objects_and_a_view_gives_views(
+    root: Context, read: Callable[[Context | ContextView], object]
+) -> None:
+    host_fiber = root.use(_no_deps)
+    root.provide("svc", host_fiber)
+    root.on("probe", lambda: host_fiber)
+    restricted = restrict(root, inject=["svc"])
+
+    assert isinstance(read(restricted), Fiber)
+    assert type(read(ContextView(restricted))) is FiberView
+
+
 def test_a_view_equals_a_view_of_the_same_fiber_for_the_same_scope(
     root: Context,
 ) -> None:
     restricted = restrict(root, inject=["other"])
     other_scope = restrict(root, inject=["other"])
-    view = restricted.use(_no_deps)
-    fiber = view.unwrap(root)
+    fiber = restricted.use(_no_deps)
+    view = expose(restricted, fiber)
 
     assert expose(restricted, fiber) == view
     assert hash(expose(restricted, fiber)) == hash(view)
     assert view in {expose(restricted, fiber)}
     assert view != fiber and fiber != view
     assert expose(other_scope, fiber) != view
-
-
-def test_unwrap_needs_an_unrestricted_def_site(root: Context) -> None:
-    restricted = restrict(root, inject=["other"])
-    view = restricted.use(_no_deps)
-    restricted_ctx = restricted.use(_no_deps).unwrap(root).ctx
-
-    assert view.unwrap(root) is root.fiber.children[0]
-    assert view.unwrap(restricted_ctx.with_shadow(root)) is view.unwrap(root)
-    with pytest.raises(CordisError, match="restricted context"):
-        view.unwrap(restricted_ctx)
-    with pytest.raises(CordisError, match="restricted context"):
-        view.unwrap(root.with_shadow(restricted_ctx))
 
 
 @pytest.mark.divergence("context-restriction")
@@ -582,7 +575,9 @@ def test_a_restricted_listener_gets_views_and_placeholders_in_place_of_host_obje
     kind: type,
 ) -> None:
     calls: list[tuple[object, ...]] = []
-    restrict(root, inject=["other"]).on(event, lambda *args: calls.append(args), True)
+    ContextView(restrict(root, inject=["other"])).on(
+        event, lambda *args: calls.append(args), True
+    )
 
     trigger(root)
 
@@ -815,7 +810,7 @@ def test_a_restricted_listener_gets_exposed_arguments_and_its_result_is_received
         seen.append(next_())
         return seen[0]
 
-    restrict(root, inject=["other"]).on("wrap", listener)
+    ContextView(restrict(root, inject=["other"])).on("wrap", listener)
 
     assert root.waterfall("wrap", lambda: root.fiber) is root.fiber
     assert [type(value) for value in seen] == [FiberView]
@@ -864,21 +859,6 @@ def test_receive_of_a_deferred_settles_with_the_received_value_or_the_same_error
     with pytest.raises(CordisError) as excinfo:
         received[1].result()
     assert excinfo.value is error
-
-
-def test_a_read_exit_raises_for_a_hidden_value_and_for_a_hidden_call_result(
-    root: Context,
-) -> None:
-    restricted = restrict(root, inject=["other"])
-    impl = Impl(uid=1, name="svc", ctx=root, value=None, isolate=object())
-
-    with pytest.raises(CordisError, match="hidden Impl"):
-        screen(restricted, "svc", impl)
-    leaking = screen(restricted, "svc", lambda: impl)
-    with pytest.raises(CordisError, match='"svc" gives a hidden Impl'):
-        leaking()
-    assert type(screen(restricted, "svc", lambda: root.fiber)()) is FiberView
-    assert screen(root, "svc", impl) is impl
 
 
 def test_a_hidden_copy_is_the_same_placeholder_and_a_pickled_one_cannot_be_received(
@@ -1157,7 +1137,7 @@ class _Sequence:
 
 def test_a_restricted_once_listener_gets_exposed_arguments(root: Context) -> None:
     received: list[object] = []
-    restrict(root, inject=["other"]).once("greet", received.append)
+    ContextView(restrict(root, inject=["other"])).once("greet", received.append)
 
     root.emit("greet", root.fiber)
     root.emit("greet", root.fiber)
@@ -1335,12 +1315,15 @@ def test_a_direct_read_filters_a_value_that_has_no_service_view(
 
 @pytest.mark.divergence("context-restriction")
 @pytest.mark.parametrize(
-    "read",
-    [lambda ctx: ctx["host_ctx"], lambda ctx: ctx.get("host_ctx")],
+    ("read", "name"),
+    [
+        (lambda ctx: ctx["host_ctx"], "host_ctx"),
+        (lambda ctx: ctx.get("host_ctx"), "get"),
+    ],
     ids=["item", "get"],
 )
 def test_a_direct_read_of_a_host_context_fails_and_leaves_no_provider(
-    root: Context, read: Callable[[Context], Context]
+    root: Context, read: Callable[[Context], Context], name: str
 ) -> None:
     root.provide("host_ctx", root)
 
@@ -1351,7 +1334,7 @@ def test_a_direct_read_of_a_host_context_fails_and_leaves_no_provider(
     view = restrict(root, inject=["host_ctx"]).use(plugin)
 
     assert view.state == FiberState.FAILED
-    assert '"host_ctx" gives a hidden Context' in str(view.error)
+    assert f'"{name}" gives a hidden Context' in str(view.error)
     view.dispose()
     assert root.get("leak") is None
     assert read(root) is root
@@ -1371,7 +1354,7 @@ def test_a_service_method_reads_real_objects_when_a_restricted_plugin_calls_it(
 
     assert restricted[name].same_host() is True
     assert len(result) == count and all(type(item) is FiberView for item in result)
-    assert all(item.unwrap(root) is host for item in result)
+    assert all(receive(restricted, item) is host for item in result)
 
 
 class _Marked:
@@ -1545,7 +1528,7 @@ def test_a_reload_result_gives_a_restricted_caller_fiber_views(
     assert isinstance(result, ReloadResult) and result.settled == []
     assert isinstance(exposed, ReloadResult)
     assert [type(item) for item in exposed.settled] == [FiberView]
-    assert exposed.settled[0].unwrap(root) is fiber
+    assert receive(restricted, exposed.settled[0]) is fiber
 
 
 class TestContextView:

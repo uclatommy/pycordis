@@ -24,10 +24,8 @@ from pycordis.scheduler import Scheduler, owner_thread, start
 from pycordis.traceable import (
     Hidden,
     Overlay,
-    expose,
     get_traceable,
     get_with_receiver,
-    receive,
 )
 
 if TYPE_CHECKING:
@@ -510,27 +508,18 @@ class ReflectService:
         return ctx._fiber.effect(setup, f"ctx.mixin({json.dumps(source_name)})")
 
     @owner_thread("scheduler")
-    def bind[**P, R](
-        self, ctx: "Context", callback: Callable[P, R], *, site: "Context | None" = None
-    ) -> Callable[P, R]:
+    def bind[**P, R](self, ctx: "Context", callback: Callable[P, R]) -> Callable[P, R]:
         """Return a function that calls `callback` with arguments prepared for `ctx`.
 
         An argument that has a `Tracker` reaches `callback` as its view for `ctx`, so an
         effect that `callback` registers through it belongs to the fiber of `ctx`.
 
-        When the def site of `site` is restricted, `callback` is code of a restricted
-        component. Each argument goes through `expose`, so `callback` gets views and
-        `Hidden` placeholders in place of fibers, foreign contexts, and provider
-        records, and a function argument carries its values across the boundary. The
-        result of `callback` goes through `receive`, so the caller gets real objects.
-        `site` defaults to `ctx`.
         """
-        scope = ctx if site is None else site
 
         @functools.wraps(callback)
         def bound(*args: P.args, **kwargs: P.kwargs) -> R:
-            traced = [expose(scope, get_traceable(ctx, arg)) for arg in args]
-            return receive(scope, callback(*traced, **kwargs))  # type: ignore[arg-type]
+            traced = [get_traceable(ctx, arg) for arg in args]
+            return callback(*traced, **kwargs)  # type: ignore[arg-type]
 
         return bound
 
