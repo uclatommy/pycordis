@@ -45,6 +45,7 @@ from types import (
     CoroutineType,
     FunctionType,
     GeneratorType,
+    MappingProxyType,
     MethodType,
 )
 from typing import TYPE_CHECKING, Any
@@ -355,7 +356,8 @@ def expose[T](receiver: "Context", value: T) -> T:
       and gives the result through `expose`.
     - A `tuple`, `list`, `dict`, `set`, or `frozenset` gives a new container of the
       same type, with each element, key, and value exposed. A change to the new
-      container is not visible through the old one.
+      container is not visible through the old one. A read-only mapping (such as
+      `ctx.meta`) gives a new read-only mapping in the same way.
     - A `Deferred` gives a new `Deferred` that settles with the exposed result, or with
       the same error. On the owner thread it settles when `value` completes, and at
       once when `value` is done. When `value` completes on another thread, it settles
@@ -407,6 +409,10 @@ def _expose(scope: "Context", value: Any) -> Any:
         return {
             _expose(scope, key): _expose(scope, item) for key, item in value.items()
         }
+    if kind is MappingProxyType:
+        return MappingProxyType(
+            {_expose(scope, key): _expose(scope, item) for key, item in value.items()}
+        )
     if kind in _LATER_FORMS:
         return _cross_later(scope, value, to_host=False)
     if isinstance(value, _FUNCTION_FORMS):
@@ -427,8 +433,8 @@ def receive[T](scope: "Context", value: T) -> T:
     - Any other function, bound or builtin method, or `functools.partial` gives a
       function that equals it. A call of that function passes each argument through
       `expose` and gives the result through `receive`.
-    - A `tuple`, `list`, `dict`, `set`, or `frozenset` gives a new container of the
-      same type, with each element, key, and value received.
+    - A `tuple`, `list`, `dict`, `set`, `frozenset`, or read-only mapping gives a new
+      container of the same type, with each element, key, and value received.
     - A `Deferred`, a coroutine, a generator, and an async generator give the same
       kind of object, with each result, item, and return value received and each value
       that is sent in exposed (the `Deferred` rule of `expose` applies to threads).
@@ -472,6 +478,10 @@ def _receive(scope: "Context", value: Any) -> Any:
         return {
             _receive(scope, key): _receive(scope, item) for key, item in value.items()
         }
+    if kind is MappingProxyType:
+        return MappingProxyType(
+            {_receive(scope, key): _receive(scope, item) for key, item in value.items()}
+        )
     if kind in _LATER_FORMS:
         return _cross_later(scope, value, to_host=True)
     if isinstance(value, _FUNCTION_FORMS):

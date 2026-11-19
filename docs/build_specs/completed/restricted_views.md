@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: ✅ Completed — Increments 1 to 12 are done. Every decision is accepted (see [Decisions](#decisions))
+**Status**: ✅ Completed — Increments 1 to 13 are done. Every decision is accepted (see [Decisions](#decisions))
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15), [#19 Restricted context: make an unfiltered boundary impossible by construction](https://github.com/uclatommy/pycordis/issues/19)
 
@@ -333,7 +333,7 @@ The classification of the known gaps:
 
 | Class | Gaps | Answer |
 |---|---|---|
-| Closed, tested | Every row of the crossing test, D38, D39, D43, D44 | A crossing-test case for each |
+| Closed, tested | Every row of the crossing test, D38, D39, D43, D44, D47 | A crossing-test case for each |
 | Open (D18) | A value of a type that the boundary does not recognize and that its class does not mark (any other object, a callable object that is not a function form, a container subclass); `StepReport.fiber` | Listed in the `restrict` warning; follow-up issue |
 | Trust model | `get_original`, `cordis_original`, a `cordis_` hook that restricted code defines, `gc`, frames, private slots, tracebacks and the other contents of an exception that crosses (D46) | One sentence in the `restrict` warning |
 | Host permission (D42) | The config of `use`, `isolates` labels, an admitted `loader` or `hmr` | Stated in the `restrict` docstring |
@@ -412,7 +412,7 @@ this table before the code changes. A new gap is decided with the [Gap policy](#
 | D11 | How `expose` recognizes `Fiber`, `Context`, and `Impl` | A `cordis_expose(value, receiver)` hook on each class, read from `type(value)` | The module rules permit no import back from `traceable.py`; the rule for each type stays in its module |
 | D12 | `Loader` and `Hmr` in a restricted context | Not supported; documented | Their own listeners read `fiber.parent`. The use case is a host service, which runs unrestricted |
 | D13 | Event results | Replaced by D25 and D28 | `bail`, `serial`, and `waterfall` are `cross` members of `ContextView`; pycordis calls the real methods |
-| D14 | `meta`, `intercepts`, `intercept_layers` | Replaced by D25 and D28 | `cross` members; pycordis reads them on the real context |
+| D14 | `meta`, `intercepts`, `intercept_layers` | Replaced by D25 and D28; `meta` and `intercepts` give a read-only mapping that D47 closes | `cross` members; pycordis reads them on the real context |
 | D15 | Calls into restricted code; equality of the bound callable | Replaced by D26 | `receive` wraps every restricted function; the wrapper equals its function |
 | D16 | Filter forms | Wrap function forms only; wrap coroutines and generators; forward protocol operations of an exposed view; `target == view` stays with the target | A value that is read must behave as the value |
 | D17 | A settled `Deferred` | The done callback settles at once on the owner thread; a completion on another thread uses `Scheduler.submit` | The step exists only to keep `expose` off a foreign thread, and `expose` has no side effects |
@@ -445,6 +445,7 @@ this table before the code changes. A new gap is decided with the [Gap policy](#
 | D44 | Weak references to a wrapper | The wrapper class has no `__weakref__` slot, so a weak reference raises `TypeError` | A new wrapper is made for each crossing, so a weak reference would die at once and a host service would lose a restricted callback with no error (Gap policy test 4) |
 | D45 | Containers that cross | A new container; the `restrict` docstring states it | It is the D5 rule, not a gap. A host service that expects to see later changes to a container from a restricted caller sees a copy |
 | D46 | Exceptions that cross | Pass unchanged; trust model | Reading the frames of a traceback is deliberate (Gap policy test 2). pycordis's own errors carry text or validation issues, never a fiber or a context |
+| D47 | Read-only mappings that cross | `expose` and `receive` give a new `MappingProxyType` with each key and value crossed, as D45 does for a `dict` | `ctx.meta` and `ctx.intercepts` are `cross` members whose values are a `MappingProxyType`; the boundary did not recognize the type, so a host `Context` or `Fiber` in `meta` or in an intercept configuration reached restricted code unchanged. Gap policy test 3: one rule at the boundary closes the path, and the other `cross` members give types that the boundary already recognizes |
 
 ## Key Constraints
 
@@ -1028,6 +1029,24 @@ this spec moves to `completed/`
 **Deviations**:
 - The follow-up issue for the open paths of D18 is not created: it is an outward-facing action, so the maintainer creates it. The `restrict` warning lists the paths
 - The review of `traceable.py`, `fiber.py`, `reflect.py`, and `events.py` docstrings found no stale sentence (search for "now", "no longer", "previously", `screen`, `unwrap`, `site=`)
+
+### Increment 13: Close `meta` and `intercepts`
+**Goal**: a host `Context` or `Fiber` in `ctx.meta` or `ctx.intercepts` reaches restricted code as a view or a `Hidden`, as `intercept_layers` already gives it (D47).
+**Files**: `traceable.py` (~14, the `MappingProxyType` rule in `_expose`, `_receive`, and their docstrings), `tests/test_restrict.py` (~45), this spec
+**Validation**: `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .`,
+`uv run python scripts/gen_ref_pages.py && uv run zensical build`; the new tests fail against the code without the rule
+**Docs**: D14 and the gap table follow D47; the `expose` and `receive` docstrings name the read-only mapping; the `restrict` docstring already states that a container crosses as a copy (D45); this spec returns to `completed/`
+**Status**: ✅ Completed
+**Changed**:
+- `traceable.py`: `expose` and `receive` give a new read-only mapping with each key and value crossed
+- `restricted_views.md`: D47, the D14 note, the gap table row, and this increment
+**Tests**:
+- `tests/test_restrict.py`: the container test has a `mappingproxy` case; a new test puts a host fiber and a host context in `meta` and in `intercepts`, and checks that restricted code gets `FiberView` and `Hidden` values, cannot write the mapping, and cannot provide through them; a new test checks that `intercepts` and `intercept_layers` give the same view of a configuration; the `receive` container test has a read-only mapping case. Each new case fails without the rule
+- `uv run pytest` (full suite): 1659 passed, no unmarked slow tests; `ruff check .` and `ruff format --check .` clean
+**Deviations**:
+- None. The other `cross` members give `list`, `dict`, a `Context`, or a `Fiber`, which the boundary already recognizes, so the sibling search found no other open path
+**Manual validation**:
+- Confirmed in `uv run python`: a restricted plugin gets a `Hidden` and a `FiberView` from `ctx.meta` and `ctx.intercepts["x"]`, and `provide` and `dispose` through them raise `CordisError`; the code before the fix leaks both
 
 ## Code Standards
 

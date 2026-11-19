@@ -8,6 +8,7 @@ import pickle
 import weakref
 from collections.abc import AsyncGenerator, Callable, Generator, Iterator
 from pathlib import Path
+from types import MappingProxyType
 
 import pytest
 from loader_fakes import RecordingLoader
@@ -626,8 +627,9 @@ class _Plain:
         lambda fiber: {fiber: fiber},
         lambda fiber: {fiber},
         lambda fiber: frozenset({fiber}),
+        lambda fiber: MappingProxyType({fiber: [fiber]}),
     ],
-    ids=["tuple", "list", "dict", "set", "frozenset"],
+    ids=["tuple", "list", "dict", "set", "frozenset", "mappingproxy"],
 )
 def test_expose_filters_the_elements_of_a_builtin_container(
     root: Context, build: Callable[[Fiber], object]
@@ -646,11 +648,55 @@ def test_expose_filters_the_elements_of_a_builtin_container(
 
 def _leaves(value: object) -> list[object]:
     """Return the non-container elements, including dict keys, of a nested value."""
-    if isinstance(value, dict):
+    if isinstance(value, (dict, MappingProxyType)):
         return [leaf for item in (*value, *value.values()) for leaf in _leaves(item)]
     if isinstance(value, (tuple, list, set, frozenset)):
         return [leaf for item in value for leaf in _leaves(item)]
     return [value]
+
+
+@pytest.mark.parametrize("member", ["meta", "intercepts"])
+def test_a_host_object_in_meta_or_intercepts_does_not_reach_a_restricted_plugin(
+    root: Context, member: str
+) -> None:
+    host = root.use(lambda c, cfg: None)
+    app = root.extend(app=root, f=host)
+    app = app.intercept("x", {"app": root, "f": host})
+    seen: list[object] = []
+
+    def plugin(ctx: Context, config: object) -> None:
+        mapping = getattr(ctx, member)
+        seen.extend(leaf for leaf in _leaves(mapping) if not isinstance(leaf, str))
+        with pytest.raises(TypeError):
+            mapping["new"] = 1
+
+    restrict(app, inject=[]).use(plugin).dispose()
+
+    assert {type(leaf) for leaf in seen} == {FiberView, Hidden}
+    for leaf in seen:
+        with pytest.raises(CordisError):
+            leaf.provide("leak", 1)  # type: ignore[attr-defined]
+    assert root.get("leak") is None
+
+
+def test_intercepts_and_intercept_layers_give_the_same_view_of_a_configuration(
+    root: Context,
+) -> None:
+    host = root.use(lambda c, cfg: None)
+    app = root.intercept("x", {"f": host})
+    got: list[object] = []
+
+    def plugin(ctx: Context, config: object) -> None:
+        got.append(ctx.intercepts["x"])
+        got.append(ctx.intercept_layers("x")[0])
+
+    restrict(app, inject=[]).use(plugin)
+
+    from_mapping, from_layers = (
+        [type(leaf) for leaf in _leaves(exposed) if not isinstance(leaf, str)]
+        for exposed in got
+    )
+    assert from_mapping == from_layers == [FiberView]
 
 
 def test_expose_gives_a_placeholder_for_a_provider_and_a_method_of_a_fiber(
@@ -746,10 +792,14 @@ def test_receive_gives_back_each_element_of_a_container_and_a_service_view(
 
     assert view is not holder and isinstance(view, Holder)
     assert receive(restricted, view) is holder
-    exposed = expose(restricted, {root.fiber: [root.fiber, root]})
-    received = receive(restricted, exposed)
-    assert received == {root.fiber: [root.fiber, root]}
-    assert received is not exposed
+    for build in (
+        lambda: {root.fiber: [root.fiber, root]},
+        lambda: MappingProxyType({root.fiber: [root.fiber, root]}),
+    ):
+        exposed = expose(restricted, build())
+        received = receive(restricted, exposed)
+        assert type(received) is type(exposed) and received == build()
+        assert received is not exposed
 
 
 def test_a_function_that_crosses_equals_its_function_and_has_no_weak_reference(
