@@ -26,6 +26,9 @@ from dataclasses import dataclass
 from types import FunctionType, MethodType
 from typing import TYPE_CHECKING, Any
 
+from pycordis.deferred import Deferred
+from pycordis.errors import CordisError
+
 if TYPE_CHECKING:
     from pycordis.context import Context
 
@@ -62,6 +65,124 @@ class Tracker:
     property: str | None = None
     associate: str | None = None
     no_shadow: bool = False
+
+
+class Hidden:
+    """The value that a restricted component gets in place of an object it cannot use.
+
+    Every attribute access, call, and iteration raises `CordisError` that names the
+    type of the hidden object. A listener that receives a `Hidden` is still called, so
+    a restricted component can ignore the argument without a change to event dispatch.
+    """
+
+    __slots__ = ("_kind",)
+
+    def __init__(self, kind: str) -> None:
+        """Create a placeholder for an object of the type named `kind`."""
+        object.__setattr__(self, "_kind", kind)
+
+    def _refuse(self, action: str) -> CordisError:
+        kind = object.__getattribute__(self, "_kind")
+        return CordisError(f"cannot {action} a hidden {kind}")
+
+    def __getattribute__(self, name: str) -> Any:
+        if name == "__class__":  # `isinstance` reads it
+            return Hidden
+        raise Hidden._refuse(self, f'read "{name}" of')
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise Hidden._refuse(self, f'set "{name}" of')
+
+    def __delattr__(self, name: str) -> None:
+        raise Hidden._refuse(self, f'delete "{name}" of')
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        raise Hidden._refuse(self, "call")
+
+    def __iter__(self) -> Any:
+        raise Hidden._refuse(self, "iterate")
+
+    def __getitem__(self, key: Any) -> Any:
+        raise Hidden._refuse(self, "index")
+
+    def __repr__(self) -> str:
+        return f"Hidden <{object.__getattribute__(self, '_kind')}>"
+
+
+def _hook(value: object) -> Callable[[object, "Context"], object] | None:
+    """Return the `cordis_expose` hook of the class of `value`, or `None`.
+
+    The hook is read from the class, so a view whose `__class__` shows a service class
+    is not taken for that service.
+    """
+    return getattr(type(value), "cordis_expose", None)  # optional on any class
+
+
+def _expose_deferred(receiver: "Context", source: Deferred[Any]) -> Deferred[Any]:
+    """Return a `Deferred` that settles with the exposed result of `source`.
+
+    `source` can complete on any thread. The exposure runs on the owner thread.
+    """
+    settled = Deferred[Any]()
+
+    def complete() -> None:
+        try:
+            result = source.result()
+        except BaseException as error:
+            settled.reject(error)
+        else:
+            settled.resolve(expose(receiver, result))
+
+    source.add_done_callback(lambda _: receiver.scheduler.submit(complete))
+    return settled
+
+
+def expose[T](receiver: "Context", value: T) -> T:
+    """Return what code in the context `receiver` can use in place of `value`.
+
+    The scope of `receiver` is its def site. When that scope carries no restriction,
+    `value` is returned unchanged. Otherwise:
+
+    - An object whose class has a `cordis_expose(value, receiver)` hook gives the
+      result of the hook: a `Fiber` gives a `FiberView`, and a `Context` that the
+      scope does not own, or a provider record, gives a `Hidden`.
+    - A method of such an object gives a `Hidden`.
+    - A `tuple`, `list`, `dict`, `set`, or `frozenset` gives a new container of the
+      same type, with each element, key, and value exposed.
+    - A `Deferred` gives a new `Deferred` that settles with the exposed result, or with
+      the same error.
+    - Any other object is returned unchanged.
+
+    The result has the type of `value` for a caller: a `FiberView` and a `Hidden` are
+    not instances of that type. Call this function on the owner thread.
+
+    Args:
+        receiver: The context of the component that receives the value.
+        value: Any object.
+    """
+    if not receiver._def_site._restrictions:
+        return value
+    return _expose(receiver, value)
+
+
+def _expose(receiver: "Context", value: Any) -> Any:
+    """Apply the exposure rule of `expose` to `value` for a restricted scope."""
+    hook = _hook(value)
+    if hook is not None:
+        return hook(value, receiver)
+    if isinstance(value, MethodType) and inspect.isfunction(_hook(value.__self__)):
+        return Hidden(f"method of {type(value.__self__).__name__}")
+    kind = type(value)
+    if kind in (tuple, list, set, frozenset):
+        return kind(_expose(receiver, item) for item in value)
+    if kind is dict:
+        return {
+            _expose(receiver, key): _expose(receiver, item)
+            for key, item in value.items()
+        }
+    if kind is Deferred:
+        return _expose_deferred(receiver, value)
+    return value
 
 
 def get_traceable[T](ctx: "Context", value: T) -> T:

@@ -21,7 +21,7 @@ from pycordis.errors import CordisError
 from pycordis.fiber import EffectHandle, Fiber, FiberState
 from pycordis.keys import Keyable, key_name
 from pycordis.scheduler import Scheduler, owner_thread, start
-from pycordis.traceable import Overlay, get_traceable, get_with_receiver
+from pycordis.traceable import Hidden, Overlay, expose, get_traceable, get_with_receiver
 
 if TYPE_CHECKING:
     from pycordis.context import Context
@@ -75,6 +75,10 @@ class Impl:
     dependents: set[Any] = field(default_factory=set)
     release: Callable[[], None] | None = None
     check: Callable[[Any], bool] | None = None
+
+    def cordis_expose(self, receiver: "Context") -> Hidden:
+        """Return a `Hidden`: a restricted scope never sees a provider record."""
+        return Hidden("Impl")
 
 
 @dataclass(frozen=True, slots=True)
@@ -499,16 +503,23 @@ class ReflectService:
         return ctx._fiber.effect(setup, f"ctx.mixin({json.dumps(source_name)})")
 
     @owner_thread("scheduler")
-    def bind[**P, R](self, ctx: "Context", callback: Callable[P, R]) -> Callable[P, R]:
-        """Return a function that calls `callback` with its arguments traced for `ctx`.
+    def bind[**P, R](
+        self, ctx: "Context", callback: Callable[P, R], *, site: "Context | None" = None
+    ) -> Callable[P, R]:
+        """Return a function that calls `callback` with arguments prepared for `ctx`.
 
         An argument that has a `Tracker` reaches `callback` as its view for `ctx`, so an
         effect that `callback` registers through it belongs to the fiber of `ctx`.
+
+        When the def site of `site` is restricted, each argument also goes through
+        `expose`, so `callback` gets views and `Hidden` placeholders in place of fibers,
+        foreign contexts, and provider records. `site` defaults to `ctx`.
         """
+        receiver = ctx if site is None else site
 
         @functools.wraps(callback)
         def bound(*args: P.args, **kwargs: P.kwargs) -> R:
-            traced = [get_traceable(ctx, arg) for arg in args]
+            traced = [expose(receiver, get_traceable(ctx, arg)) for arg in args]
             return callback(*traced, **kwargs)  # type: ignore[arg-type]
 
         return bound

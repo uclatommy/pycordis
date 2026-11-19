@@ -358,6 +358,14 @@ class Fiber:
         """The lifecycle state of the fiber."""
         return self._state
 
+    def cordis_expose(self, receiver: "Context") -> "FiberView":
+        """Return the `FiberView` of this fiber for the component of `receiver`.
+
+        `expose` calls this hook when the def site of `receiver` is restricted.
+        """
+        site = receiver._def_site
+        return FiberView(self, site._fiber, site._restrictions)
+
     @property
     def children(self) -> tuple["Fiber", ...]:
         """The live fibers that this fiber's context created, in creation order.
@@ -937,6 +945,16 @@ class Fiber:
         return gate
 
 
+def extends(held: tuple["Restriction", ...], chain: tuple["Restriction", ...]) -> bool:
+    """Return whether `held` starts with `chain`, compared by identity.
+
+    Two `Restriction` objects that are equal are not the same restriction.
+    """
+    return len(held) >= len(chain) and all(
+        a is b for a, b in zip(held, chain, strict=False)
+    )
+
+
 def owns(scope: Fiber, chain: tuple["Restriction", ...], target: Fiber) -> bool:
     """Return whether a component with this `scope` and `chain` owns `target`.
 
@@ -953,10 +971,7 @@ def owns(scope: Fiber, chain: tuple["Restriction", ...], target: Fiber) -> bool:
         chain: The restriction chain of the component.
         target: The fiber to test.
     """
-    held = target.ctx._restrictions
-    if len(held) < len(chain) or any(
-        a is not b for a, b in zip(held, chain, strict=False)
-    ):
+    if not extends(target.ctx._restrictions, chain):
         return False
     fiber = target
     while fiber is not scope:

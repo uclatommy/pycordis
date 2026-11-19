@@ -9,18 +9,25 @@ from collections import ChainMap
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any, Self, cast
+from typing import Any, Self
 
 from pycordis.deferred import Deferred
 from pycordis.errors import CallSite, CordisError
 from pycordis.events import EventName, EventOptions, EventsService, Listener
-from pycordis.fiber import EffectForm, EffectHandle, Fiber, FiberView, resolve_config
+from pycordis.fiber import (
+    EffectForm,
+    EffectHandle,
+    Fiber,
+    extends,
+    owns,
+    resolve_config,
+)
 from pycordis.keys import Keyable, key_name
 from pycordis.logger import LoggerService
 from pycordis.reflect import Accessor, ReflectService
 from pycordis.registry import Component, RegistryService
 from pycordis.scheduler import Scheduler, owner_thread
-from pycordis.traceable import get_traceable
+from pycordis.traceable import Hidden, expose, get_traceable
 
 
 def _run_update_hooks(fiber: Fiber, config: object, next_: Callable[[], Any]) -> Any:
@@ -181,17 +188,21 @@ class Context:
         if self._def_site._restrictions:
             raise CordisError(f'cannot read "{name}" in a restricted context')
 
-    def _view_of(self, fiber: Fiber) -> Fiber:
-        """Return `fiber`, or a `FiberView` of it when the def site is restricted.
+    def cordis_expose(self, receiver: "Context") -> "Context | Hidden":
+        """Return this context when the component of `receiver` owns it, else `Hidden`.
 
-        The view is for the component of the def site: its fiber and its restriction
-        chain. `FiberView` has the type of `Fiber` for a caller, which gets a view
-        only in a restricted context.
+        `expose` calls this hook when the def site of `receiver` is restricted. A
+        component owns a context when the restriction chain of the context's def site
+        starts with the chain of the component, and the context's fiber is a fiber that
+        the component owns.
         """
-        site = self._def_site
-        if not site._restrictions:
-            return fiber
-        return cast(Fiber, FiberView(fiber, site._fiber, site._restrictions))
+        scope = receiver._def_site
+        chain = scope._restrictions
+        if extends(self._def_site._restrictions, chain) and owns(
+            scope._fiber, chain, self._fiber
+        ):
+            return self
+        return Hidden("Context")
 
     @property
     def fiber(self) -> Fiber:
@@ -201,7 +212,7 @@ class Context:
         context, parent, or provider record, and it ends only the fibers that the
         component owns.
         """
-        return self._view_of(self._fiber)
+        return expose(self, self._fiber)
 
     @property
     def root(self) -> Self:
@@ -516,7 +527,7 @@ class Context:
             bye world
             ```
         """
-        return self._view_of(self._use(component, config, skip=2))
+        return expose(self, self._use(component, config, skip=2))
 
     def _use(self, component: Component, config: object, skip: int = 1) -> Fiber:
         """Create the real fiber that `use` gives, with the call site of the caller.
@@ -544,10 +555,11 @@ class Context:
             The new fiber, or a `FiberView` of it in a restricted context.
         """
         with self.scheduler.call():
-            return self._view_of(
+            return expose(
+                self,
                 self._registry.inject(
                     self.use_site, deps, callback, CallSite.capture(skip=1)
-                )
+                ),
             )
 
     def __getitem__(self, key: Keyable[Any]) -> Any:
@@ -729,7 +741,8 @@ class Context:
             name: The event name.
             listener: The function to call with the arguments of the event. An
                 argument that has a `Tracker` reaches it as its view for this
-                context, so its effects belong to this context's fiber.
+                context, so its effects belong to this context's fiber. In a
+                restricted context, an argument is also filtered (see `restrict`).
             options: The `EventOptions`, or a `bool` for `prepend`.
 
         Returns:
@@ -746,7 +759,7 @@ class Context:
             >>> remove()
             ```
         """
-        return self._events.on(self.use_site, name, listener, options)
+        return self._events.on(self.use_site, name, listener, options, site=self)
 
     @owner_thread("scheduler")
     def once(
@@ -759,7 +772,7 @@ class Context:
 
         The arguments and the result are those of `on`.
         """
-        return self._events.once(self.use_site, name, listener, options)
+        return self._events.once(self.use_site, name, listener, options, site=self)
 
     @owner_thread("scheduler")
     def emit(self, name: EventName, *args: Any, this: object = None) -> None:
@@ -892,12 +905,17 @@ def restrict(
 
         `Context.use`, `inject`, and `fiber` give a restricted component a `FiberView`,
         which hides the context, the parent, and the provider records of a fiber, and
-        ends only the fibers that the component owns. These paths stay open:
+        ends only the fibers that the component owns. A listener that the component
+        registers gets the same protection for its arguments: a fiber becomes a
+        `FiberView`, a context that the component does not own and a provider record
+        become a `Hidden` that raises `CordisError` on use, and a method of such an
+        object becomes a `Hidden`. A `tuple`, `list`, `dict`, `set`, `frozenset`, or
+        `Deferred` argument is filtered the same way. An argument of any other type
+        reaches the listener unchanged, so an object that holds a host fiber or context
+        stays open. These paths stay open:
 
-        - The `Fiber` argument of the `internal/plugin`, `internal/status`, and
-          `internal/replace` events, which can be a host fiber. It gives its context,
-          its parent, `committed`, `runtime`, and its lifecycle methods with no
-          check.
+        - An event argument of a type that the filter does not recognize, such as the
+          closure that `internal/get` passes.
         - A host service that returns fibers or contexts, such as `Loader.resolve`,
           gives a restricted caller the same authority as those objects.
 

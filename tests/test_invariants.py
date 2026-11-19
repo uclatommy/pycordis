@@ -376,6 +376,48 @@ def test_a_schedule_ends_where_a_static_load_of_the_same_components_ends(
     assert structure(root, keys_of()) == static_structure(slots), f"seed {seed}"
 
 
+def watch_status(root: Context, attempts: list[str]) -> None:
+    """Register a restricted `internal/status` listener that disposes its fibers.
+
+    The host owns every fiber, so each call raises `CordisError`, which the listener
+    catches. A call that succeeded would change the structure.
+    """
+
+    def on_status(fiber: Any, *_: Any) -> None:
+        attempts.append(fiber.name)
+        try:
+            fiber.dispose()
+        except CordisError:
+            pass
+
+    restrict(root, inject=["unused"]).on("internal/status", on_status)
+
+
+@pytest.mark.contract("LIFE-CONFLUENT")
+@pytest.mark.parametrize("seed", SEEDS)
+def test_a_restricted_status_listener_that_disposes_foreign_fibers_changes_nothing(
+    seed: int,
+) -> None:
+    rng = random.Random(seed)
+    root, pump, probe = new_root()
+    slots = build_pool(probe)
+    attempts: list[str] = []
+    watch_status(root, attempts)
+
+    run_schedule(root, pump, slots, random_ops(rng, slots, OPS), rng, seed)
+
+    static_root, static_pump, _ = new_root()
+    watch_status(static_root, [])
+    for slot in slots:
+        if slot.live:
+            static_root.use(slot.current, slot.config)
+    settle(static_pump, -1)
+    assert structure(root, keys_of()) == structure(static_root, keys_of()), (
+        f"seed {seed}"
+    )
+    assert attempts or not any(slot.live for slot in slots), f"seed {seed}"
+
+
 @pytest.mark.contract("EFF-ISOLATE")
 @pytest.mark.parametrize("seed", SEEDS)
 def test_components_at_different_keys_interleave_as_they_run_one_after_the_other(

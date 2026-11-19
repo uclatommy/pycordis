@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🟡 In progress (Increment 1 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
+**Status**: 🟡 In progress (Increments 1 and 2 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15)
 
@@ -427,7 +427,30 @@ manual: in `uv run python`, a restricted `internal/plugin` listener reads `fiber
 fiber and gets `CordisError` for `fiber.ctx`
 **Docs**: `expose`, `Hidden`, `ReflectService.bind`, `Context.on` (the `listener` argument);
 the `restrict` warning bullet for event arguments
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `traceable.py`: `expose` (hook lookup on `type(value)`, hidden methods of hooked objects, containers, `Deferred`) and `Hidden`
+- `fiber.py`: `Fiber.cordis_expose` gives a `FiberView`; `extends(held, chain)` is the one prefix rule, and `owns` calls it
+- `context.py`: `use`, `inject`, and `fiber` call `expose` (`_view_of` is removed); `Context.cordis_expose` (`extends` and `owns`); `on` and `once` pass `site=self`; `restrict` and `Context.on` docstrings
+- `reflect.py`: `Impl.cordis_expose` gives a `Hidden`; `bind` exposes each positional argument for `site`
+- `events.py`: `on` and `once` take the keyword-only `site`
+- `tests/test_restrict.py`: listener arguments for six events (one parametrized test), owned contexts, `once`, containers (also with an unrestricted def site), `Hidden` and hidden methods, unrecognized objects, `Deferred`
+- `tests/test_invariants.py`: 30 seeded schedules with a restricted `internal/status` listener that disposes every fiber it gets
+- `tests/test_threading.py`: an exposed `Deferred` that completes on a worker settles on the owner thread
+**Tests**:
+- `uv run pytest tests/test_restrict.py tests/test_events.py tests/test_invariants.py tests/test_shadow.py tests/test_threading.py`: 450 passed
+- `uv run pytest` (full suite): 1528 passed; `ruff check` and `ruff format --check` clean
+**Deviations**:
+- `bind(ctx, callback, *, site=None)` keeps `ctx` as the tracing context and takes `site` as the exposure receiver; the spec's single `site` parameter cannot carry both
+- `expose` also handles the `Deferred` thread rule (`Scheduler.submit`), which the plan lists in Increment 3; its thread test is in this increment
+- `Hidden` also refuses `__setattr__`, `__delattr__`, and indexing; `__class__` reads as `Hidden` so `isinstance` does not raise
+- `extends(held, chain)` is a new function in `fiber.py` that `owns` and `Context.cordis_expose` share (one prefix rule)
+- Ownership tests still call `expose(ctx, fiber)` for fibers that exist before the listener registers; no event gives their views
+- The `internal/update` listener of a fiber runs only for that fiber's own update, so the listener-argument test has no host-object case for it; a bound method gets `Hidden` (unit test)
+- `bind` exposes positional arguments only: events deliver no keyword arguments
+- A restricted `internal/get` listener still gets a closure unchanged: `expose` does not recognize it (D5); the `restrict` warning names this gap
+**Manual validation**:
+- Confirmed in `uv run python`: a restricted `internal/plugin` listener gets a `FiberView`, and reading `f.ctx` raises `CordisError`
 
 ### Increment 3: Service boundary filter
 **Goal**: a service view whose scope is restricted filters every value at its two exits, with

@@ -5,11 +5,14 @@ from collections.abc import Callable
 import pytest
 
 from pycordis.context import Context, Rule, restrict
+from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.fiber import Fiber, FiberState, FiberView
 from pycordis.loader import Loader
+from pycordis.reflect import Impl
 from pycordis.registry import inject as inject_method
 from pycordis.scheduler import start
+from pycordis.traceable import Hidden, expose
 
 
 def _no_deps(ctx: Context, config: object) -> None:
@@ -427,9 +430,9 @@ def test_a_view_acts_only_on_a_fiber_that_the_component_owns(
         seen["own"] = ctx.use(_no_deps)
         seen["grandchild"] = restrict(ctx, inject=["other"]).use(_no_deps)
         # views of fibers outside the subtree, for the scope of this plugin
-        seen["sibling"] = ctx._view_of(sibling)
-        seen["host"] = ctx._view_of(host)
-        seen["root"] = ctx._view_of(root.fiber)
+        seen["sibling"] = expose(ctx, sibling)
+        seen["host"] = expose(ctx, host)
+        seen["root"] = expose(ctx, root.fiber)
 
     assert restricted.use(plugin).state == FiberState.ACTIVE
 
@@ -448,11 +451,11 @@ def test_a_view_equals_a_view_of_the_same_fiber_for_the_same_scope(
     view = restricted.use(_no_deps)
     fiber = view.unwrap(root)
 
-    assert restricted._view_of(fiber) == view
-    assert hash(restricted._view_of(fiber)) == hash(view)
-    assert view in {restricted._view_of(fiber)}
+    assert expose(restricted, fiber) == view
+    assert hash(expose(restricted, fiber)) == hash(view)
+    assert view in {expose(restricted, fiber)}
     assert view != fiber and fiber != view
-    assert other_scope._view_of(fiber) != view
+    assert expose(other_scope, fiber) != view
 
 
 def test_unwrap_needs_an_unrestricted_def_site(root: Context) -> None:
@@ -505,3 +508,186 @@ def test_a_restricted_fibers_provide_notifies_an_existing_dependent(
     # the dependent fiber reaches ACTIVE only if the restricted provider's fiber
     # announces its new provision through `ReflectService.notify`
     assert dependent.state == FiberState.ACTIVE
+
+
+def _calls_of(calls: list[tuple[object, ...]]) -> list[object]:
+    return [call[0] for call in calls]
+
+
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize(
+    ("event", "trigger", "pick", "kind"),
+    [
+        ("internal/plugin", lambda root: root.use(_no_deps), _calls_of, FiberView),
+        ("internal/status", lambda root: root.use(_no_deps), _calls_of, FiberView),
+        ("internal/config", lambda root: root.use(_no_deps), _calls_of, FiberView),
+        (
+            "internal/commit",
+            lambda root: root.use(_no_deps).update({"a": 1}),
+            _calls_of,
+            FiberView,
+        ),
+        (
+            "internal/listener",
+            lambda root: root.on("greet", lambda: None),
+            _calls_of,
+            Hidden,
+        ),
+        (
+            "internal/dispatch",
+            lambda root: root.emit("greet", root.fiber, (root.fiber,)),
+            lambda calls: [
+                element
+                for call in calls
+                if call[1] == "greet"
+                for element in (call[2][0], call[2][1][0])
+            ],
+            FiberView,
+        ),
+    ],
+    ids=["plugin", "status", "config", "commit", "listener", "dispatch"],
+)
+def test_a_restricted_listener_gets_views_and_placeholders_in_place_of_host_objects(
+    root: Context,
+    event: str,
+    trigger: Callable[[Context], object],
+    pick: Callable[[list[tuple[object, ...]]], list[object]],
+    kind: type,
+) -> None:
+    calls: list[tuple[object, ...]] = []
+    restrict(root, inject=["other"]).on(event, lambda *args: calls.append(args), True)
+
+    trigger(root)
+
+    objects = pick(calls)
+    assert objects and all(type(obj) is kind for obj in objects)
+    for obj in objects:
+        with pytest.raises(CordisError):
+            _ = obj.ctx  # a view and a placeholder both refuse
+    host_views = [obj for obj in objects if isinstance(obj, FiberView)]
+    for view in host_views:
+        with pytest.raises(CordisError, match="does not own"):
+            view.dispose()
+    # no host fiber went down through the listener
+    assert root.fiber.state == FiberState.ACTIVE
+    assert all(child.state == FiberState.ACTIVE for child in root.fiber.children)
+
+
+def test_a_restricted_listener_gets_the_contexts_that_its_component_owns(
+    root: Context,
+) -> None:
+    seen: list[object] = []
+    own: list[Context] = []
+
+    def plugin(ctx: Context, config: object) -> None:
+        ctx.on("internal/listener", lambda target, *rest: seen.append(target))
+        ctx.on("greet", lambda: None)
+        child = restrict(ctx, inject=["other"])
+        child.use(lambda inner, cfg: inner.on("greet", lambda: None))
+        own.append(ctx)
+
+    restrict(root, inject=["other"]).use(plugin)
+
+    assert seen[0] is own[0]
+    assert len(seen) == 2 and type(seen[1]) is Context
+
+
+class _Plain:
+    pass
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda fiber: (fiber, fiber),
+        lambda fiber: [fiber, [fiber]],
+        lambda fiber: {fiber: fiber},
+        lambda fiber: {fiber},
+        lambda fiber: frozenset({fiber}),
+    ],
+    ids=["tuple", "list", "dict", "set", "frozenset"],
+)
+def test_expose_filters_the_elements_of_a_builtin_container(
+    root: Context, build: Callable[[Fiber], object]
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    value = build(root.fiber)
+
+    result = expose(restricted, value)
+
+    assert type(result) is type(value) and result is not value
+    assert _leaves(result) and all(type(leaf) is FiberView for leaf in _leaves(result))
+    assert expose(root, value) is value
+    # a scope whose def site is unrestricted gets the real objects
+    assert expose(restricted.with_shadow(root), value) is value
+
+
+def _leaves(value: object) -> list[object]:
+    """Return the non-container elements, including dict keys, of a nested value."""
+    if isinstance(value, dict):
+        return [leaf for item in (*value, *value.values()) for leaf in _leaves(item)]
+    if isinstance(value, (tuple, list, set, frozenset)):
+        return [leaf for item in value for leaf in _leaves(item)]
+    return [value]
+
+
+def test_expose_gives_a_placeholder_for_a_provider_and_a_method_of_a_fiber(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    impl = Impl(uid=1, name="svc", ctx=root, value=None, isolate=object())
+
+    hidden_impl = expose(restricted, impl)
+    hidden_method = expose(restricted, root.fiber.dispose)
+
+    assert type(hidden_impl) is Hidden and type(hidden_method) is Hidden
+    assert expose(root, impl) is impl
+    with pytest.raises(CordisError, match="hidden Impl"):
+        _ = hidden_impl.value
+    with pytest.raises(CordisError, match="hidden method of Fiber"):
+        hidden_method()
+    with pytest.raises(CordisError, match="hidden Impl"):
+        iter(hidden_impl)
+    with pytest.raises(CordisError, match="hidden Impl"):
+        hidden_impl.value = 1
+    assert repr(hidden_impl) == "Hidden <Impl>"
+
+
+def test_expose_returns_an_object_that_it_does_not_recognize_unchanged(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    plain = _Plain()
+
+    assert expose(restricted, plain) is plain
+    assert expose(restricted, "text") == "text"
+
+
+@pytest.mark.parametrize("fails", [False, True], ids=["resolves", "rejects"])
+def test_expose_of_a_deferred_settles_with_the_exposed_value_or_the_same_error(
+    root: Context, fails: bool
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    source = Deferred[Fiber]()
+
+    exposed = expose(restricted, source)
+    assert exposed is not source and not exposed.done()
+    error = CordisError("failed")
+    source.reject(error) if fails else source.resolve(root.fiber)
+
+    if fails:
+        with pytest.raises(CordisError) as excinfo:
+            exposed.result()
+        assert excinfo.value is error
+    else:
+        assert isinstance(exposed.result(), FiberView)
+
+
+def test_a_restricted_once_listener_gets_exposed_arguments(root: Context) -> None:
+    received: list[object] = []
+    restrict(root, inject=["other"]).once("greet", received.append)
+
+    root.emit("greet", root.fiber)
+    root.emit("greet", root.fiber)
+
+    assert [type(item) for item in received] == [FiberView]
