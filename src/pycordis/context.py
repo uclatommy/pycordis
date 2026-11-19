@@ -1085,38 +1085,35 @@ def restrict(
     !!! warning "Guard, not sandbox"
         pycordis trusts every plugin that it loads; the host decides which plugins to
         load. This restriction stops accidental and undeclared access by trusted code,
-        and fails fast. It is not a security boundary: hostile code can reach other
-        objects through `gc`, `sys._getframe`, module globals, or
-        `pycordis.traceable.get_original`, and pycordis does not run plugins in another
-        process.
+        and fails fast. It is not a security boundary, and pycordis does not run
+        plugins in another process. Code that reaches objects on purpose is outside
+        the guard: `gc`, `sys._getframe`, module globals, private slots,
+        `pycordis.traceable.get_original`, `cordis_original`, a `cordis_` hook that the
+        component defines itself, and the traceback or other contents of an exception
+        that crosses the boundary.
 
-        A restricted component gets a `FiberView` of each fiber that it reads. The view
-        hides the context, the parent, and the provider records of a fiber, and ends
-        only the fibers that the component owns. A listener that the component
-        registers gets the same protection for its arguments: a fiber becomes a
-        `FiberView`, a context that the component does not own and a provider record
-        become a `Hidden` that raises `CordisError` on use, and a method of a fiber or
-        of such a context becomes a `Hidden`. A `tuple`, `list`, `dict`, `set`,
-        `frozenset`, or `Deferred` argument is filtered the same way. An argument of any
-        other type reaches the listener unchanged, so an object that holds a host fiber
-        or context stays open. A service that the component reads gives the same
-        protection for its values: each attribute, method result, and call result of
-        the service view is filtered, and the service class can name members to hide or
-        to pass unchanged (see `Exposure`). The methods of the service itself read real
-        objects. A value that `ctx[key]` or `ctx.get(key)` reads directly, such as a
-        provided value with no service view or an accessor value, is filtered in the
-        same way. These paths stay open:
+        These paths stay open, because the boundary recognizes a value by its type or
+        by an `Exposure` that its class declares:
 
-        - An event argument of a type that the filter does not recognize, such as the
-          closure that `internal/get` passes.
-        - A host service that does not declare an `Exposure` and returns an object that
-          the filter does not recognize, which holds a fiber or a context, gives a
-          restricted caller the same authority as that object. The loader, the
-          loader entries and groups, `ReloadResult`, and the logger declare one.
+        - A value of a type that the boundary does not recognize and that its class
+          does not mark passes unchanged. This includes an object that holds a host
+          fiber or context, a callable object that is not a function (a lambda,
+          `def`, method, builtin, or `functools.partial`), and a subclass of `tuple`,
+          `list`, `dict`, `set`, or `frozenset`. A host service that returns such an
+          object gives a restricted caller the same authority as that object. Declare
+          an `Exposure` on the class to close the path for that class. The loader,
+          the loader entries and groups, `ReloadResult`, and the logger declare one.
+        - `Scheduler.observe_steps` gives the real fiber of each step in
+          `StepReport.fiber`.
         - A service that a restricted component admits has its own authority:
           `loader` lets the component create, update, and remove entries, and `hmr`
           lets it reload modules. Provide `Loader` and `Hmr` in an unrestricted
           context; their own listeners do not support a restricted one.
+
+    !!! info "Authority that the host grants"
+        The config that the host gives to `use`, the realm labels that `isolates`
+        returns, and the authority of an admitted `loader` or `hmr` service reach the
+        component as the host chose. They are not gaps.
 
     !!! warning "Experimental"
         This API can change before `pycordis` exports it.
@@ -1138,20 +1135,34 @@ def restrict(
     `Context.shadow`): a mixin accessor is checked by the service name it forwards,
     not by its own name. A `ctx.provide`, `ctx.accessor`, or `ctx.mixin` call outside
     the provide rule raises from the call itself, so a component that makes the call
-    in its own setup fails to load with no effect installed. The context that `restrict`
-    gives is a real `Context`: the host that holds it gets real fibers and objects. A
-    restricted component gets a `FiberView` of a fiber: it names only `name`, `uid`,
-    `state`, `error`, `children`, and `get_effects()`, and `dispose`, `restart`, and
-    `update` raise unless the component owns the fiber (it created the fiber, or the
-    fiber descends from one that it created).
+    in its own setup fails to load with no effect installed.
 
-    A restricted component holds a `ContextView` (see `ContextView`), not a `Context`.
-    The first argument of a function component, of a component class, of an `inject`
-    callback, and of an `@inject` method is a view of the component's own context, and
-    every other context that the component owns reaches it as a view too. Through a
-    view, `root`, `reflect`, `registry`, `events`, `intercept_layer`, and
-    `intercept_through` raise `CordisError`, and so does a dispatch (`emit`, `bail`,
-    `serial`, `parallel`, `waterfall`) of an event name that starts with `internal/`.
+    A restricted component holds only views, never the real objects. The first
+    argument of a function component, of a component class, of an `inject` callback,
+    and of an `@inject` method is a `ContextView` of the component's own context. Every
+    other context that the component owns reaches it as a `ContextView`, and a `Fiber`
+    reaches it as a `FiberView`. A context that the component does not own, and a
+    provider record, reach it as a `Hidden` that raises `CordisError` on use. The
+    host that holds the result of `restrict` gets real contexts, fibers, and objects.
+
+    Every value that crosses between a restricted component and the rest of the
+    application goes through one boundary, in both directions: arguments and results
+    of context members, event listeners and their results, `next_` of a waterfall,
+    accessors, callbacks, and the attributes and calls of a service view. A function
+    that crosses is wrapped, so its arguments and its result cross as well. `tuple`,
+    `list`, `dict`, `set`, `frozenset`, `Deferred`, coroutines, and generators cross
+    with their elements and later values. A value that the component gives back is the
+    real object again. A container crosses as a copy: a change that one side makes to
+    a container after the crossing is not visible to the other side. A wrapper equals
+    the function that it wraps, but it is not the same object (`is`).
+
+    A `ContextView` gives only the members of its member table. `root`, `reflect`,
+    `registry`, `events`, `intercept_layer`, and `intercept_through` raise
+    `CordisError`, and so does a dispatch (`emit`, `bail`, `serial`, `parallel`,
+    `waterfall`) of an event name that starts with `internal/`. A `FiberView` names
+    only `name`, `uid`, `state`, `error`, `children`, and `get_effects()`; `dispose`,
+    `restart`, and `update` raise unless the component owns the fiber (it created the
+    fiber, or the fiber descends from one that it created).
 
     Args:
         ctx: The context to restrict. A `ContextView` is also valid.

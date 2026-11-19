@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🔄 Reopened — Increments 1 to 11 are done. Increment 12 closes out. Every decision is accepted (see [Decisions](#decisions))
+**Status**: ✅ Completed — Increments 1 to 12 are done. Every decision is accepted (see [Decisions](#decisions))
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15), [#19 Restricted context: make an unfiltered boundary impossible by construction](https://github.com/uclatommy/pycordis/issues/19)
 
@@ -610,7 +610,7 @@ this table before the code changes. A new gap is decided with the [Gap policy](#
 
 ## Dependencies
 
-- **Prerequisite**: none in code. [Context Restriction](completed/context_restriction.md)
+- **Prerequisite**: none in code. [Context Restriction](context_restriction.md)
   is merged.
 - **Open defect (maintainer decision)**: an error from any `internal/status` listener leaves
   `Fiber._update_state` before `reflect.announce`. Upstream has the same order. It is reported
@@ -1017,13 +1017,23 @@ and a new issue holds the paths of D18.
 `docs/architecture.md`; the follow-up issue holds the open gaps of D18; a review of
 the docstrings in `context.py`, `traceable.py`, `fiber.py`, `reflect.py`, and `events.py`;
 this spec moves to `completed/`
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `context.py`: the `restrict` docstring states that a restricted component holds only views, the one boundary and its copy and wrapper rules, the open paths of D18, the trust-model sentence, and the authority that the host grants (D42)
+- `docs/architecture.md`: the `context-restriction` row is the text of Appendix A
+- `docs/build_specs/completed/restricted_views.md`, `zensical.toml`: the spec moves to `completed/` and its links and nav entry follow
+**Tests**:
+- `uv run pytest` (full suite): 1655 passed, no unmarked slow tests; `ruff check .` and `ruff format --check .` clean
+- `uv run python scripts/gen_ref_pages.py && uv run zensical build`: no issues
+**Deviations**:
+- The follow-up issue for the open paths of D18 is not created: it is an outward-facing action, so the maintainer creates it. The `restrict` warning lists the paths
+- The review of `traceable.py`, `fiber.py`, `reflect.py`, and `events.py` docstrings found no stale sentence (search for "now", "no longer", "previously", `screen`, `unwrap`, `site=`)
 
 ## Code Standards
 
-- [Contributing](../contributing.md) and [Developer Guide](../developer_guide.md): the pull
+- [Contributing](../../contributing.md) and [Developer Guide](../../developer_guide.md): the pull
   request checklist, branches, and slow tests
-- [Architecture](../architecture.md): the semantic contract and the divergence table
+- [Architecture](../../architecture.md): the semantic contract and the divergence table
 - The instruction files in `.github/instructions/`: Python Coding Standards (enforcement points,
   fail fast, the "re-implements a rule another component owns" and "lists known-bad cases"
   checks, No Vestigial Code), Docstrings & Markdown Style, Testing Standards (coverage without
