@@ -21,6 +21,7 @@ A view forwards attribute access to the service, with these differences:
 When the use site is restricted (see `Context.shadow` and `restrict`), every value that
 leaves a view goes through `expose`, and a service class can declare an `Exposure` to
 hide or to pass members. The methods of the service read the unfiltered values.
+`screen` applies the same filter to a value that `ctx[key]` or `ctx.get(key)` reads.
 """
 
 import functools
@@ -74,9 +75,15 @@ class Tracker:
 class Hidden:
     """The value that a restricted component gets in place of an object it cannot use.
 
-    Every attribute access, call, and iteration raises `CordisError` that names the
-    type of the hidden object. A listener that receives a `Hidden` is still called, so
-    a restricted component can ignore the argument without a change to event dispatch.
+    A read or write of an attribute, a call, iteration, and indexing raise
+    `CordisError` that names the type of the hidden object. A listener that receives a
+    `Hidden` is still called, so a restricted component can ignore the argument without
+    a change to event dispatch.
+
+    A placeholder holds only the type name, not the hidden object. A protocol name
+    (`__class__`, `__reduce_ex__`, and the other `__name__` forms) reads as on any
+    object, so `isinstance`, `copy`, and `pickle` work, and a missing protocol name
+    raises `AttributeError`. A copy is a `Hidden` of the same type.
     """
 
     __slots__ = ("_kind",)
@@ -90,9 +97,12 @@ class Hidden:
         return CordisError(f"cannot {action} a hidden {kind}")
 
     def __getattribute__(self, name: str) -> Any:
-        if name == "__class__":  # `isinstance` reads it
-            return Hidden
+        if name.startswith("__") and name.endswith("__"):
+            return object.__getattribute__(self, name)
         raise Hidden._refuse(self, f'read "{name}" of')
+
+    def __reduce__(self) -> tuple[type["Hidden"], tuple[str]]:
+        return (Hidden, (object.__getattribute__(self, "_kind"),))
 
     def __setattr__(self, name: str, value: Any) -> None:
         raise Hidden._refuse(self, f'set "{name}" of')
@@ -125,7 +135,9 @@ def _hook(value: object) -> Callable[[object, "Context"], object] | None:
 def _expose_deferred(receiver: "Context", source: Deferred[Any]) -> Deferred[Any]:
     """Return a `Deferred` that settles with the exposed result of `source`.
 
-    `source` can complete on any thread. The exposure runs on the owner thread.
+    `source` can complete on any thread. The exposure runs on the owner thread, in a
+    scheduler step after `source` completes, also when `source` completes on the owner
+    thread: one path for every thread keeps `expose` off the completing thread.
     """
     settled = Deferred[Any]()
 
@@ -150,11 +162,14 @@ def expose[T](receiver: "Context", value: T) -> T:
     - An object whose class has a `cordis_expose(value, receiver)` hook gives the
       result of the hook: a `Fiber` gives a `FiberView`, and a `Context` that the
       scope does not own, or a provider record, gives a `Hidden`.
-    - A method of such an object gives a `Hidden`.
+    - A method of an object that its hook replaces gives a `Hidden`: a method of a
+      `Fiber` or of a provider record always, and a method of a `Context` that the
+      scope does not own. A method of a `Context` that the scope owns is unchanged.
     - A `tuple`, `list`, `dict`, `set`, or `frozenset` gives a new container of the
       same type, with each element, key, and value exposed.
     - A `Deferred` gives a new `Deferred` that settles with the exposed result, or with
-      the same error.
+      the same error. It settles one scheduler step after `value`, so code that awaits
+      it resumes after code that awaits `value` directly.
     - Any other object is returned unchanged.
 
     The result has the type of `value` for a caller: a `FiberView` and a `Hidden` are
@@ -174,8 +189,11 @@ def _expose(receiver: "Context", value: Any) -> Any:
     hook = _hook(value)
     if hook is not None:
         return hook(value, receiver)
-    if isinstance(value, MethodType) and inspect.isfunction(_hook(value.__self__)):
-        return Hidden(f"method of {type(value.__self__).__name__}")
+    if isinstance(value, MethodType):
+        owner = value.__self__
+        owner_hook = _hook(owner)
+        if inspect.isfunction(owner_hook) and owner_hook(owner, receiver) is not owner:
+            return Hidden(f"method of {type(owner).__name__}")
     kind = type(value)
     if kind in (tuple, list, set, frozenset):
         return kind(_expose(receiver, item) for item in value)
@@ -245,8 +263,34 @@ def _hidden_error(name: str, hidden: Hidden) -> CordisError:
     return CordisError(f'"{name}" gives a hidden {kind} in a restricted context')
 
 
+def screen[T](receiver: "Context", name: str, value: T) -> T:
+    """Return what a read of `name` gives to code in the context `receiver`.
+
+    `Context.__getitem__` and `Context.get` pass the value that they read through this
+    function, so a provided value or an accessor value is filtered as a value that
+    leaves a service view is. When the def site of `receiver` carries no restriction,
+    `value` is returned unchanged. Otherwise `value` goes through `expose`, a `Hidden`
+    result raises `CordisError`, and a callable that `expose` does not change gives a
+    function whose results are filtered in the same way. A service view passes
+    unchanged, because it filters its own values. Call this function on the owner
+    thread.
+
+    Args:
+        receiver: The context that reads.
+        name: The service or accessor name, for the error message.
+        value: The value that the read gives.
+
+    Raises:
+        CordisError: If the value is a context that the scope does not own, a provider
+            record, or a method that `expose` hides.
+    """
+    if not receiver._def_site._restrictions:
+        return value
+    return _screen(receiver, None, name, value)
+
+
 def _screen(ctx: "Context", exposure: Exposure | None, name: str, value: Any) -> Any:
-    """Filter a value that leaves a view for the restricted scope of `ctx`.
+    """Filter a value that leaves a view or a context read for the scope of `ctx`.
 
     This is the one place where a `Hidden` becomes an error. A callable that `expose`
     does not change is wrapped, so that its result is filtered when it is called.

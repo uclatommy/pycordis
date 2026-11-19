@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: ✅ Completed (Increments 1 to 5 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
+**Status**: ✅ Completed (Increments 1 to 5 done, with the PR #18 review fixes recorded as deviations) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15)
 
@@ -331,6 +331,7 @@ The maintainer accepted D1, D2, D7, and D9 to D12. D3 to D6 and D8 are proposed 
   catches the `CordisError` of a view that it does not own (an uncaught error reaches the
   emitter's `_update_state`, #16); every seed reaches the same quiescent state, and the seed
   is in the assertion message
+- ✅ Direct reads: `ctx[key]` and `ctx.get` of a provided fiber, a list of fibers, a provided callable, and an accessor give views to a restricted plugin and real objects to the root (one parametrized test); a read of a host context fails the plugin, and no provider stays after it is disposed
 - ✅ Service boundary: a test service that returns a `Fiber`, a host `Context`, an `Impl`, a
   container of fibers, and a `Deferred` of a fiber gives views or `CordisError` to a restricted
   caller and the real objects to an unrestricted one, through each read path (property, plain
@@ -411,6 +412,8 @@ and services)
 - Ownership tests build the views of foreign fibers with `ctx._view_of`, because no public path gives them until the event arguments change in Increment 2
 - `Context.fiber` of a shadow with an unrestricted def site and a restricted use site gives the real fiber (D9); a test that expected `CordisError` changed
 - `ReflectService`'s `ctx.inject` call for `@inject` methods is unchanged: it drops the result, so a restricted context builds one unused view
+- PR #18 review: `ctx[key]` and `ctx.get` are also context boundaries. A provided value with no service view, or an accessor value, reached a restricted plugin unfiltered, so `ctx["hostctx"].provide(...)` left a provider on the root after the plugin was disposed. Both reads pass the value through `traceable.screen`, which calls the service-view filter `_screen`; no second copy of the rule
+- PR #18 review: `FiberView` raises `CordisError` on a write or delete of any attribute, so `view._owned = True` cannot grant `dispose`; `__copy__` and `__deepcopy__` return the view, because `copy` restores slots through `setattr`. The docstring says "every other public name"
 **Manual validation**:
 - Confirmed in `uv run python`: `a.committed` raises `CordisError`, and `a.unwrap(root)` gives the `Fiber`. Two views from one unbound `restrict` result have the root fiber as scope, so each owns the other; the sibling rule applies between plugins that run in their own fibers, and the ownership tests check it
 
@@ -450,6 +453,9 @@ the `restrict` warning bullet for event arguments
 - The `internal/update` listener of a fiber runs only for that fiber's own update, so the listener-argument test has no host-object case for it; a bound method gets `Hidden` (unit test)
 - `bind` exposes positional arguments only: events deliver no keyword arguments
 - A restricted `internal/get` listener still gets a closure unchanged: `expose` does not recognize it (D5); the `restrict` warning names this gap
+- PR #18 review: `Hidden` reads a protocol name (`__x__`) as any object does and defines `__reduce__`, so `copy`, `deepcopy`, and `pickle` give a `Hidden` of the same type; it holds only the type name, so nothing is exposed. The review proposed `AttributeError` for these names, which breaks `isinstance` (`__class__`) and still fails `copy`
+- PR #18 review: a bound method is hidden only when the hook of its object replaces the object; a method of a `Context` that the scope owns passes, as the `restrict` warning states. A method of a `Fiber` or an `Impl` is always hidden
+- PR #18 review: an exposed `Deferred` settles one scheduler step after its source, also on the owner thread; the `expose` docstring states it. `LIFE-CONFLUENT` holds, because it constrains the quiescent state, not the order of steps
 **Manual validation**:
 - Confirmed in `uv run python`: a restricted `internal/plugin` listener gets a `FiberView`, and reading `f.ctx` raises `CordisError`
 
@@ -529,6 +535,7 @@ with no drift
 - `docs/build_specs/`: this spec moved to `completed/`, and its relative links point from the new directory
 **Tests**:
 - `uv run pytest` (full suite): 1550 passed, no unmarked slow tests; `ruff check` and `ruff format --check` clean
+- After the PR #18 review fixes: 1559 passed, no unmarked slow tests; `ruff check`, `ruff format --check`, and `zensical build` clean. In `tests/test_restrict.py`, the new direct-read tests (6 and 2 cases), the owned-context method test, and the stronger view and `Hidden` tests fail against the code before the fixes
 - `uv run python scripts/gen_ref_pages.py`: the only change is the nav entry that moves to Completed
 **Deviations**:
 - The review of the docstrings in `fiber.py`, `traceable.py`, `reflect.py`, and `logger.py` found no stale sentence, so none changed
@@ -554,7 +561,7 @@ replaces the row in `docs/architecture.md` in Increment 5.
 
 | ID | Kind | Upstream | pycordis | Contract | Reason and evidence |
 |---|---|---|---|---|---|
-| `context-restriction` | improvement | No access rule; `ctx.root`, `ctx.reflect`, `ctx.registry`, `ctx.events`, and `ctx.fiber` are always public | `pycordis.context.restrict` gives a context whose inject keys, service and accessor reads and writes, and provide keys follow data rules, for every derived context; in a restricted context, `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise `CordisError`; `ctx.fiber`, `ctx.use`, `ctx.inject`, listener arguments, and the values of a service view give a `FiberView` in place of a `Fiber`, and no context, provider record, or lifecycle method of a fiber that the component does not own | `LIFE-FAILURE`, `EFF-REVERT`, `LIFE-CONFLUENT` | A host states which services a plugin can use or replace, and a restricted plugin cannot register an effect that outlives it or end a fiber that it does not own. The ownership rule uses only facts fixed at fiber creation. A guard, not a sandbox: an object that is not recognized and not marked passes unchanged, as the `restrict` warning lists. Test: `divergence("context-restriction")` in `tests/test_restrict.py` |
+| `context-restriction` | improvement | No access rule; `ctx.root`, `ctx.reflect`, `ctx.registry`, `ctx.events`, and `ctx.fiber` are always public | `pycordis.context.restrict` gives a context whose inject keys, service and accessor reads and writes, and provide keys follow data rules, for every derived context; in a restricted context, `ctx.root`, `ctx.reflect`, `ctx.registry`, and `ctx.events` raise `CordisError`; `ctx.fiber`, `ctx.use`, `ctx.inject`, listener arguments, the values of a service view, and the values that `ctx[key]` and `ctx.get` read give a `FiberView` in place of a `Fiber`, and no context, provider record, or lifecycle method of a fiber that the component does not own | `LIFE-FAILURE`, `EFF-REVERT`, `LIFE-CONFLUENT` | A host states which services a plugin can use or replace, and a restricted plugin cannot register an effect that outlives it or end a fiber that it does not own. The ownership rule uses only facts fixed at fiber creation. A guard, not a sandbox: an object that is not recognized and not marked passes unchanged, as the `restrict` warning lists. Test: `divergence("context-restriction")` in `tests/test_restrict.py` |
 
 ## Appendix B: Corrections to the Issues and the Audit
 

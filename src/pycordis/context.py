@@ -27,7 +27,7 @@ from pycordis.logger import LoggerService
 from pycordis.reflect import Accessor, ReflectService
 from pycordis.registry import Component, RegistryService
 from pycordis.scheduler import Scheduler, owner_thread
-from pycordis.traceable import Hidden, expose, get_traceable
+from pycordis.traceable import Hidden, expose, get_traceable, screen
 
 
 def _run_update_hooks(fiber: Fiber, config: object, next_: Callable[[], Any]) -> Any:
@@ -572,12 +572,18 @@ class Context:
         A context that belongs to a component's fiber reads only the services that the
         fiber or one of its ancestors injects or provides. `get` checks the same rule.
 
+        In a restricted context (see `restrict`), the value is filtered as a value of a
+        service view is: a `Fiber` gives a `FiberView`, and a container gives a
+        filtered copy (see `pycordis.traceable.screen`).
+
         Raises:
             CordisError: In a component's context, if no fiber injects the service, or
-                if the fiber that injects it is not loaded.
+                if the fiber that injects it is not loaded. In a restricted context, if
+                the value is a context that the component does not own or a provider
+                record.
             TypeError: If `key` is neither a `Key` nor a `str`.
         """
-        return self._reflect.read(self, key)
+        return screen(self, key_name(key), self._reflect.read(self, key))
 
     def __setitem__(self, key: Keyable[Any], value: Any) -> None:
         """Set the value of the accessor or the service `key`.
@@ -609,6 +615,8 @@ class Context:
         which provider a context resolves, without the check, calls
         `ctx.reflect.get(ctx, key, strict)`.
 
+        In a restricted context, the value is filtered as `ctx[key]` filters it.
+
         Args:
             key: The service key.
             strict: When true, a provider whose fiber is not `ACTIVE` gives `None`.
@@ -621,6 +629,8 @@ class Context:
         Raises:
             CordisError: In a component's context, if no fiber injects or provides the
                 service. A note on the error names the two ways to declare the read.
+                In a restricted context, if the value is a context that the component
+                does not own or a provider record.
             TypeError: If `key` is neither a `Key` nor a `str`.
 
         Examples:
@@ -630,7 +640,7 @@ class Context:
             >>> fiber = root.use(apply)  # loads with no "metrics" provider
             ```
         """
-        return self._reflect.checked_get(self, key, strict)
+        return screen(self, key_name(key), self._reflect.checked_get(self, key, strict))
 
     @owner_thread("scheduler")
     def set[T](self, key: Keyable[T], value: T) -> None:
@@ -908,15 +918,17 @@ def restrict(
         ends only the fibers that the component owns. A listener that the component
         registers gets the same protection for its arguments: a fiber becomes a
         `FiberView`, a context that the component does not own and a provider record
-        become a `Hidden` that raises `CordisError` on use, and a method of such an
-        object becomes a `Hidden`. A `tuple`, `list`, `dict`, `set`, `frozenset`, or
-        `Deferred` argument is filtered the same way. An argument of any other type
-        reaches the listener unchanged, so an object that holds a host fiber or context
-        stays open. A service that the component reads gives the same protection for
-        its values: each attribute, method result, and call result of the service view
-        is filtered, and the service class can name members to hide or to pass
-        unchanged (see `Exposure`). The methods of the service itself read real
-        objects. These paths stay open:
+        become a `Hidden` that raises `CordisError` on use, and a method of a fiber or
+        of such a context becomes a `Hidden`. A `tuple`, `list`, `dict`, `set`,
+        `frozenset`, or `Deferred` argument is filtered the same way. An argument of any
+        other type reaches the listener unchanged, so an object that holds a host fiber
+        or context stays open. A service that the component reads gives the same
+        protection for its values: each attribute, method result, and call result of
+        the service view is filtered, and the service class can name members to hide or
+        to pass unchanged (see `Exposure`). The methods of the service itself read real
+        objects. A value that `ctx[key]` or `ctx.get(key)` reads directly, such as a
+        provided value with no service view or an accessor value, is filtered in the
+        same way. These paths stay open:
 
         - An event argument of a type that the filter does not recognize, such as the
           closure that `internal/get` passes.

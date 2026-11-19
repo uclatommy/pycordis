@@ -1,6 +1,8 @@
 """`restrict`: which inject, read, and provide keys a derived context admits."""
 
+import copy
 import logging
+import pickle
 from collections.abc import Callable
 from pathlib import Path
 
@@ -390,7 +392,13 @@ def test_a_restricted_fiber_is_a_view_that_gives_only_the_allow_list(
         with pytest.raises(CordisError, match=f'"{name}"'):
             getattr(view, name)
     # a protocol probe is a missing attribute, not a rule violation
-    assert not hasattr(view, "__deepcopy__")
+    assert not hasattr(view, "__fspath__")
+    assert copy.copy(view) is view and copy.deepcopy(view) is view
+    for name in ("_owned", "_target", "name"):
+        with pytest.raises(CordisError, match=f'cannot set "{name}"'):
+            setattr(view, name, True)
+        with pytest.raises(CordisError, match=f'cannot delete "{name}"'):
+            delattr(view, name)
 
 
 @pytest.mark.parametrize("fails", [False, True], ids=["resolves", "rejects"])
@@ -656,6 +664,32 @@ def test_expose_gives_a_placeholder_for_a_provider_and_a_method_of_a_fiber(
     with pytest.raises(CordisError, match="hidden Impl"):
         hidden_impl.value = 1
     assert repr(hidden_impl) == "Hidden <Impl>"
+    # protocol names work, so a listener can copy or record its arguments
+    assert isinstance(hidden_impl, Hidden)
+    assert not hasattr(hidden_impl, "__fspath__")
+    for duplicate in (
+        copy.copy(hidden_impl),
+        copy.deepcopy(hidden_impl),
+        pickle.loads(pickle.dumps(hidden_impl)),
+    ):
+        assert type(duplicate) is Hidden and repr(duplicate) == "Hidden <Impl>"
+
+
+def test_expose_hides_a_context_method_only_when_it_hides_the_context(
+    root: Context,
+) -> None:
+    exposed: dict[str, object] = {}
+
+    def plugin(ctx: Context, config: object) -> None:
+        exposed["own"] = expose(ctx, ctx.provide)
+        exposed["host"] = expose(ctx, root.provide)
+
+    restrict(root, inject=["other"]).use(plugin)
+
+    assert type(exposed["own"]) is not Hidden and callable(exposed["own"])
+    assert type(exposed["host"]) is Hidden
+    with pytest.raises(CordisError, match="hidden method of Context"):
+        exposed["host"]()  # type: ignore[operator]
 
 
 def test_expose_returns_an_object_that_it_does_not_recognize_unchanged(
@@ -827,6 +861,69 @@ def test_a_service_view_hides_a_context_and_honors_hidden_and_safe_names(
         _ = traced.secret
 
 
+_DIRECT = ["host_fiber", "host_list", "host_getter", "host_ctx"]
+
+
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize(
+    "read",
+    [
+        lambda ctx: ctx["host_fiber"],
+        lambda ctx: ctx.get("host_fiber"),
+        lambda ctx: ctx["host_list"],
+        lambda ctx: ctx.get("host_list"),
+        lambda ctx: ctx["host_getter"](),
+        lambda ctx: ctx["host_acc"],
+    ],
+    ids=["item", "get", "list item", "list get", "provided callable", "accessor"],
+)
+def test_a_direct_read_filters_a_value_that_has_no_service_view(
+    root: Context, read: Callable[[Context], object]
+) -> None:
+    host = root.use(_no_deps)
+    root.provide("host_fiber", host)
+    root.provide("host_list", [host])
+    root.provide("host_getter", lambda: host)
+    root.accessor("host_acc", lambda ctx, receiver: host)
+    seen: list[object] = []
+
+    def plugin(ctx: Context, config: object) -> None:
+        seen.append(read(ctx))
+
+    plugin.inject = _DIRECT[:3]
+    fiber = restrict(root, inject=[*_DIRECT, "host_acc"]).use(plugin)
+
+    assert fiber.state == FiberState.ACTIVE
+    assert _is_view(seen[0])
+    # an unrestricted caller gets the real objects
+    result = read(root)
+    assert result is host or result == [host]
+
+
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize(
+    "read",
+    [lambda ctx: ctx["host_ctx"], lambda ctx: ctx.get("host_ctx")],
+    ids=["item", "get"],
+)
+def test_a_direct_read_of_a_host_context_fails_and_leaves_no_provider(
+    root: Context, read: Callable[[Context], Context]
+) -> None:
+    root.provide("host_ctx", root)
+
+    def plugin(ctx: Context, config: object) -> None:
+        read(ctx).provide("leak", 1)
+
+    plugin.inject = ["host_ctx"]
+    view = restrict(root, inject=["host_ctx"]).use(plugin)
+
+    assert view.state == FiberState.FAILED
+    assert '"host_ctx" gives a hidden Context' in str(view.error)
+    view.dispose()
+    assert root.get("leak") is None
+    assert read(root) is root
+
+
 @pytest.mark.parametrize(
     ("name", "count"), [("probe", 4), ("plain_probe", 2)], ids=["shadowed", "no_shadow"]
 )
@@ -991,7 +1088,7 @@ def test_a_restricted_plugin_logs_but_cannot_read_the_log_of_the_root(
     assert len(records) == 2
     assert all(type(record.cordis_fiber) is Fiber for record in records)
     with pytest.raises(CordisError, match='cannot read "extra"'):
-        _ = seen["extra"].extra  # type: ignore[attr-defined]
+        _ = seen["extra"].extra
     for name in ("buffer", "exporter"):
         with pytest.raises(CordisError, match=f'cannot read "{name}"'):
             getattr(seen["service"], name)
