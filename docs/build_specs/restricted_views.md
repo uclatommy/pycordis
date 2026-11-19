@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🟡 In progress (Increments 1 to 3 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
+**Status**: 🟡 In progress (Increments 1 to 4 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15)
 
@@ -171,7 +171,8 @@ class Exposure:                                    # pycordis.traceable
     result also goes through `expose` when it is called.
   - A new read path in `_read_attribute` is filtered without a change to the filter. Hook
     names (`cordis_original`) stay out of scope (trust model).
-- **Boundary, not interior**: a method of the service runs with a `_Shadow` as `self`. The
+- **Boundary, not interior**: a method of the service runs with a `_Shadow` as `self`, also
+  a `no_shadow` method when the scope is restricted. The
   body of `TraceableView.__getattribute__` divides into the unfiltered read and the filter at
   its exit; `_Shadow.__getattribute__` calls the unfiltered read directly, not
   `getattr(view, name)`. So `self.resolve(...)` in a loader method still returns real
@@ -492,7 +493,25 @@ accept views as arguments.
 manual: the #15 reproduction in `uv run python` gives `CordisError` for both `provide` calls
 **Docs**: `Loader.entry_of`, `locate`; `LoggerService.buffer`, `exporter`; `Logger`; the
 `Loader` and `Hmr` class docstrings and the `restrict` warning (unrestricted context only, D12)
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `traceable.py`: `_interior` gives a `no_shadow` method a shadow that reads without the filter for a restricted scope (the view itself otherwise); `_shadow` is the one constructor of a shadow
+- `loader/_entry.py`, `_group.py`, `_tree.py`: `Entry`, `EntryGroup`, and `EntryTree` (so `Group` and `Loader`) declare `cordis_expose = Exposure()`
+- `loader/_service.py`: `entry_of` and `locate` accept a `FiberView` and unwrap it with `unwrap(self.ctx)`; `Loader` docstring states D7 and D12
+- `hmr/_service.py`: `ReloadResult` declares `cordis_expose = Exposure()`; `Hmr` docstring states D7 and D12
+- `logger.py`: `LoggerService` hides `buffer` and `exporter`; `Logger` hides `extra`
+- `context.py`: the `restrict` warning names the marked classes, the authority of an admitted service, and D12
+- `tests/test_restrict.py`: entry fiber views (three reads), no host context from an entry (four escapes), entry ids and states, `entry_of`/`locate` with a view, the logger, and `ReloadResult`; the service-method test also covers a `no_shadow` method (one parametrized test)
+**Tests**:
+- `uv run pytest tests/test_restrict.py tests/test_loader.py tests/test_hmr.py tests/test_logger.py`: 150 passed
+- `uv run pytest` (full suite): 1550 passed; `ruff check` and `ruff format --check` clean; the new tests, and the `no_shadow` case of the service-method test, fail against the code before the change
+**Deviations**:
+- The `no_shadow` interior fix in `traceable.py` is not in the plan: with `buffer` hidden, `LoggerService.cordis_invoke` ran with the filtered view as `self` and gave `Logger` a `FiberView`, so a record lost its real fiber (the open point of Increment 3)
+- `Entry`, `EntryGroup`, `EntryTree`, and `ReloadResult` declare an empty `Exposure()`: the generic filter already gives fibers as views and raises for a foreign context, so no member needs `hidden`
+- `Loader.entry_of` and `locate` take the unwrap authority from `self.ctx`, so the guard is the def site of the loader, not a new check
+- `Entry` has no `hidden` name for `loader`: the filter gives a `TraceableView` of the loader for the scope
+**Manual validation**:
+- Confirmed in `uv run python`: an entry that a restricted caller reads gives a `FiberView` from `live_fiber()`, and `live_fiber().ctx` and `parent.ctx.provide(...)` raise `CordisError`
 
 ### Increment 5: Close-out
 **Goal**: the divergence row and the `restrict` warning describe the views, and the full suite

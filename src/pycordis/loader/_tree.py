@@ -26,6 +26,7 @@ from pycordis.loader._entry import (
     validate_options,
 )
 from pycordis.loader._group import EntryGroup
+from pycordis.traceable import Exposure
 
 if TYPE_CHECKING:
     from pycordis.loader._service import Loader
@@ -142,6 +143,7 @@ class EntryTree(ABC):
     """
 
     sep = ENTRY_SEP
+    cordis_expose = Exposure()
 
     def __init__(
         self, ctx: Context, *, import_function: ImportFunction | None = None

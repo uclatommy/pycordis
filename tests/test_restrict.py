@@ -1,13 +1,17 @@
 """`restrict`: which inject, read, and provide keys a derived context admits."""
 
+import logging
 from collections.abc import Callable
+from pathlib import Path
 
 import pytest
+from loader_fakes import RecordingLoader
 
 from pycordis.context import Context, Rule, restrict
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.fiber import Fiber, FiberState, FiberView
+from pycordis.hmr import Hmr, HmrConfig, ReloadResult
 from pycordis.loader import Loader
 from pycordis.reflect import Impl
 from pycordis.registry import inject as inject_method
@@ -722,6 +726,9 @@ class _Probe(Service):
         """Read the fibers of the service itself, through `self`."""
         return [self.host, *self.method(), self.prop, self.plain]
 
+    def same_host(self) -> bool:
+        return self.method()[0] is self.host
+
     def cordis_invoke(self) -> Fiber:
         return self.host
 
@@ -737,6 +744,13 @@ class _PlainProbe(Service):
 
     def method(self) -> list[Fiber]:
         return [self.host]
+
+    def own_fibers(self) -> list[Fiber]:
+        """Read the fibers of the service itself, through `self`."""
+        return [self.host, *self.method()]
+
+    def same_host(self) -> bool:
+        return self.method()[0] is self.host
 
     def cordis_invoke(self) -> Context:
         return self.host_ctx
@@ -813,16 +827,20 @@ def test_a_service_view_hides_a_context_and_honors_hidden_and_safe_names(
         _ = traced.secret
 
 
+@pytest.mark.parametrize(
+    ("name", "count"), [("probe", 4), ("plain_probe", 2)], ids=["shadowed", "no_shadow"]
+)
 def test_a_service_method_reads_real_objects_when_a_restricted_plugin_calls_it(
-    probe_scope: tuple[Context, Context, Fiber],
+    probe_scope: tuple[Context, Context, Fiber], name: str, count: int
 ) -> None:
     root, restricted, host = probe_scope
 
     # the method reads `self.host` and `self.method()` on the real objects, and only
     # the list that it returns is filtered
-    result = restricted["probe"].own_fibers()
+    result = restricted[name].own_fibers()
 
-    assert len(result) == 4 and all(type(item) is FiberView for item in result)
+    assert restricted[name].same_host() is True
+    assert len(result) == count and all(type(item) is FiberView for item in result)
     assert all(item.unwrap(root) is host for item in result)
 
 
@@ -865,3 +883,136 @@ def test_a_marked_object_reaches_a_restricted_scope_as_a_read_only_view(
         del view.name
     assert expose(root, marked) is marked
     assert expose(restricted, [marked])[0].cordis_original is marked
+
+
+@pytest.fixture
+def loader_scope(
+    root: Context, loader: RecordingLoader
+) -> tuple[Context, RecordingLoader]:
+    """A loader with an entry `a` that has an outer fiber, and a restricted scope."""
+    root.provide("dep", {})
+    loader.mock("a", inject=None)
+    loader.read([{"id": "a", "name": "a", "inject": ["dep"]}]).result()
+    return restrict(root, inject=["loader"]), loader
+
+
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize(
+    "read",
+    [
+        lambda entry: entry.live_fiber(),
+        lambda entry: entry.inner_fiber,
+        lambda entry: entry.outer_fiber,
+    ],
+    ids=["live_fiber", "inner_fiber", "outer_fiber"],
+)
+def test_a_loader_entry_gives_a_restricted_caller_fiber_views(
+    loader_scope: tuple[Context, RecordingLoader],
+    read: Callable[[object], object],
+) -> None:
+    restricted, loader = loader_scope
+    entry = restricted["loader"].resolve("a")
+
+    assert type(read(entry)) is FiberView
+    assert type(read(loader.resolve("a"))) is Fiber
+
+
+def _provider_of(loader: RecordingLoader, name: str) -> object:
+    return loader.ctx.get(name, strict=False)
+
+
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize(
+    "escape",
+    [
+        lambda entry: entry.live_fiber().ctx,
+        lambda entry: entry.outer_fiber.ctx,
+        lambda entry: entry.parent.ctx,
+        lambda entry: entry.parent.tree.ctx.provide("x", 1),
+    ],
+    ids=["live_fiber.ctx", "outer_fiber.ctx", "group.ctx", "tree.ctx.provide"],
+)
+def test_a_loader_entry_gives_a_restricted_caller_no_host_context(
+    loader_scope: tuple[Context, RecordingLoader],
+    escape: Callable[[object], object],
+) -> None:
+    restricted, loader = loader_scope
+    entry = restricted["loader"].resolve("a")
+
+    with pytest.raises(CordisError):
+        escape(entry)
+    assert _provider_of(loader, "x") is None
+
+
+@pytest.mark.divergence("context-restriction")
+def test_a_restricted_caller_still_reads_entry_ids_names_and_states(
+    loader_scope: tuple[Context, RecordingLoader],
+) -> None:
+    restricted, _ = loader_scope
+    entry = restricted["loader"].resolve("a")
+
+    assert entry.id == "a" and entry.options["name"] == "a"
+    assert entry.live_fiber().state == FiberState.ACTIVE
+    assert [item.id for item in restricted["loader"].entries()] == ["a"]
+
+
+def test_loader_entry_of_and_locate_accept_a_fiber_view(
+    loader_scope: tuple[Context, RecordingLoader],
+) -> None:
+    restricted, loader = loader_scope
+    fiber = loader.fiber("a")
+    view = expose(restricted, fiber)
+
+    assert type(view) is FiberView
+    assert restricted["loader"].entry_of(view).id == "a"
+    assert restricted["loader"].locate(view) == "a"
+    assert loader.entry_of(fiber) is loader.resolve("a")
+    assert loader.locate(fiber) == "a"
+
+
+def test_a_restricted_plugin_logs_but_cannot_read_the_log_of_the_root(
+    root: Context,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    seen: dict[str, object] = {}
+
+    def component(ctx: Context, config: object) -> None:
+        ctx.logger("x").warning("named")
+        ctx.logger.warning("direct")
+        seen["extra"] = ctx.logger("x")
+        seen["service"] = ctx.logger
+
+    with caplog.at_level(logging.WARNING, logger="pycordis"):
+        fiber = restricted.use(component)
+
+    assert fiber.state == FiberState.ACTIVE
+    records = [r for r in root.logger.buffer if r.getMessage() in ("named", "direct")]
+    assert len(records) == 2
+    assert all(type(record.cordis_fiber) is Fiber for record in records)
+    with pytest.raises(CordisError, match='cannot read "extra"'):
+        _ = seen["extra"].extra  # type: ignore[attr-defined]
+    for name in ("buffer", "exporter"):
+        with pytest.raises(CordisError, match=f'cannot read "{name}"'):
+            getattr(seen["service"], name)
+    root.logger.exporter(logging.NullHandler())()
+
+
+@pytest.mark.divergence("context-restriction")
+def test_a_reload_result_gives_a_restricted_caller_fiber_views(
+    root: Context, tmp_path: Path
+) -> None:
+    service = root.use(Hmr, HmrConfig(scope=(str(tmp_path),)))
+    restricted = restrict(root, inject=["hmr"])
+    fiber = root.fiber
+
+    try:
+        result = restricted["hmr"].reconcile(lambda: []).result()
+        exposed = expose(restricted, ReloadResult(settled=[fiber]))
+    finally:
+        service.dispose()  # only one `Hmr` can be active in a process
+
+    assert isinstance(result, ReloadResult) and result.settled == []
+    assert isinstance(exposed, ReloadResult)
+    assert [type(item) for item in exposed.settled] == [FiberView]
+    assert exposed.settled[0].unwrap(root) is fiber

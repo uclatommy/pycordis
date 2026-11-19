@@ -920,9 +920,14 @@ def restrict(
 
         - An event argument of a type that the filter does not recognize, such as the
           closure that `internal/get` passes.
-        - A host service that does not declare an `Exposure`, and that returns fibers
-          or contexts, such as `Loader.resolve`, gives a restricted caller the same
-          authority as those objects.
+        - A host service that does not declare an `Exposure` and returns an object that
+          the filter does not recognize, which holds a fiber or a context, gives a
+          restricted caller the same authority as that object. The loader, the
+          loader entries and groups, `ReloadResult`, and the logger declare one.
+        - A service that a restricted component admits has its own authority:
+          `loader` lets the component create, update, and remove entries, and `hmr`
+          lets it reload modules. Provide `Loader` and `Hmr` in an unrestricted
+          context; their own listeners do not support a restricted one.
 
     !!! warning "Experimental"
         This API can change before `pycordis` exports it.

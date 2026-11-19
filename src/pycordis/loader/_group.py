@@ -18,6 +18,7 @@ from pycordis.loader._entry import (
     run,
     validate_options,
 )
+from pycordis.traceable import Exposure
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -40,6 +41,8 @@ class EntryGroup:
             the root tree.
         data: The options of the entries, in order.
     """
+
+    cordis_expose = Exposure()
 
     def __init__(self, ctx: Context, tree: "EntryTree") -> None:
         self.ctx = ctx

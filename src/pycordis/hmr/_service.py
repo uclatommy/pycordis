@@ -36,6 +36,7 @@ from pycordis.logger import Logger
 from pycordis.registry import Component, RegistryService
 from pycordis.scheduler import owner_thread, start
 from pycordis.service import Service
+from pycordis.traceable import Exposure
 
 type Changes = Callable[
     [], Iterable[str | os.PathLike[str]] | Deferred[Iterable[str | os.PathLike[str]]]
@@ -103,7 +104,11 @@ class ReloadResult:
         aborted: The units whose new modules failed to import or did not export a
             component.
         skipped: The changes that need a restart.
+
+    A restricted component that reads the result gets `FiberView` objects in `settled`.
     """
+
+    cordis_expose = Exposure()
 
     settled: list[Fiber] = field(default_factory=list)
     aborted: list[Abort] = field(default_factory=list)
@@ -217,6 +222,12 @@ class Hmr(Service):
           fiber waits for such a call, the transaction does not end.
 
     Call every method on the owner thread.
+
+    The service runs in an unrestricted context. A restricted component can read it when
+    its rules admit `hmr`, and then it has the authority of the service over every
+    component that a module change reaches. What it reads is filtered: `ReloadResult`
+    gives `FiberView` objects. An `Hmr` that is provided in a restricted context is
+    not supported.
 
     Args:
         ctx: The context of the component.

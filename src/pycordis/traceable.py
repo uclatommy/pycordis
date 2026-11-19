@@ -371,8 +371,24 @@ def _create_shadow(
     if stored is None:
         return receiver
     def_site = stored if stored.shadow is None else stored.shadow
+    return _shadow(receiver, prop, use_site.with_shadow(def_site))
+
+
+def _shadow(receiver: Any, prop: str | None, ctx: "Context") -> "_Shadow":
+    """Return the shadow of the view `receiver` that reads `prop` as `ctx`."""
     cls = _CallableShadow if callable(receiver) else _Shadow
-    return cls(receiver, prop, use_site.with_shadow(def_site))
+    return cls(receiver, prop, ctx)
+
+
+def _interior(view: "TraceableView", ctx: "Context", tracker: Tracker) -> Any:
+    """Return the `self` of a `no_shadow` method of `view`.
+
+    A restricted scope gets a shadow that reads without the filter, so the method sees
+    real objects, as a shadowed method does. Otherwise `self` is the view.
+    """
+    if not ctx._def_site._restrictions:
+        return view
+    return _shadow(view, tracker.property, ctx.use_site)
 
 
 def _trace_result(use_site: "Context", function: Callable[..., Any]) -> Any:
@@ -410,7 +426,7 @@ def _read_attribute(
         return _finish(use_site, tracker, _reflect_get(target, name, shadow))
     if name not in _own(target) and isinstance(attr, FunctionType):
         if tracker.no_shadow:
-            return MethodType(attr, view)
+            return MethodType(attr, _interior(view, ctx, tracker))
         shadow = _create_shadow(use_site, target, tracker.property, view)
         return _trace_result(use_site, MethodType(attr, shadow))
     return _finish(use_site, tracker, getattr(target, name))
@@ -451,7 +467,7 @@ def _invoke_view(view: "CallableTraceableView", args: Any, kwargs: Any) -> Any:
     if inspect.getattr_static(target, "cordis_invoke", _MISSING) is _MISSING:
         return target(*args, **kwargs)
     receiver = (
-        view
+        _interior(view, ctx, tracker)
         if tracker.no_shadow
         else _create_shadow(ctx.use_site, target, tracker.property, view)
     )
@@ -553,7 +569,7 @@ class _Shadow(_Forwarder):
 
     __slots__ = ("_view", "_property", "_ctx")
 
-    def __init__(self, view: Any, prop: str, ctx: "Context") -> None:
+    def __init__(self, view: Any, prop: str | None, ctx: "Context") -> None:
         _set = object.__setattr__
         _set(self, "_view", view)
         _set(self, "_property", prop)

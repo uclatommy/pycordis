@@ -8,7 +8,7 @@ from typing import Any
 from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.events import EventOptions
-from pycordis.fiber import Fiber, FiberState
+from pycordis.fiber import Fiber, FiberState, FiberView
 from pycordis.loader._entry import Entry, is_outer, own_options, run
 from pycordis.loader._tree import (
     EntryChange,
@@ -52,6 +52,13 @@ class Loader(EntryTree, Service):
     loads, rebuilds, or has a fiber that loads or unloads (see `wait`).
 
     Call every method on the owner thread.
+
+    The loader runs in an unrestricted context. A restricted component can use it
+    when its rules admit `loader`, and then it has the authority of the loader over
+    the tree: it can create, update, and remove entries. What it reads from the loader
+    is filtered: a fiber is a `FiberView`, and a context that it does not own raises
+    `CordisError`. A loader that is provided in a restricted context is not supported,
+    because its own listeners read the parent of a fiber, which a view does not give.
 
     Args:
         ctx: The context of the component.
@@ -167,21 +174,23 @@ class Loader(EntryTree, Service):
                 except Exception:
                     pass  # the fiber or the entry has logged its own failure
 
-    def entry_of(self, fiber: Fiber) -> Entry | None:
+    def entry_of(self, fiber: Fiber | FiberView) -> Entry | None:
         """Return the entry whose component runs in `fiber`, or `None`.
 
         Only the fiber of the component itself has an entry: a fiber that the
-        component creates has none.
+        component creates has none. A restricted component can pass the `FiberView`
+        that it holds.
         """
-        return self._links.get(fiber)
+        return self._links.get(self._real(fiber))
 
-    def locate(self, fiber: Fiber | None = None) -> str | None:
+    def locate(self, fiber: Fiber | FiberView | None = None) -> str | None:
         """Return the id of the entry that `fiber` runs under, or `None`.
 
         Args:
-            fiber: The fiber to start from. The default is the fiber of the loader.
+            fiber: The fiber to start from, or a `FiberView` of it. The default is the
+                fiber of the loader.
         """
-        fiber = self.ctx._fiber if fiber is None else fiber
+        fiber = self.ctx._fiber if fiber is None else self._real(fiber)
         while True:
             entry = self._links.get(fiber)
             if entry is not None:
@@ -190,6 +199,10 @@ class Loader(EntryTree, Service):
             if parent is fiber:
                 return None
             fiber = parent
+
+    def _real(self, fiber: Fiber | FiberView) -> Fiber:
+        """Return the real fiber: the loader has the authority to read it."""
+        return fiber.unwrap(self.ctx) if isinstance(fiber, FiberView) else fiber
 
     def _link(self, fiber: Fiber, entry: Entry) -> None:
         self._links[fiber] = entry
