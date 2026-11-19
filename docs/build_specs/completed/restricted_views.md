@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🟡 In progress (Increments 1 to 4 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
+**Status**: ✅ Completed (Increments 1 to 5 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15)
 
@@ -370,7 +370,7 @@ The maintainer accepted D1, D2, D7, and D9 to D12. D3 to D6 and D8 are proposed 
 
 ## Dependencies
 
-- **Prerequisite**: none in code. [Context Restriction](completed/context_restriction.md)
+- **Prerequisite**: none in code. [Context Restriction](context_restriction.md)
   is merged.
 - **Open defect (maintainer decision)**: an error from any `internal/status` listener leaves
   `Fiber._update_state` before `reflect.announce`. Reproduced at `develop`: when a listener of
@@ -522,13 +522,22 @@ meets the standards.
 with no drift
 **Docs**: `docs/architecture.md`; a review of the docstrings in `fiber.py`, `traceable.py`,
 `context.py`, `reflect.py`, and `logger.py`; this spec moves to `completed/`
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `docs/architecture.md`: the `context-restriction` row is the row of Appendix A
+- `context.py`: the `restrict` docstring reviewed; it already states each boundary and the gaps that stay, so it does not change
+- `docs/build_specs/`: this spec moved to `completed/`, and its relative links point from the new directory
+**Tests**:
+- `uv run pytest` (full suite): 1550 passed, no unmarked slow tests; `ruff check` and `ruff format --check` clean
+- `uv run python scripts/gen_ref_pages.py`: the only change is the nav entry that moves to Completed
+**Deviations**:
+- The review of the docstrings in `fiber.py`, `traceable.py`, `reflect.py`, and `logger.py` found no stale sentence, so none changed
 
 ## Code Standards
 
-- [Contributing](../contributing.md) and [Developer Guide](../developer_guide.md): the pull
+- [Contributing](../../contributing.md) and [Developer Guide](../../developer_guide.md): the pull
   request checklist, branches, and slow tests
-- [Architecture](../architecture.md): the semantic contract and the divergence table
+- [Architecture](../../architecture.md): the semantic contract and the divergence table
 - The instruction files in `.github/instructions/`: Python Coding Standards (enforcement points,
   fail fast, the "re-implements a rule another component owns" check), Docstrings & Markdown
   Style, Testing Standards (coverage without proliferation, seeded schedules, traceability
