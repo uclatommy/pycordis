@@ -36,6 +36,7 @@ from collections.abc import Callable
 from functools import partial
 from typing import TYPE_CHECKING, Protocol, Self
 
+from pycordis.context import real_context
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
 from pycordis.keys import Key
@@ -472,6 +473,11 @@ class TimerService(Service):
     provide = "timer"
     inject = ["clock"]
 
+    @property
+    def _fiber(self) -> "Fiber":
+        """The real fiber of the context, also when `ctx` is a `ContextView`."""
+        return real_context(self.ctx)._fiber
+
     def __init__(self, ctx: "Context", config: object = None) -> None:
         clock = ctx[CLOCK]
         super().__init__(ctx)
@@ -498,7 +504,7 @@ class TimerService(Service):
             ValueError: If `delay` is negative.
         """
         _check_delay(delay)
-        fiber = self.ctx._fiber
+        fiber = self._fiber
 
         def fire() -> None:
             handle()
@@ -568,7 +574,7 @@ class TimerService(Service):
             ValueError: If `delay` is not positive.
         """
         _check_delay(delay, positive=True)
-        fiber = self.ctx._fiber
+        fiber = self._fiber
         return self._every(
             delay,
             lambda: _run_logged(fiber, "ctx.interval()", callback),
@@ -619,7 +625,7 @@ class TimerService(Service):
             ValueError: If `delay` is negative.
         """
         _check_delay(delay)
-        fiber = self.ctx._fiber
+        fiber = self._fiber
         clock = self._clock
         last = -math.inf
 
@@ -661,7 +667,7 @@ class TimerService(Service):
             ValueError: If `delay` is negative.
         """
         _check_delay(delay)
-        fiber = self.ctx._fiber
+        fiber = self._fiber
         clock = self._clock
 
         def trigger(*args: P.args, **kwargs: P.kwargs) -> Cancel:

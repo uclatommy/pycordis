@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🔄 Reopened — Increments 1 to 8 are done. Increments 9 to 12 replace the filter at each exit with one boundary that every crossing uses. Every decision is accepted, and Increment 9 is ready to start (see [Decisions](#decisions))
+**Status**: 🔄 Reopened — Increments 1 to 9 are done. Increments 10 to 12 replace the filter at each exit with one boundary that every crossing uses. Every decision is accepted, and Increment 10 is ready to start (see [Decisions](#decisions))
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15), [#19 Restricted context: make an unfiltered boundary impossible by construction](https://github.com/uclatommy/pycordis/issues/19)
 
@@ -558,9 +558,9 @@ this table before the code changes. A new gap is decided with the [Gap policy](#
 - ⬜ `receive` gives back the real object of each view kind, and a wrapper equals its function
   (cases of the crossing test where the shape fits); a copy of a `Hidden` is the same
   `Hidden`, and `receive` of an unpickled one raises
-- ⬜ A component that a restricted context and the host both `use` runs with a `ContextView`
+- ✅ A component that a restricted context and the host both `use` runs with a `ContextView`
   in the restricted fiber and a real `Context` in the host fiber (D32)
-- ⬜ A load-failure note of a fiber that a restricted component creates names the line in the
+- ✅ A load-failure note of a fiber that a restricted component creates names the line in the
   component (a case of an existing call-site test)
 - ⬜ Filter forms: a callable object stays itself; an `async def` value stays a coroutine
   function; a coroutine, a generator, and an async generator give exposed values; `len`,
@@ -570,7 +570,7 @@ this table before the code changes. A new gap is decided with the [Gap policy](#
   parametrized test)
 - ⬜ `Scheduler.is_owner` on the owner thread and on a worker thread (a case of an existing
   owner-check test; the thread is joined with a timeout)
-- ⬜ A restricted component builds a `Service` and a `TimerService` and gets a logger with its
+- ✅ A restricted component builds a `Service` and a `TimerService` and gets a logger with its
   `ContextView`, and a host reads the service; a timer callback that raises is logged on the
   restricted fiber (cases of existing tests in `test_service.py`, `test_timer.py`, and
   `test_logger.py` in a restricted context where the shape fits)
@@ -901,7 +901,25 @@ raises is logged; the same function component that the host also uses gets a rea
 in the host fiber
 **Docs**: `restrict` (the body sentence on what a restricted component holds); `TimerService`
 (check only)
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `fiber.py`: `Fiber._apply` gives the component `expose(self.ctx, self.ctx)`: a `ContextView` for a restricted component, the real context otherwise; `run_inject_methods` still gets the real context
+- `registry.py`: `_call_method` reads `real_context(ctx)`, so an `@inject` method and an `inject` callback of a restricted component work with a view
+- `traceable.py`: `_stored_context` converts a `ContextView` to its context through `real_context`, so a service that stores its view gets its def site
+- `timer.py`: `TimerService._fiber` reads the fiber of `real_context(self.ctx)`; the four timer methods and the logger of a failed callback use it
+- `context.py`: `_capture_site` records the call site of `use`, `inject`, and `effect`, and leaves out the owner-thread wrapper and the `ContextView` forwarder; the `restrict` docstring states what a restricted component holds
+- `tests/test_restrict.py`: `TestComponentHoldsView` (each component form and the `inject` callback get a view, the same component in the host fiber gets a `Context`, a restricted `Service`, and the call site of a failure from `use`, `inject`, and `effect`, in one parametrized test); eight existing tests read `real_context(ctx)` where they used the component context as a `Context`
+- `tests/test_timer.py`: a restricted `TimerService` runs with a view, and a callback that raises is logged on the fiber of the plugin
+**Tests**:
+- `uv run pytest` (full suite): 1633 passed; `ruff check` and `ruff format --check` clean
+- The three call-site cases fail against the code before the `_capture_site` change, and the restricted `Service` test fails without the `_stored_context` change
+**Deviations**:
+- The direct-read cases are not merged into the crossing test: that test is not written yet (it is a later increment)
+- `_capture_site` skips two frames, not one: the owner-thread wrapper of `use`, `inject`, and `effect` sits between the forwarder and the method, and it is the first recorded frame today
+- The logger needs no change: `LoggerService` and `Logger` already read the real fiber through `cordis_caller` and the def site
+- A restricted `Service` method that reads `self.ctx.fiber` still gives the use-site fiber, not its own: the shadow for a restricted def site is in the next increment, so the service test checks construction and a host read only
+**Manual validation**:
+- Confirmed in `uv run python`: a restricted plugin gets a `ContextView` and the host's own use of the same function gets a `Context`; a restricted `Service` builds with a view and the host reads it; a restricted `TimerService` logs a callback that raises; the call-site note of a failed child ends at the line in the component
 
 ### Increment 10: Service views in both directions
 **Goal**: a service view applies the direction table, fixed when the view is created, so a

@@ -647,8 +647,15 @@ def _stored_context(target: object, name: str) -> "Context | None":
         return None
     own = _own(target)
     if name in own:
-        return own[name]
-    return None if attr is _MISSING else attr
+        return _real(own[name])
+    return None if attr is _MISSING else _real(attr)
+
+
+def _real(value: Any) -> Any:
+    """Return the context that a `ContextView` shows; any other value is unchanged."""
+    from pycordis.context import real_context
+
+    return real_context(value)
 
 
 def _create_shadow(

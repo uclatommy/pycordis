@@ -24,7 +24,7 @@ from pycordis.deferred import Deferred
 from pycordis.disposables import DisposableList
 from pycordis.errors import CallSite, CordisError, Issue, ValidationError
 from pycordis.scheduler import Scheduler, owner_thread, spawn, start
-from pycordis.traceable import get_traceable
+from pycordis.traceable import expose, get_traceable
 
 if TYPE_CHECKING:
     from pycordis.context import Context, Restriction
@@ -681,9 +681,12 @@ class Fiber:
         assert self.runtime is not None
         callback = self.runtime.callback
         config = self._resolve(self.config)
+        # A restricted component holds a view of its context; an unrestricted one
+        # holds the context itself.
+        ctx = expose(self.ctx, self.ctx)
         if not inspect.isclass(callback):
-            return callback(self.ctx, config)
-        instance = callback(self.ctx, config)
+            return callback(ctx, config)
+        instance = callback(ctx, config)
         self.ctx._registry.run_inject_methods(self.ctx, instance)
         init = getattr(instance, "cordis_init", None)
         return None if init is None else init()

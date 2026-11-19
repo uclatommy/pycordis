@@ -450,13 +450,14 @@ def test_a_view_acts_only_on_a_fiber_that_the_component_owns(
     host = root.use(_no_deps)
     seen: dict[str, FiberView] = {}
 
-    def plugin(ctx: Context, config: object) -> None:
+    def plugin(ctx: ContextView, config: object) -> None:
         seen["own"] = ctx.use(_no_deps)
         seen["grandchild"] = restrict(ctx, inject=["other"]).use(_no_deps)
         # views of fibers outside the subtree, for the scope of this plugin
-        seen["sibling"] = expose(ctx, sibling)
-        seen["host"] = expose(ctx, host)
-        seen["root"] = expose(ctx, root.fiber)
+        scope = real_context(ctx)
+        seen["sibling"] = expose(scope, sibling)
+        seen["host"] = expose(scope, host)
+        seen["root"] = expose(scope, root.fiber)
 
     assert restricted.use(plugin).state == FiberState.ACTIVE
 
@@ -503,9 +504,9 @@ def test_a_restricted_plugin_reading_loader_ctx_gets_the_use_site(
     loader's own unrestricted context."""
     root.use(Loader)
     restricted = restrict(root, inject=["loader"])
-    captured: dict[str, Context] = {}
+    captured: dict[str, ContextView] = {}
 
-    def component(ctx: Context, config: object) -> None:
+    def component(ctx: ContextView, config: object) -> None:
         captured["own"] = ctx
         captured["loader_ctx"] = ctx["loader"].ctx
 
@@ -513,7 +514,7 @@ def test_a_restricted_plugin_reading_loader_ctx_gets_the_use_site(
     fiber = restricted.use(component)
 
     assert fiber.state == FiberState.ACTIVE
-    assert real_context(captured["loader_ctx"]) is captured["own"]
+    assert captured["loader_ctx"] == captured["own"]
 
 
 def test_a_restricted_fibers_provide_notifies_an_existing_dependent(
@@ -608,7 +609,7 @@ def test_a_restricted_listener_gets_the_contexts_that_its_component_owns(
         ctx.on("greet", lambda: None)
         child = restrict(ctx, inject=["other"])
         child.use(lambda inner, cfg: inner.on("greet", lambda: None))
-        own.append(ctx)
+        own.append(real_context(ctx))
 
     restrict(root, inject=["other"]).use(plugin)
 
@@ -1553,7 +1554,7 @@ class TestContextView:
         """A view of the context of a restricted component, and that context."""
         held: list[Context] = []
         restrict(root, inject=["other", "mine"]).use(
-            lambda ctx, config: held.append(ctx)
+            lambda ctx, config: held.append(real_context(ctx))
         )
         return ContextView(held[0]), held[0]
 
@@ -1734,3 +1735,104 @@ class TestContextView:
         assert receive(ctx, view) is ctx
         assert real_context(ctx) is ctx and real_context(view) is ctx
         assert copy.deepcopy(view) is view
+
+
+class TestComponentHoldsView:
+    """A restricted component, `inject` callback, and `@inject` method get a view."""
+
+    def test_each_form_of_component_gets_a_context_view(self, root: Context) -> None:
+        held: dict[str, object] = {}
+
+        def function(ctx: object, config: object) -> None:
+            held["function"] = ctx
+
+        class Cls:
+            def __init__(self, ctx: object, config: object) -> None:
+                held["class"] = ctx
+
+        class WithMethod:
+            def __init__(self, ctx: object, config: object) -> None:
+                self.ctx = ctx
+
+            @inject_method("other")
+            def method(self) -> None:
+                held["method"] = self.ctx
+
+        class WithApply:
+            def apply(self, ctx: object, config: object) -> None:
+                held["apply"] = ctx
+
+        restricted = restrict(root, inject=["other"])
+        root.provide("other", object())
+        restricted.use(function)
+        restricted.use(Cls)
+        restricted.use(WithMethod)
+        restricted.use(WithApply())
+        restricted.inject(["other"], lambda ctx: held.__setitem__("callback", ctx))
+
+        assert set(held) == {"function", "class", "method", "apply", "callback"}
+        assert all(type(ctx) is ContextView for ctx in held.values())
+
+    def test_a_component_that_the_host_also_uses_gets_the_real_context(
+        self, root: Context
+    ) -> None:
+        held: list[object] = []
+        restricted = restrict(root, inject=["other"])
+
+        def component(ctx: object, config: object) -> None:
+            held.append(ctx)
+
+        restricted.use(component)
+        root.use(component)
+
+        assert [type(ctx) for ctx in held] == [ContextView, Context]
+
+    def test_a_restricted_service_builds_with_a_view_and_the_host_reads_it(
+        self, root: Context
+    ) -> None:
+        held: list[object] = []
+
+        class Greeter(Service):
+            provide = "greeter"
+
+            def __init__(self, ctx: object, config: object = None) -> None:
+                super().__init__(ctx)  # type: ignore[arg-type]
+                held.append(ctx)
+
+            def hello(self) -> str:
+                return "hello"
+
+        fiber = restrict(root, provide=["greeter"]).use(Greeter)
+
+        assert fiber.state == FiberState.ACTIVE
+        assert type(held[0]) is ContextView
+        assert root["greeter"].hello() == "hello"
+
+    @pytest.mark.parametrize("member", ["use", "inject", "effect"])
+    def test_the_call_site_of_a_failure_names_the_line_in_the_component(
+        self, root: Context, member: str
+    ) -> None:
+        def failing(*args: object) -> None:
+            raise RuntimeError("boom")
+
+        arguments = {"use": (failing,), "inject": ([], failing), "effect": (failing,)}
+
+        def component(ctx: ContextView, config: object) -> None:
+            getattr(ctx, member)(*arguments[member])  # the recorded line
+
+        fiber = restrict(root, inject=["other"]).use(component)
+        notes = [
+            note
+            for f in (fiber, *_all_fibers(fiber))
+            if isinstance(f.error, RuntimeError)
+            for note in f.error.__notes__
+        ]
+
+        assert any(note.splitlines()[-1].endswith("component") for note in notes)
+        assert not any("_cross_member" in note for note in notes)
+
+
+def _all_fibers(fiber: Fiber) -> Iterator[Fiber]:
+    for child in fiber.children:
+        yield child
+        yield from _all_fibers(child)

@@ -6,10 +6,11 @@ and meta tables. Start with `Context(scheduler)` to create a root context.
 """
 
 import inspect
+import sys
 from collections import ChainMap
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
-from types import MappingProxyType
+from types import CodeType, MappingProxyType
 from typing import Any, Literal, Self, overload
 
 from pycordis.deferred import Deferred
@@ -499,9 +500,7 @@ class Context:
             TypeError: If `execute` returns an invalid effect.
         """
         with self.scheduler.call():
-            return self._fiber.effect(
-                execute, label, call_site=CallSite.capture(skip=1)
-            )
+            return self._fiber.effect(execute, label, call_site=_capture_site(1))
 
     @owner_thread("scheduler")
     def use(self, component: Component, config: object = None) -> Fiber:
@@ -546,7 +545,7 @@ class Context:
         """
         with self.scheduler.call():
             return self._registry.use(
-                self.use_site, component, config, CallSite.capture(skip=skip)
+                self.use_site, component, config, _capture_site(skip)
             )
 
     @owner_thread("scheduler")
@@ -565,9 +564,7 @@ class Context:
         with self.scheduler.call():
             return expose(
                 self,
-                self._registry.inject(
-                    self.use_site, deps, callback, CallSite.capture(skip=1)
-                ),
+                self._registry.inject(self.use_site, deps, callback, _capture_site(1)),
             )
 
     def __getitem__(self, key: Keyable[Any]) -> Any:
@@ -883,6 +880,25 @@ class Context:
         return None
 
 
+# The code of the function that a `ContextView` forwards a call through. It adds a frame
+# between the component and `Context`, which a recorded call site leaves out.
+_FORWARDERS: set[CodeType] = set()
+
+
+def _capture_site(skip: int) -> CallSite:
+    """Record the call site of the caller of a `Context` method.
+
+    `skip` is the number of frames between the caller of this function and the frame to
+    record, as for `CallSite.capture`. The first frame to record is the owner-thread
+    wrapper of the method. When a `ContextView` forwards the call, the wrapper and the
+    forwarder are left out, so the site is the line in the component.
+    """
+    caller = sys._getframe(1 + skip).f_back
+    if caller is not None and caller.f_code in _FORWARDERS:
+        skip += 2
+    return CallSite.capture(skip=skip + 1)
+
+
 type _MemberKind = Literal["cross", "guard", "pass"]
 
 _MEMBER_KINDS: Mapping[str, _MemberKind] = MappingProxyType(
@@ -958,6 +974,7 @@ def _cross_member(
         )
         return _read_exit(target, name, result)
 
+    _FORWARDERS.add(member.__code__)
     return member
 
 
@@ -1182,8 +1199,11 @@ def restrict(
     created the fiber, or the fiber descends from one that it created). A host that
     holds an unrestricted context gets the real fiber from `FiberView.unwrap`.
 
-    A context that the component owns reaches it as a `ContextView` (see `ContextView`).
-    Through a view, `root`, `reflect`, `registry`, `events`, `intercept_layer`, and
+    A restricted component holds a `ContextView` (see `ContextView`), not a `Context`.
+    The first argument of a function component, of a component class, of an `inject`
+    callback, and of an `@inject` method is a view of the component's own context, and
+    every other context that the component owns reaches it as a view too. Through a
+    view, `root`, `reflect`, `registry`, `events`, `intercept_layer`, and
     `intercept_through` raise `CordisError`, and so does a dispatch (`emit`, `bail`,
     `serial`, `parallel`, `waterfall`) of an event name that starts with `internal/`.
 
