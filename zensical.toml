@@ -14,6 +14,7 @@ site_description = "A Python port of the Cordis core: plugin and service composi
 site_author = "Thomas Chen"
 repo_url = "https://github.com/uclatommy/pycordis"
 docs_dir = "docs"
+extra_css = ["stylesheets/layout.css"]
 extra_javascript = [
   "javascripts/mathjax.js",
   "javascripts/vendor/mathjax/tex-svg.js",
