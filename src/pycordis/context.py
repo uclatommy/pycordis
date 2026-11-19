@@ -202,7 +202,7 @@ class Context:
             scope._fiber, chain, self._fiber
         ):
             return self
-        return Hidden("Context")
+        return Hidden("Context", self)
 
     @property
     def fiber(self) -> Fiber:

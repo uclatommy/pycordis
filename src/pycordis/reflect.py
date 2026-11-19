@@ -21,7 +21,14 @@ from pycordis.errors import CordisError
 from pycordis.fiber import EffectHandle, Fiber, FiberState
 from pycordis.keys import Keyable, key_name
 from pycordis.scheduler import Scheduler, owner_thread, start
-from pycordis.traceable import Hidden, Overlay, expose, get_traceable, get_with_receiver
+from pycordis.traceable import (
+    Hidden,
+    Overlay,
+    expose,
+    get_traceable,
+    get_with_receiver,
+    receive,
+)
 
 if TYPE_CHECKING:
     from pycordis.context import Context
@@ -78,7 +85,7 @@ class Impl:
 
     def cordis_expose(self, receiver: "Context") -> Hidden:
         """Return a `Hidden`: a restricted scope never sees a provider record."""
-        return Hidden("Impl")
+        return Hidden("Impl", self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -511,16 +518,19 @@ class ReflectService:
         An argument that has a `Tracker` reaches `callback` as its view for `ctx`, so an
         effect that `callback` registers through it belongs to the fiber of `ctx`.
 
-        When the def site of `site` is restricted, each argument also goes through
-        `expose`, so `callback` gets views and `Hidden` placeholders in place of fibers,
-        foreign contexts, and provider records. `site` defaults to `ctx`.
+        When the def site of `site` is restricted, `callback` is code of a restricted
+        component. Each argument goes through `expose`, so `callback` gets views and
+        `Hidden` placeholders in place of fibers, foreign contexts, and provider
+        records, and a function argument carries its values across the boundary. The
+        result of `callback` goes through `receive`, so the caller gets real objects.
+        `site` defaults to `ctx`.
         """
-        receiver = ctx if site is None else site
+        scope = ctx if site is None else site
 
         @functools.wraps(callback)
         def bound(*args: P.args, **kwargs: P.kwargs) -> R:
-            traced = [expose(receiver, get_traceable(ctx, arg)) for arg in args]
-            return callback(*traced, **kwargs)  # type: ignore[arg-type]
+            traced = [expose(scope, get_traceable(ctx, arg)) for arg in args]
+            return receive(scope, callback(*traced, **kwargs))  # type: ignore[arg-type]
 
         return bound
 

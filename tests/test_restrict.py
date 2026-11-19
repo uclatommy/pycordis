@@ -1,8 +1,11 @@
 """`restrict`: which inject, read, and provide keys a derived context admits."""
 
 import copy
+import functools
+import inspect
 import logging
 import pickle
+import weakref
 from collections.abc import Callable
 from pathlib import Path
 
@@ -19,7 +22,15 @@ from pycordis.reflect import Impl
 from pycordis.registry import inject as inject_method
 from pycordis.scheduler import start
 from pycordis.service import Service
-from pycordis.traceable import Exposure, Hidden, Tracker, expose
+from pycordis.traceable import (
+    Exposure,
+    Hidden,
+    Tracker,
+    expose,
+    get_traceable,
+    receive,
+    screen,
+)
 
 
 def _no_deps(ctx: Context, config: object) -> None:
@@ -667,12 +678,6 @@ def test_expose_gives_a_placeholder_for_a_provider_and_a_method_of_a_fiber(
     # protocol names work, so a listener can copy or record its arguments
     assert isinstance(hidden_impl, Hidden)
     assert not hasattr(hidden_impl, "__fspath__")
-    for duplicate in (
-        copy.copy(hidden_impl),
-        copy.deepcopy(hidden_impl),
-        pickle.loads(pickle.dumps(hidden_impl)),
-    ):
-        assert type(duplicate) is Hidden and repr(duplicate) == "Hidden <Impl>"
 
 
 def test_expose_hides_a_context_method_only_when_it_hides_the_context(
@@ -700,6 +705,193 @@ def test_expose_returns_an_object_that_it_does_not_recognize_unchanged(
 
     assert expose(restricted, plain) is plain
     assert expose(restricted, "text") == "text"
+
+
+def _host_function() -> None:
+    return None
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda root: root.fiber,
+        lambda root: root,
+        lambda root: Impl(uid=1, name="svc", ctx=root, value=None, isolate=object()),
+        lambda root: root.provide,
+        lambda root: _host_function,
+    ],
+    ids=["fiber", "foreign context", "provider record", "method", "function"],
+)
+def test_receive_gives_back_the_real_object_that_expose_hid_or_wrapped(
+    root: Context, build: Callable[[Context], object]
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    value = build(root)
+
+    exposed = expose(restricted, value)
+
+    assert exposed is not value
+    assert receive(restricted, exposed) is value
+    assert receive(root, exposed) is exposed  # an unrestricted scope changes nothing
+
+
+def test_receive_gives_back_each_element_of_a_container_and_a_service_view(
+    root: Context,
+) -> None:
+    class Holder:
+        cordis_tracker = Tracker(property="ctx")
+
+        def __init__(self, ctx: Context) -> None:
+            self.ctx = ctx
+
+    restricted = restrict(root, inject=["other"])
+    holder = Holder(root)
+    view = expose(restricted, get_traceable(root, holder))
+
+    assert view is not holder and isinstance(view, Holder)
+    assert receive(restricted, view) is holder
+    exposed = expose(restricted, {root.fiber: [root.fiber, root]})
+    received = receive(restricted, exposed)
+    assert received == {root.fiber: [root.fiber, root]}
+    assert received is not exposed
+
+
+def test_a_function_that_crosses_equals_its_function_and_has_no_weak_reference(
+    root: Context,
+) -> None:
+    async def host_async() -> None:
+        return None
+
+    restricted = restrict(root, inject=["other"])
+    wrapped = expose(restricted, _host_function)
+    wrapped_async = expose(restricted, host_async)
+    to_host = receive(restricted, _host_function)
+
+    for crossing in (wrapped, to_host):
+        assert crossing is not _host_function and crossing == _host_function
+        assert hash(crossing) == hash(_host_function)
+        assert {_host_function: 1}[crossing] == 1
+        with pytest.raises(TypeError):
+            weakref.ref(crossing)
+    assert not inspect.iscoroutinefunction(wrapped)
+    assert inspect.iscoroutinefunction(wrapped_async)
+    # a function crosses back as itself in either direction
+    assert expose(restricted, to_host) is _host_function
+    assert expose(restricted, wrapped) is wrapped
+
+
+def test_a_function_that_crosses_carries_its_arguments_and_its_result(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    view = expose(restricted, root.fiber)
+    host_seen: list[object] = []
+    restricted_seen: list[object] = []
+
+    def host(fiber: object, *, key: object) -> object:
+        host_seen.extend([fiber, key])
+        return fiber
+
+    def inside(fiber: object) -> object:
+        restricted_seen.append(fiber)
+        return fiber
+
+    # a restricted caller of a host function: arguments received, result exposed
+    result = expose(restricted, host)(view, key=view)
+    assert host_seen == [root.fiber, root.fiber] and result == view
+    assert type(result) is FiberView
+    # the host caller of a restricted function: arguments exposed, result received
+    assert receive(restricted, inside)(root.fiber) is root.fiber
+    assert [type(seen) for seen in restricted_seen] == [FiberView]
+
+
+def test_a_restricted_listener_gets_exposed_arguments_and_its_result_is_received(
+    root: Context,
+) -> None:
+    seen: list[object] = []
+
+    def listener(next_: Callable[[], object]) -> object:
+        seen.append(next_())
+        return seen[0]
+
+    restrict(root, inject=["other"]).on("wrap", listener)
+
+    assert root.waterfall("wrap", lambda: root.fiber) is root.fiber
+    assert [type(value) for value in seen] == [FiberView]
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: functools.partial(_identity),
+        lambda: [].append,
+        lambda: lambda value: value,
+    ],
+    ids=["partial", "builtin method", "lambda"],
+)
+def test_every_function_form_crosses_as_a_function_that_equals_it(
+    root: Context, build: Callable[[], Callable[..., object]]
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    function = build()
+
+    exposed = expose(restricted, function)
+    received = receive(restricted, function)
+
+    for crossing in (exposed, received):
+        assert crossing is not function and crossing == function and callable(crossing)
+    assert receive(restricted, exposed) is function
+
+
+def _identity(value: object) -> object:
+    return value
+
+
+def test_receive_of_a_deferred_settles_with_the_received_value_or_the_same_error(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    view = expose(restricted, root.fiber)
+    resolved, rejected = Deferred[object](), Deferred[object]()
+    error = CordisError("failed")
+
+    received = [receive(restricted, source) for source in (resolved, rejected)]
+    resolved.resolve(view)
+    rejected.reject(error)
+
+    assert received[0].result() is root.fiber
+    with pytest.raises(CordisError) as excinfo:
+        received[1].result()
+    assert excinfo.value is error
+
+
+def test_a_read_exit_raises_for_a_hidden_value_and_for_a_hidden_call_result(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    impl = Impl(uid=1, name="svc", ctx=root, value=None, isolate=object())
+
+    with pytest.raises(CordisError, match="hidden Impl"):
+        screen(restricted, "svc", impl)
+    leaking = screen(restricted, "svc", lambda: impl)
+    with pytest.raises(CordisError, match='"svc" gives a hidden Impl'):
+        leaking()
+    assert type(screen(restricted, "svc", lambda: root.fiber)()) is FiberView
+    assert screen(root, "svc", impl) is impl
+
+
+def test_a_hidden_copy_is_the_same_placeholder_and_a_pickled_one_cannot_be_received(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    impl = Impl(uid=1, name="svc", ctx=root, value=None, isolate=object())
+    hidden = expose(restricted, impl)
+
+    assert copy.copy(hidden) is hidden and copy.deepcopy(hidden) is hidden
+    unpickled = pickle.loads(pickle.dumps(hidden))
+    assert type(unpickled) is Hidden and repr(unpickled) == "Hidden <Impl>"
+    with pytest.raises(CordisError, match="lost its object"):
+        receive(restricted, unpickled)
 
 
 @pytest.mark.parametrize("fails", [False, True], ids=["resolves", "rejects"])

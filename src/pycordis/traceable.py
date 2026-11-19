@@ -22,13 +22,18 @@ When the use site is restricted (see `Context.shadow` and `restrict`), every val
 leaves a view goes through `expose`, and a service class can declare an `Exposure` to
 hide or to pass members. The methods of the service read the unfiltered values.
 `screen` applies the same filter to a value that `ctx[key]` or `ctx.get(key)` reads.
+
+`expose` and `receive` are the two crossings between a restricted component and the
+rest of the application: `expose` gives the component a value that it can use, and
+`receive` gives the application the real object back for a value that the component
+returns or passes on.
 """
 
 import functools
 import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
-from types import FunctionType, MethodType
+from types import BuiltinFunctionType, FunctionType, MethodType
 from typing import TYPE_CHECKING, Any
 
 from pycordis.deferred import Deferred
@@ -80,17 +85,22 @@ class Hidden:
     `Hidden` is still called, so a restricted component can ignore the argument without
     a change to event dispatch.
 
-    A placeholder holds only the type name, not the hidden object. A protocol name
-    (`__class__`, `__reduce_ex__`, and the other `__name__` forms) reads as on any
-    object, so `isinstance`, `copy`, and `pickle` work, and a missing protocol name
-    raises `AttributeError`. A copy is a `Hidden` of the same type.
+    A protocol name (`__class__`, `__reduce_ex__`, and the other `__name__` forms)
+    reads as on any object, so `isinstance`, `copy`, and `pickle` work, and a missing
+    protocol name raises `AttributeError`. `copy.copy` and `copy.deepcopy` give the
+    same `Hidden`. A pickled `Hidden` keeps only the type name: `receive` of an
+    unpickled one raises `CordisError`.
+
+    When a component gives a `Hidden` back to the application, `receive` returns the
+    hidden object.
     """
 
-    __slots__ = ("_kind",)
+    __slots__ = ("_kind", "_target")
 
-    def __init__(self, kind: str) -> None:
-        """Create a placeholder for an object of the type named `kind`."""
+    def __init__(self, kind: str, target: object = _MISSING) -> None:
+        """Create a placeholder for `target`, an object of the type named `kind`."""
         object.__setattr__(self, "_kind", kind)
+        object.__setattr__(self, "_target", target)
 
     def _refuse(self, action: str) -> CordisError:
         kind = object.__getattribute__(self, "_kind")
@@ -103,6 +113,12 @@ class Hidden:
 
     def __reduce__(self) -> tuple[type["Hidden"], tuple[str]]:
         return (Hidden, (object.__getattribute__(self, "_kind"),))
+
+    def __copy__(self) -> "Hidden":
+        return self  # a placeholder is its own copy
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> "Hidden":
+        return self
 
     def __setattr__(self, name: str, value: Any) -> None:
         raise Hidden._refuse(self, f'set "{name}" of')
@@ -132,12 +148,14 @@ def _hook(value: object) -> Callable[[object, "Context"], object] | None:
     return getattr(type(value), "cordis_expose", None)  # optional on any class
 
 
-def _expose_deferred(receiver: "Context", source: Deferred[Any]) -> Deferred[Any]:
-    """Return a `Deferred` that settles with the exposed result of `source`.
+def _cross_deferred(
+    scope: "Context", source: Deferred[Any], cross: Callable[["Context", Any], Any]
+) -> Deferred[Any]:
+    """Return a `Deferred` that settles with `cross` applied to the result of `source`.
 
-    `source` can complete on any thread. The exposure runs on the owner thread, in a
+    `source` can complete on any thread. The crossing runs on the owner thread, in a
     scheduler step after `source` completes, also when `source` completes on the owner
-    thread: one path for every thread keeps `expose` off the completing thread.
+    thread: one path for every thread keeps the crossing off the completing thread.
     """
     settled = Deferred[Any]()
 
@@ -147,29 +165,96 @@ def _expose_deferred(receiver: "Context", source: Deferred[Any]) -> Deferred[Any
         except BaseException as error:
             settled.reject(error)
         else:
-            settled.resolve(expose(receiver, result))
+            settled.resolve(cross(scope, result))
 
-    source.add_done_callback(lambda _: receiver.scheduler.submit(complete))
+    source.add_done_callback(lambda _: scope.scheduler.submit(complete))
     return settled
+
+
+_FUNCTION_FORMS = (FunctionType, MethodType, BuiltinFunctionType, functools.partial)
+_CONTAINERS = (tuple, list, set, frozenset)
+
+
+class _Crossing:
+    """A function that carries its arguments and its result across the boundary.
+
+    One class serves both directions. A crossing that `expose` made wraps an
+    application function for a restricted caller: each argument goes through `receive`
+    and the result through `expose`. A crossing that `receive` made wraps a restricted
+    function for the application: each argument goes through `expose` and the result
+    through `receive`. A crossing equals, and hashes as, the function that it wraps.
+
+    A crossing has no `__weakref__` slot: each crossing makes a new wrapper, so a weak
+    reference to one would die at once. `weakref.ref` raises `TypeError` for it.
+    """
+
+    __slots__ = ("_function", "_scope", "_to_host", "_name", "_is_coroutine_marker")
+
+    def __init__(
+        self, scope: "Context", function: Callable[..., Any], to_host: bool
+    ) -> None:
+        self._function = function
+        self._scope = scope
+        self._to_host = to_host
+        self._name: str | None = None
+        if inspect.iscoroutinefunction(function):
+            inspect.markcoroutinefunction(self)
+
+    @property
+    def __wrapped__(self) -> Callable[..., Any]:
+        return self._function
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        scope = self._scope
+        inbound, outbound = (
+            (_expose, _receive) if self._to_host else (_receive, _expose)
+        )
+        result = self._function(
+            *[inbound(scope, arg) for arg in args],
+            **{key: inbound(scope, arg) for key, arg in kwargs.items()},
+        )
+        if self._name is not None:
+            return _read_exit(scope, self._name, result)
+        return outbound(scope, result)
+
+    def __eq__(self, other: object) -> bool:
+        if type(other) is _Crossing:
+            other = other._function
+        return self._function == other
+
+    def __hash__(self) -> int:
+        return hash(self._function)
+
+    def __repr__(self) -> str:
+        return repr(self._function)
 
 
 def expose[T](receiver: "Context", value: T) -> T:
     """Return what code in the context `receiver` can use in place of `value`.
 
-    The scope of `receiver` is its def site. When that scope carries no restriction,
-    `value` is returned unchanged. Otherwise:
+    This is the crossing from the application to a restricted component. The scope of
+    `receiver` is its def site. When that scope carries no restriction, `value` is
+    returned unchanged. Otherwise:
 
     - An object whose class has a `cordis_expose(value, receiver)` hook gives the
       result of the hook: a `Fiber` gives a `FiberView`, and a `Context` that the
       scope does not own, or a provider record, gives a `Hidden`.
+    - A service view gives the view of the same service for `receiver`, so an effect
+      that the component registers through it belongs to the component's fiber.
     - A method of an object that its hook replaces gives a `Hidden`: a method of a
       `Fiber` or of a provider record always, and a method of a `Context` that the
-      scope does not own. A method of a `Context` that the scope owns is unchanged.
+      scope does not own.
+    - A function, a bound or builtin method, or a `functools.partial` gives a function
+      that equals it. A call of that function passes each argument through `receive`
+      and gives the result through `expose`.
     - A `tuple`, `list`, `dict`, `set`, or `frozenset` gives a new container of the
-      same type, with each element, key, and value exposed.
+      same type, with each element, key, and value exposed. A change to the new
+      container is not visible through the old one.
     - A `Deferred` gives a new `Deferred` that settles with the exposed result, or with
       the same error. It settles one scheduler step after `value`, so code that awaits
       it resumes after code that awaits `value` directly.
+    - A view, a `Hidden`, and a function that `expose` made are unchanged. A function
+      that `receive` made gives the function that it wraps.
     - Any other object is returned unchanged.
 
     The result has the type of `value` for a caller: a `FiberView` and a `Hidden` are
@@ -184,26 +269,95 @@ def expose[T](receiver: "Context", value: T) -> T:
     return _expose(receiver, value)
 
 
-def _expose(receiver: "Context", value: Any) -> Any:
+def _expose(scope: "Context", value: Any) -> Any:
     """Apply the exposure rule of `expose` to `value` for a restricted scope."""
     hook = _hook(value)
     if hook is not None:
-        return hook(value, receiver)
+        return hook(value, scope)
+    kind = type(value)
+    if kind is _Crossing:
+        return value._function if value._to_host else value
+    if issubclass(kind, TraceableView):
+        return get_traceable(scope, value)
     if isinstance(value, MethodType):
         owner = value.__self__
         owner_hook = _hook(owner)
-        if inspect.isfunction(owner_hook) and owner_hook(owner, receiver) is not owner:
-            return Hidden(f"method of {type(owner).__name__}")
-    kind = type(value)
-    if kind in (tuple, list, set, frozenset):
-        return kind(_expose(receiver, item) for item in value)
+        if inspect.isfunction(owner_hook) and owner_hook(owner, scope) is not owner:
+            return Hidden(f"method of {type(owner).__name__}", value)
+    if kind in _CONTAINERS:
+        return kind(_expose(scope, item) for item in value)
     if kind is dict:
         return {
-            _expose(receiver, key): _expose(receiver, item)
-            for key, item in value.items()
+            _expose(scope, key): _expose(scope, item) for key, item in value.items()
         }
     if kind is Deferred:
-        return _expose_deferred(receiver, value)
+        return _cross_deferred(scope, value, _expose)
+    if isinstance(value, _FUNCTION_FORMS):
+        return _Crossing(scope, value, to_host=False)
+    return value
+
+
+def receive[T](scope: "Context", value: T) -> T:
+    """Return what the application can use in place of `value`, which a component gave.
+
+    This is the crossing from a restricted component to the application, the inverse
+    of `expose`. The scope of `scope` is its def site. When that scope carries no
+    restriction, `value` is returned unchanged. Otherwise:
+
+    - A view of an object (a `FiberView`, an exposed view, a service view) and a
+      `Hidden` give the real object that they show, for any scope.
+    - A function that `expose` made gives the function that it wraps.
+    - Any other function, bound or builtin method, or `functools.partial` gives a
+      function that equals it. A call of that function passes each argument through
+      `expose` and gives the result through `receive`.
+    - A `tuple`, `list`, `dict`, `set`, or `frozenset` gives a new container of the
+      same type, with each element, key, and value received.
+    - A `Deferred` gives a new `Deferred` that settles with the received result, or with
+      the same error.
+    - Any other object is returned unchanged.
+
+    Call this function on the owner thread.
+
+    Args:
+        scope: The context of the component that gave the value.
+        value: Any object.
+
+    Raises:
+        CordisError: If `value` is a `Hidden` that lost its object, such as an
+            unpickled one.
+    """
+    if not scope._def_site._restrictions:
+        return value
+    return _receive(scope, value)
+
+
+def _receive(scope: "Context", value: Any) -> Any:
+    """Apply the rule of `receive` to `value` for a restricted scope."""
+    kind = type(value)
+    if kind is Hidden:
+        target = object.__getattribute__(value, "_target")
+        if target is _MISSING:
+            raise CordisError(
+                f"cannot give back a hidden {value!r}: it lost its object"
+            )
+        return target
+    if kind is _Crossing:
+        return value if value._to_host else value._function
+    slot = getattr(kind, "cordis_view", None)  # optional on any class
+    if slot is not None:
+        return object.__getattribute__(value, slot)
+    if issubclass(kind, _Forwarder):
+        return get_original(value)
+    if kind in _CONTAINERS:
+        return kind(_receive(scope, item) for item in value)
+    if kind is dict:
+        return {
+            _receive(scope, key): _receive(scope, item) for key, item in value.items()
+        }
+    if kind is Deferred:
+        return _cross_deferred(scope, value, _receive)
+    if isinstance(value, _FUNCTION_FORMS):
+        return _Crossing(scope, value, to_host=True)
     return value
 
 
@@ -249,7 +403,7 @@ class Exposure:
         traced = get_traceable(receiver, value)
         if traced is not value:
             return traced
-        return _ExposedView(receiver, value, self)
+        return _ExposedView(receiver, value)
 
 
 def _exposure_of(target: object) -> Exposure | None:
@@ -269,11 +423,10 @@ def screen[T](receiver: "Context", name: str, value: T) -> T:
     `Context.__getitem__` and `Context.get` pass the value that they read through this
     function, so a provided value or an accessor value is filtered as a value that
     leaves a service view is. When the def site of `receiver` carries no restriction,
-    `value` is returned unchanged. Otherwise `value` goes through `expose`, a `Hidden`
-    result raises `CordisError`, and a callable that `expose` does not change gives a
-    function whose results are filtered in the same way. A service view passes
-    unchanged, because it filters its own values. Call this function on the owner
-    thread.
+    `value` is returned unchanged. Otherwise `value` goes through `expose`, and a
+    `Hidden` result raises `CordisError`. When `value` is a function, the result of a
+    call of the function that this function gives raises in the same way. Call this
+    function on the owner thread.
 
     Args:
         receiver: The context that reads.
@@ -284,39 +437,23 @@ def screen[T](receiver: "Context", name: str, value: T) -> T:
         CordisError: If the value is a context that the scope does not own, a provider
             record, or a method that `expose` hides.
     """
-    if not receiver._def_site._restrictions:
-        return value
-    return _screen(receiver, None, name, value)
+    return _read_exit(receiver, name, value)
 
 
-def _screen(ctx: "Context", exposure: Exposure | None, name: str, value: Any) -> Any:
-    """Filter a value that leaves a view or a context read for the scope of `ctx`.
+def _read_exit(scope: "Context", name: str, value: Any) -> Any:
+    """Return `expose(scope, value)`, or raise if the result is a `Hidden`.
 
-    This is the one place where a `Hidden` becomes an error. A callable that `expose`
-    does not change is wrapped, so that its result is filtered when it is called.
+    This is the one place where a `Hidden` becomes an error: a read of a view or of a
+    context gives a value to use at once, so a value that the component cannot use
+    fails at the read. A function that `expose` wraps raises in the same way when its
+    result is a `Hidden`.
     """
-    if exposure is not None and name in exposure.safe:
-        return value
-    result = _expose(ctx, value)
+    result = expose(scope, value)
     if type(result) is Hidden:
         raise _hidden_error(name, result)
-    if (
-        result is value
-        and callable(value)
-        and not isinstance(value, (type, _Forwarder))
-    ):
-        return _screen_result(ctx, name, value)
+    if type(result) is _Crossing and result is not value:
+        result._name = name
     return result
-
-
-def _screen_result(ctx: "Context", name: str, function: Callable[..., Any]) -> Any:
-    """Wrap `function` so that its result is filtered for the scope of `ctx`."""
-
-    @functools.wraps(function)
-    def call(*args: Any, **kwargs: Any) -> Any:
-        return _screen(ctx, None, name, function(*args, **kwargs))
-
-    return call
 
 
 def _exit(ctx: "Context", target: object, name: str, read: Callable[[], Any]) -> Any:
@@ -328,9 +465,12 @@ def _exit(ctx: "Context", target: object, name: str, read: Callable[[], Any]) ->
     if name in _VIEW_NAMES:
         return read()
     exposure = _exposure_of(target)
-    if exposure is not None and name in exposure.hidden:
-        raise CordisError(f'cannot read "{name}" in a restricted context')
-    return _screen(ctx, exposure, name, read())
+    if exposure is not None:
+        if name in exposure.hidden:
+            raise CordisError(f'cannot read "{name}" in a restricted context')
+        if name in exposure.safe:
+            return read()
+    return _read_exit(ctx, name, read())
 
 
 def get_traceable[T](ctx: "Context", value: T) -> T:
@@ -654,13 +794,12 @@ class _ExposedView(_Forwarder):
     for the restricted scope of the receiving context.
     """
 
-    __slots__ = ("_ctx", "_target", "_exposure")
+    __slots__ = ("_ctx", "_target")
 
-    def __init__(self, ctx: "Context", target: object, exposure: Exposure) -> None:
+    def __init__(self, ctx: "Context", target: object) -> None:
         _set = object.__setattr__
         _set(self, "_ctx", ctx)
         _set(self, "_target", target)
-        _set(self, "_exposure", exposure)
 
     def __getattribute__(self, name: str) -> Any:
         target = _slot(self, "_target")
@@ -668,10 +807,7 @@ class _ExposedView(_Forwarder):
             return target
         if name == "__class__":
             return type(target)
-        exposure = _slot(self, "_exposure")
-        if name in exposure.hidden:
-            raise CordisError(f'cannot read "{name}" in a restricted context')
-        return _screen(_slot(self, "_ctx"), exposure, name, getattr(target, name))
+        return _exit(_slot(self, "_ctx"), target, name, lambda: getattr(target, name))
 
     def __setattr__(self, name: str, value: Any) -> None:
         raise CordisError(f'cannot set "{name}" in a restricted context')

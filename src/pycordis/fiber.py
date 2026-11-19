@@ -1013,6 +1013,9 @@ class FiberView:
 
     __slots__ = ("_target", "_scope", "_chain", "_owned")
 
+    # `receive` reads the real fiber from this slot (see `pycordis.traceable.receive`)
+    cordis_view = "_target"
+
     def __init__(
         self, target: Fiber, scope: Fiber, chain: tuple["Restriction", ...]
     ) -> None:
