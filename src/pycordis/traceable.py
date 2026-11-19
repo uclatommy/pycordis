@@ -17,6 +17,10 @@ A view forwards attribute access to the service, with these differences:
   traceable for the use site.
 - `cordis_caller` reads as the def-site context, and `cordis_original` as the service.
 - `isinstance(view, ServiceClass)` is true.
+
+When the use site is restricted (see `Context.shadow` and `restrict`), every value that
+leaves a view goes through `expose`, and a service class can declare an `Exposure` to
+hide or to pass members. The methods of the service read the unfiltered values.
 """
 
 import functools
@@ -185,6 +189,106 @@ def _expose(receiver: "Context", value: Any) -> Any:
     return value
 
 
+@dataclass(frozen=True, slots=True)
+class Exposure:
+    """How a class gives itself to a restricted component.
+
+    Set an instance as the `cordis_expose` attribute of a class. `expose` calls the
+    instance with the object and the receiving context, and the result is what the
+    restricted component gets in place of the object.
+
+    A service class that has a `Tracker` keeps its view: the view applies the exposure
+    at its exits. Any other object reaches a restricted component as a read-only view
+    that forwards reads to the object. A method of the object runs on the object
+    itself, so the object reads its own data without the filter. Only what the
+    restricted component reads from the view is filtered.
+
+    Each value that leaves the view goes through `expose`, so a `Fiber` is a
+    `FiberView`, a foreign `Context` or a provider record is a `Hidden`, a container is
+    filtered element by element, and the result of a method is filtered in the same
+    way. A value that `expose` does not recognize is not changed.
+
+    Attributes:
+        hidden: Names that raise `CordisError` when a restricted component reads them.
+        safe: Names whose values pass unchanged, with no filter.
+
+    Examples:
+        ```python
+        >>> class Account:
+        ...     cordis_expose = Exposure(hidden=frozenset({"token"}))
+        ...
+        ...     def __init__(self, ctx):
+        ...         self.ctx = ctx
+        ...         self.token = "secret"
+        ```
+    """
+
+    hidden: frozenset[str] = frozenset()
+    safe: frozenset[str] = frozenset()
+
+    def __call__(self, value: object, receiver: "Context") -> object:
+        """Return the exposed view of `value` for the scope of `receiver`."""
+        traced = get_traceable(receiver, value)
+        if traced is not value:
+            return traced
+        return _ExposedView(receiver, value, self)
+
+
+def _exposure_of(target: object) -> Exposure | None:
+    """Return the `Exposure` that the class of `target` declares, or `None`."""
+    attr = inspect.getattr_static(type(target), "cordis_expose", None)
+    return attr if isinstance(attr, Exposure) else None
+
+
+def _hidden_error(name: str, hidden: Hidden) -> CordisError:
+    kind = object.__getattribute__(hidden, "_kind")
+    return CordisError(f'"{name}" gives a hidden {kind} in a restricted context')
+
+
+def _screen(ctx: "Context", exposure: Exposure | None, name: str, value: Any) -> Any:
+    """Filter a value that leaves a view for the restricted scope of `ctx`.
+
+    This is the one place where a `Hidden` becomes an error. A callable that `expose`
+    does not change is wrapped, so that its result is filtered when it is called.
+    """
+    if exposure is not None and name in exposure.safe:
+        return value
+    result = _expose(ctx, value)
+    if type(result) is Hidden:
+        raise _hidden_error(name, result)
+    if (
+        result is value
+        and callable(value)
+        and not isinstance(value, (type, _Forwarder))
+    ):
+        return _screen_result(ctx, name, value)
+    return result
+
+
+def _screen_result(ctx: "Context", name: str, function: Callable[..., Any]) -> Any:
+    """Wrap `function` so that its result is filtered for the scope of `ctx`."""
+
+    @functools.wraps(function)
+    def call(*args: Any, **kwargs: Any) -> Any:
+        return _screen(ctx, None, name, function(*args, **kwargs))
+
+    return call
+
+
+def _exit(ctx: "Context", target: object, name: str, read: Callable[[], Any]) -> Any:
+    """Return `read()` filtered for the restricted scope of `ctx`.
+
+    The names of the view protocol (`cordis_original`, `cordis_caller`, `__class__`)
+    are not filtered.
+    """
+    if name in _VIEW_NAMES:
+        return read()
+    exposure = _exposure_of(target)
+    if exposure is not None and name in exposure.hidden:
+        raise CordisError(f'cannot read "{name}" in a restricted context')
+    return _screen(ctx, exposure, name, read())
+
+
 def get_traceable[T](ctx: "Context", value: T) -> T:
     """Return the view of `value` for the context `ctx`, or `value` itself.
 
@@ -321,6 +425,39 @@ def get_with_receiver(value: Any, name: str, receiver: object) -> Any:
     return _reflect_get(get_original(value), name, receiver)
 
 
+def _read_view(view: "TraceableView", name: str) -> Any:
+    """Read `name` of `view`, with no filter: the path of a service's own methods."""
+    ctx = _slot(view, "_ctx")
+    target = _slot(view, "_target")
+    tracker = _slot(view, "_tracker")
+    if name == "cordis_original":
+        return target
+    if name == "cordis_caller":
+        return ctx if ctx.shadow is None else ctx.shadow
+    if name == tracker.property:
+        return ctx.use_site
+    if name == "__class__":
+        return type(target)
+    if _is_hook(name):
+        return _reflect_get(target, name, view)
+    return _read_attribute(view, ctx, target, tracker, name)
+
+
+def _invoke_view(view: "CallableTraceableView", args: Any, kwargs: Any) -> Any:
+    """Call `view`, with no filter on the result."""
+    ctx = _slot(view, "_ctx")
+    target = _slot(view, "_target")
+    tracker = _slot(view, "_tracker")
+    if inspect.getattr_static(target, "cordis_invoke", _MISSING) is _MISSING:
+        return target(*args, **kwargs)
+    receiver = (
+        view
+        if tracker.no_shadow
+        else _create_shadow(ctx.use_site, target, tracker.property, view)
+    )
+    return _reflect_get(target, "cordis_invoke", receiver)(*args, **kwargs)
+
+
 class _Forwarder:
     """The base of the objects that forward their attributes to a service."""
 
@@ -351,19 +488,9 @@ class TraceableView(_Forwarder):
 
     def __getattribute__(self, name: str) -> Any:
         ctx = _slot(self, "_ctx")
-        target = _slot(self, "_target")
-        tracker = _slot(self, "_tracker")
-        if name == "cordis_original":
-            return target
-        if name == "cordis_caller":
-            return ctx if ctx.shadow is None else ctx.shadow
-        if name == tracker.property:
-            return ctx.use_site
-        if name == "__class__":
-            return type(target)
-        if _is_hook(name):
-            return _reflect_get(target, name, self)
-        return _read_attribute(self, ctx, target, tracker, name)
+        if not ctx._def_site._restrictions:
+            return _read_view(self, name)
+        return _exit(ctx, _slot(self, "_target"), name, lambda: _read_view(self, name))
 
     def __setattr__(self, name: str, value: Any) -> None:
         ctx = _slot(self, "_ctx")
@@ -407,16 +534,14 @@ class CallableTraceableView(TraceableView):
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         ctx = _slot(self, "_ctx")
-        target = _slot(self, "_target")
-        tracker = _slot(self, "_tracker")
-        if inspect.getattr_static(target, "cordis_invoke", _MISSING) is _MISSING:
-            return target(*args, **kwargs)  # type: ignore[operator]
-        receiver = (
-            self
-            if tracker.no_shadow
-            else _create_shadow(ctx.use_site, target, tracker.property, self)
+        if not ctx._def_site._restrictions:
+            return _invoke_view(self, args, kwargs)
+        return _exit(
+            ctx,
+            _slot(self, "_target"),
+            "__call__",
+            lambda: _invoke_view(self, args, kwargs),
         )
-        return _reflect_get(target, "cordis_invoke", receiver)(*args, **kwargs)
 
 
 class _Shadow(_Forwarder):
@@ -441,7 +566,7 @@ class _Shadow(_Forwarder):
         if _is_hook(name) and name not in _VIEW_NAMES:
             # a hook runs with this shadow as `self`
             return _reflect_get(view.cordis_original, name, self)
-        return getattr(view, name)
+        return _read_view(view, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if name == _slot(self, "_property"):
@@ -459,7 +584,43 @@ class _CallableShadow(_Shadow):
     __slots__ = ()
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        return _slot(self, "_view")(*args, **kwargs)
+        return _invoke_view(_slot(self, "_view"), args, kwargs)
+
+
+class _ExposedView(_Forwarder):
+    """A read-only view of an object that declares an `Exposure`.
+
+    A method runs on the original object. Each value that leaves the view is filtered
+    for the restricted scope of the receiving context.
+    """
+
+    __slots__ = ("_ctx", "_target", "_exposure")
+
+    def __init__(self, ctx: "Context", target: object, exposure: Exposure) -> None:
+        _set = object.__setattr__
+        _set(self, "_ctx", ctx)
+        _set(self, "_target", target)
+        _set(self, "_exposure", exposure)
+
+    def __getattribute__(self, name: str) -> Any:
+        target = _slot(self, "_target")
+        if name == "cordis_original":
+            return target
+        if name == "__class__":
+            return type(target)
+        exposure = _slot(self, "_exposure")
+        if name in exposure.hidden:
+            raise CordisError(f'cannot read "{name}" in a restricted context')
+        return _screen(_slot(self, "_ctx"), exposure, name, getattr(target, name))
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise CordisError(f'cannot set "{name}" in a restricted context')
+
+    def __delattr__(self, name: str) -> None:
+        raise CordisError(f'cannot delete "{name}" in a restricted context')
+
+    def __repr__(self) -> str:
+        return repr(_slot(self, "_target"))
 
 
 class Overlay:

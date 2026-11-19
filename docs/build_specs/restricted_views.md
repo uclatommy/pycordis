@@ -1,6 +1,6 @@
 # Build Spec: Restricted Views
 
-**Status**: 🟡 In progress (Increments 1 and 2 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
+**Status**: 🟡 In progress (Increments 1 to 3 done) — D1, D2, D7, and D9 to D12 are accepted; the other [Decisions](#decisions) are proposed on #14 and #15
 
 **Reference**: [#14 Restricted context: give a restricted component read-only views of fibers](https://github.com/uclatommy/pycordis/issues/14), [#15 Restricted context: host services give a restricted caller views, not host objects](https://github.com/uclatommy/pycordis/issues/15)
 
@@ -464,7 +464,24 @@ manual: in `uv run python`, a restricted plugin calls a test service whose metho
 fiber and a list of host fibers
 **Docs**: `Exposure`; the module docstring of `pycordis.traceable`; the `restrict` warning
 bullet for host services (it keeps only the services that are not marked)
-**Status**: ⬜ Not started
+**Status**: ✅ Completed
+**Changed**:
+- `traceable.py`: `Exposure` (the `cordis_expose` hook; a tracked object gives its `TraceableView`, any other object gives an exposed view)
+- `traceable.py`: `_exit` and `_screen` are the one filter, called by `TraceableView.__getattribute__`, `CallableTraceableView.__call__`, and the exposed view; `_screen` is the one place that converts a `Hidden` to `CordisError`, and it wraps a callable that `expose` leaves unchanged
+- `traceable.py`: `_read_view` and `_invoke_view` are the unfiltered paths; `_Shadow` and `_CallableShadow` call them, so a service method reads real objects
+- `traceable.py`: `_ExposedView` forwards reads, runs methods on the original object, and raises on a write or delete
+- `context.py`, `traceable.py`: the `restrict` warning and the module docstring state the service boundary
+- `tests/test_restrict.py`: seven read paths, with the `no_shadow` method (one parametrized test), `hidden` and `safe` names, a service method that reads its own fibers, and a marked object with no `Tracker`
+**Tests**:
+- `uv run pytest tests/test_restrict.py`: 73 passed
+- `uv run pytest` (full suite): 1538 passed; `ruff check` and `ruff format --check` clean
+**Deviations**:
+- `cordis_original`, `cordis_caller`, and `__class__` pass the exit unfiltered (the view protocol and the trust model); the plan named only `cordis_original`
+- A `no_shadow` method runs with the view as `self`, so its own reads are filtered; the interior path is unfiltered only for shadowed methods. `LoggerService` uses `no_shadow`, and Increment 4 must keep its `cordis_invoke` working when `buffer` and `exporter` are hidden
+- The `Deferred` thread rule and its thread test were done in Increment 2, so `test_threading.py` does not change
+- A read of a service through `ReflectService.get` (a root-fiber context) builds the view from `ctx.use_site` and drops the shadow, so a shadowed root read still filters; the unrestricted def-site rule is tested at the `expose` level only
+**Manual validation**:
+- Confirmed in `uv run python`: a restricted caller gets `FiberView` objects from a service method and `CordisError` for a `hidden` name, and an unrestricted caller gets real fibers
 
 ### Increment 4: Loader, hmr, and logger declarations
 **Goal**: the loader, hmr, and logger give a restricted caller views and no host context, and

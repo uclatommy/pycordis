@@ -12,7 +12,8 @@ from pycordis.loader import Loader
 from pycordis.reflect import Impl
 from pycordis.registry import inject as inject_method
 from pycordis.scheduler import start
-from pycordis.traceable import Hidden, expose
+from pycordis.service import Service
+from pycordis.traceable import Exposure, Hidden, Tracker, expose
 
 
 def _no_deps(ctx: Context, config: object) -> None:
@@ -691,3 +692,176 @@ def test_a_restricted_once_listener_gets_exposed_arguments(root: Context) -> Non
     root.emit("greet", root.fiber)
 
     assert [type(item) for item in received] == [FiberView]
+
+
+class _Probe(Service):
+    """A service that hands out host objects through every read path."""
+
+    cordis_expose = Exposure(hidden=frozenset({"secret"}), safe=frozenset({"raw"}))
+
+    def __init__(self, ctx: Context, host: Fiber) -> None:
+        super().__init__(ctx, "probe")
+        self.host = host
+        self.plain = host
+        self.raw = host
+        self.secret = 1
+        self.stored = lambda: host
+        self.host_ctx = ctx
+
+    @property
+    def prop(self) -> Fiber:
+        return self.host
+
+    def method(self) -> list[Fiber]:
+        return [self.host]
+
+    def hidden_result(self) -> Context:
+        return self.host_ctx
+
+    def own_fibers(self) -> list[Fiber]:
+        """Read the fibers of the service itself, through `self`."""
+        return [self.host, *self.method(), self.prop, self.plain]
+
+    def cordis_invoke(self) -> Fiber:
+        return self.host
+
+
+class _PlainProbe(Service):
+    """A service whose methods run with the view as `self` (`no_shadow`)."""
+
+    def __init__(self, ctx: Context, host: Fiber) -> None:
+        super().__init__(ctx, "plain_probe")
+        self.cordis_tracker = Tracker(property="ctx", no_shadow=True)
+        self.host = host
+        self.host_ctx = ctx
+
+    def method(self) -> list[Fiber]:
+        return [self.host]
+
+    def cordis_invoke(self) -> Context:
+        return self.host_ctx
+
+
+@pytest.fixture
+def probe_scope(root: Context) -> tuple[Context, Context, Fiber]:
+    host = root.fiber
+    root.use(_Probe, host)
+    root.use(_PlainProbe, host)
+    root.accessor("probe.assoc", lambda ctx, receiver: host)
+    restricted = restrict(root, inject=["probe", "probe.assoc", "plain_probe"])
+    return root, restricted, host
+
+
+def _is_view(value: object) -> bool:
+    return type(value) is FiberView or (
+        isinstance(value, list) and all(type(item) is FiberView for item in value)
+    )
+
+
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize(
+    "read",
+    [
+        lambda probe, plain: probe.prop,
+        lambda probe, plain: probe.plain,
+        lambda probe, plain: probe.stored(),
+        lambda probe, plain: probe.assoc,
+        lambda probe, plain: probe.method(),
+        lambda probe, plain: probe(),
+        lambda probe, plain: plain.method(),
+    ],
+    ids=[
+        "property",
+        "attribute",
+        "stored callable",
+        "associated",
+        "method",
+        "call",
+        "no_shadow method",
+    ],
+)
+def test_a_service_view_filters_each_read_path_for_a_restricted_caller(
+    probe_scope: tuple[Context, Context, Fiber],
+    read: Callable[[object, object], object],
+) -> None:
+    root, restricted, host = probe_scope
+
+    assert _is_view(read(restricted["probe"], restricted["plain_probe"]))
+    # an unrestricted caller gets the real objects
+    result = read(root["probe"], root["plain_probe"])
+    assert result is host or result == [host]
+
+
+@pytest.mark.divergence("context-restriction")
+def test_a_service_view_hides_a_context_and_honors_hidden_and_safe_names(
+    probe_scope: tuple[Context, Context, Fiber],
+) -> None:
+    root, restricted, host = probe_scope
+    view = restricted["probe"]
+
+    with pytest.raises(CordisError, match="hidden Context"):
+        view.hidden_result()
+    with pytest.raises(CordisError, match="hidden Context"):
+        restricted["plain_probe"]()
+    with pytest.raises(CordisError, match='cannot read "secret"'):
+        _ = view.secret
+    assert view.raw is host
+    assert root["probe"].secret == 1
+    # the service object itself reaches the scope as a filtered view
+    traced = expose(restricted, root["probe"].cordis_original)
+    with pytest.raises(CordisError, match='cannot read "secret"'):
+        _ = traced.secret
+
+
+def test_a_service_method_reads_real_objects_when_a_restricted_plugin_calls_it(
+    probe_scope: tuple[Context, Context, Fiber],
+) -> None:
+    root, restricted, host = probe_scope
+
+    # the method reads `self.host` and `self.method()` on the real objects, and only
+    # the list that it returns is filtered
+    result = restricted["probe"].own_fibers()
+
+    assert len(result) == 4 and all(type(item) is FiberView for item in result)
+    assert all(item.unwrap(root) is host for item in result)
+
+
+class _Marked:
+    """A plain object with an `Exposure` and no `Tracker`."""
+
+    cordis_expose = Exposure(hidden=frozenset({"token"}))
+
+    def __init__(self, fiber: Fiber) -> None:
+        self.fiber = fiber
+        self.token = "t"
+        self.name = "marked"
+
+    def fibers(self) -> list[Fiber]:
+        return [self.fiber]
+
+    def combined(self) -> list[Fiber]:
+        return [*self.fibers(), self.fiber]
+
+
+def test_a_marked_object_reaches_a_restricted_scope_as_a_read_only_view(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    marked = _Marked(root.fiber)
+
+    view = expose(restricted, marked)
+
+    assert view is not marked and isinstance(view, _Marked)
+    assert view.cordis_original is marked
+    assert view.name == "marked"
+    assert type(view.fiber) is FiberView
+    # a method runs on the object itself, and its result is filtered
+    assert _is_view(view.fibers()) and len(view.combined()) == 2
+    with pytest.raises(CordisError, match='cannot read "token"'):
+        _ = view.token
+    with pytest.raises(CordisError, match="cannot set"):
+        view.name = "other"
+    with pytest.raises(CordisError, match="cannot delete"):
+        del view.name
+    assert expose(root, marked) is marked
+    assert expose(restricted, [marked])[0].cordis_original is marked

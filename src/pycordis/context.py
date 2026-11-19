@@ -912,12 +912,17 @@ def restrict(
         object becomes a `Hidden`. A `tuple`, `list`, `dict`, `set`, `frozenset`, or
         `Deferred` argument is filtered the same way. An argument of any other type
         reaches the listener unchanged, so an object that holds a host fiber or context
-        stays open. These paths stay open:
+        stays open. A service that the component reads gives the same protection for
+        its values: each attribute, method result, and call result of the service view
+        is filtered, and the service class can name members to hide or to pass
+        unchanged (see `Exposure`). The methods of the service itself read real
+        objects. These paths stay open:
 
         - An event argument of a type that the filter does not recognize, such as the
           closure that `internal/get` passes.
-        - A host service that returns fibers or contexts, such as `Loader.resolve`,
-          gives a restricted caller the same authority as those objects.
+        - A host service that does not declare an `Exposure`, and that returns fibers
+          or contexts, such as `Loader.resolve`, gives a restricted caller the same
+          authority as those objects.
 
     !!! warning "Experimental"
         This API can change before `pycordis` exports it.
