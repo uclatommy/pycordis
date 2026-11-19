@@ -296,11 +296,71 @@ def static_structure(slots: list[Slot], prefix: str = "") -> Any:
     return structure(root, keys_of(prefix))
 
 
-@pytest.mark.contract("EFF-REVERT")
+NOTIFICATIONS = (
+    "internal/plugin",
+    "internal/replace",
+    "internal/status",
+    "internal/service",
+    "internal/commit",
+    "internal/dispatch",
+)
+
+
+def watch_notifications(root: Context, armed: bool) -> None:
+    """Start a plugin `watcher` with a listener on every notification event.
+
+    When `armed` is true, each listener raises `RuntimeError`.
+    """
+
+    def apply(ctx: Context, config: object) -> None:
+        def listener(*_: Any) -> None:
+            if armed:
+                raise RuntimeError("listener bug")
+
+        for name in NOTIFICATIONS:
+            ctx.on(name, listener)  # type: ignore[arg-type]
+
+    root.use(SimpleNamespace(name="watcher", inject=[], apply=apply))
+
+
+@pytest.mark.contract("LIFE-PROGRESS")
+@pytest.mark.contract("LIFE-FAILURE")
+@pytest.mark.divergence("notification-errors")
 @pytest.mark.parametrize("seed", SEEDS)
-def test_disposing_every_fiber_restores_the_tables(seed: int) -> None:
+def test_a_raising_notification_listener_does_not_change_any_fiber(seed: int) -> None:
+    results = []
+    for armed in (False, True):
+        root, pump, probe = new_root()
+        watch_notifications(root, armed)
+        slots = build_pool(probe)
+        run_schedule(
+            root,
+            pump,
+            slots,
+            random_ops(random.Random(seed), slots, OPS),
+            random.Random(seed),
+            seed,
+        )
+        results.append(structure(root, keys_of()))
+        assert probe.violations == [], f"seed {seed}"
+
+    assert results[0] == results[1], f"seed {seed}"
+    # the unarmed run is the reference: it has no failed fiber
+    assert "FAILED" not in repr(results[1]), f"seed {seed}"
+
+
+@pytest.mark.contract("EFF-REVERT")
+@pytest.mark.divergence("notification-errors")
+@pytest.mark.parametrize("raising", [False, True])
+@pytest.mark.parametrize("seed", SEEDS)
+def test_disposing_every_fiber_restores_the_tables(
+    seed: int, raising: bool, caplog: pytest.LogCaptureFixture
+) -> None:
     rng = random.Random(seed)
     root, pump, probe = new_root()
+    if raising:
+        watch_notifications(root, armed=True)
+        settle(pump, seed)
     before = hook_snapshot(root)
     slots = build_pool(probe)
 
@@ -312,8 +372,11 @@ def test_disposing_every_fiber_restores_the_tables(seed: int) -> None:
 
     assert hook_snapshot(root) == before, f"seed {seed}"
     assert all(root.get(key, strict=False) is None for key in keys_of()), f"seed {seed}"
-    assert root.fiber.children == (), f"seed {seed}"
+    expected = ["watcher"] if raising else []
+    assert [child.name for child in root.fiber.children] == expected, f"seed {seed}"
     assert probe.installed == {}, f"seed {seed}"
+    logged = any(r.name == "pycordis.watcher" for r in caplog.records)
+    assert logged == raising, f"seed {seed}"
 
 
 @pytest.mark.contract("LIFE-ORDER")

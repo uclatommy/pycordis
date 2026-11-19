@@ -1,6 +1,6 @@
 # Build Spec: Notification Listener Errors
 
-**Status**: 🚧 Increment 1 complete; Increment 2 not started
+**Status**: ✅ Completed — both increments are done
 
 **Reference**: [#16 Listener error: an internal/status listener's error fails the fiber whose state changed](https://github.com/uclatommy/pycordis/issues/16)
 
@@ -201,15 +201,30 @@ manual: in `uv run python`, run the #16 reproduction and the dispose case from t
 **Files**: `test_invariants.py` (~60)
 **Validation**: `uv run pytest`; the unmarked slow tests section is empty
 **Docs**: a review of every docstring in `events.py` and of the `notification-errors` row
+**Status**: ✅ Completed
+
+**Changed**:
+- `tests/test_invariants.py`: `watch_notifications` starts a plugin `watcher` with a listener on each of the six notification events; the listeners raise when armed
+
+**Tests**:
+- `tests/test_invariants.py`: the dispose-every-fiber test gains a `raising` parameter (`EFF-REVERT`, logged by `pycordis.watcher`), and a new seeded test: an armed schedule ends in the same structure as an unarmed one (`LIFE-PROGRESS`, `LIFE-FAILURE`); both carry `divergence("notification-errors")`
+- Full suite 1622 passed; `ruff check` and `ruff format --check` clean; no unmarked slow tests
+- Revert check: all 60 new cases fail against the original `events.py`
+
+**Deviations**:
+- The docstring review found no change to make
+
+**Manual validation**:
+- `uv run pytest tests/test_invariants.py -k raising` gives 60 passed
 
 ## Code Standards
 
-- [Python Coding Standards](../../.github/instructions/python-coding-standards.instructions.md):
+- [Python Coding Standards](../../../.github/instructions/python-coding-standards.instructions.md):
   bug remediation (invariant, sibling cases, enforcement point), mirror items
-- [Docstrings & Markdown Style](../../.github/instructions/docstrings-and-markdown.instructions.md)
-- [Testing Standards](../../.github/instructions/testing-standards.instructions.md): seeded
+- [Docstrings & Markdown Style](../../../.github/instructions/docstrings-and-markdown.instructions.md)
+- [Testing Standards](../../../.github/instructions/testing-standards.instructions.md): seeded
   contract schedules, parametrized cases
-- [Upstream Porting](../../.github/instructions/upstream-porting.instructions.md): bugs that
+- [Upstream Porting](../../../.github/instructions/upstream-porting.instructions.md): bugs that
   upstream also has, divergence evidence
 
 This spec is scaffolding — do not cite it, its filename, or its increment numbers in source,

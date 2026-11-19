@@ -57,6 +57,7 @@ nav = [
       { "Core Port" = "build_specs/completed/core_port.md" },
       { "Declarative Loader" = "build_specs/completed/declarative_loader.md" },
       { "Module Reload" = "build_specs/completed/module_reload.md" },
+      { "Notification Errors" = "build_specs/completed/notification_errors.md" },
       { "Pages And Ci" = "build_specs/completed/pages_and_ci.md" },
       { "Pump Budget" = "build_specs/completed/pump_budget.md" },
       { "Restricted Views" = "build_specs/completed/restricted_views.md" },
