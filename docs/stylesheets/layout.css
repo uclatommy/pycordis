@@ -1,0 +1,8 @@
+/* With top-level tabs, a page that is not inside a nav section has no
+   primary-sidebar links. Remove the empty column so that the content
+   region fills the width. Pages in a section keep their sidebar. */
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--primary:not(:has(.md-nav__item--active.md-nav__item--nested)) {
+    display: none;
+  }
+}
