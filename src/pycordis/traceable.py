@@ -509,9 +509,10 @@ class Exposure:
 
     A class that is callable gives a view that is callable: a call passes each argument
     through `receive` and gives the result through the same filter, and `"__call__"` in
-    `hidden` or `safe` applies to the call. A bound method of the object that the
-    component gets from a listener argument receives its arguments through `receive`
-    and gives its result through `expose`.
+    `hidden` or `safe` applies to the call. With `"__call__"` in `safe`, the call passes
+    its arguments and its result unchanged, as a `safe` method does. A bound method of
+    the object that the component gets from a listener argument receives its arguments
+    through `receive` and gives its result through `expose`.
 
     Each value that leaves the view goes through `expose`, so a `Fiber` is a
     `FiberView`, a foreign `Context` or a provider record is a `Hidden`, a container is
@@ -1091,7 +1092,9 @@ class _CallableExposedView(_ExposedView):
 
     A call passes each argument through `receive`, runs the object, and gives the
     result through the exit rule, so `"__call__"` in `Exposure.hidden` or
-    `Exposure.safe` applies to the call as it does to any other name.
+    `Exposure.safe` applies to the call as it does to any other name. A `safe` call
+    passes its arguments unchanged, as `view.__call__(...)` does with the unfiltered
+    bound method.
     """
 
     __slots__ = ()
@@ -1099,8 +1102,10 @@ class _CallableExposedView(_ExposedView):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         ctx = _slot(self, "_ctx")
         target = _slot(self, "_target")
-        args = tuple(receive(ctx, arg) for arg in args)
-        kwargs = {key: receive(ctx, arg) for key, arg in kwargs.items()}
+        exposure = _exposure_of(target)
+        if exposure is None or "__call__" not in exposure.safe:
+            args = tuple(receive(ctx, arg) for arg in args)
+            kwargs = {key: receive(ctx, arg) for key, arg in kwargs.items()}
         return _exit(ctx, target, "__call__", lambda: target(*args, **kwargs))
 
 

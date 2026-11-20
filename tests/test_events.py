@@ -1,4 +1,4 @@
-"""Ported upstream event cases that need only the root context."""
+"""Event dispatch: ported upstream cases, and errors of notification listeners."""
 
 import logging
 from collections.abc import Callable, Coroutine

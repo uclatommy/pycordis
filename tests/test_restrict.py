@@ -1500,27 +1500,31 @@ def test_a_callable_view_receives_its_arguments_and_exposes_its_result(
 
 
 @pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize("spelling", ["call", "dunder"])
 @pytest.mark.parametrize(
-    ("cls", "runs", "outcome"),
-    [
-        (_HiddenCall, False, "raises"),
-        (_SafeCall, True, "unchanged"),
-    ],
+    ("cls", "outcome"),
+    [(_HiddenCall, "raises"), (_SafeCall, "unchanged")],
     ids=["hidden", "safe"],
 )
 def test_call_in_hidden_or_safe_names_applies_to_the_call_of_a_view(
-    root: Context, cls: type[_MarkedCallable], runs: bool, outcome: str
+    root: Context, cls: type[_MarkedCallable], outcome: str, spelling: str
 ) -> None:
     restricted = restrict(root, inject=["other"])
     target = cls(root.fiber)
     view = expose(restricted, target)
+    argument = expose(restricted, root.fiber)
+
+    def call() -> object:
+        return view(argument) if spelling == "call" else view.__call__(argument)
 
     if outcome == "raises":
         with pytest.raises(CordisError, match='cannot read "__call__"'):
-            view()
+            call()
+        assert target.received == []
     else:
-        assert view() is root.fiber
-    assert bool(target.received) is runs
+        assert call() is root.fiber
+        assert target.received == [argument]
+        assert type(target.received[0]) is FiberView
 
 
 @pytest.mark.divergence("context-restriction")
