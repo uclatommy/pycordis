@@ -1104,11 +1104,12 @@ def restrict(
 
         - A value of a type that the boundary does not recognize and that its class
           does not mark passes unchanged. This includes an object that holds a host
-          fiber or context, a callable object that is not a function (a lambda,
-          `def`, method, builtin, or `functools.partial`), and a subclass of `tuple`,
-          `list`, `dict`, `set`, or `frozenset`. A host service that returns such an
-          object gives a restricted caller the same authority as that object. Declare
-          an `Exposure` on the class to close the path for that class. The loader,
+          fiber or context, a callable object whose type is not a function, method,
+          builtin, or `functools.partial`, and a subclass of `tuple`, `list`, `dict`,
+          `set`, or `frozenset`. A host service that returns such an object gives a
+          restricted caller the same authority as that object. Declare an `Exposure`
+          on the class to close the path for that class; an `Exposure` on a callable
+          class keeps the view callable. The loader,
           the loader entries and groups, `ReloadResult`, and the logger declare one.
         - A service that a restricted component admits has its own authority:
           `loader` lets the component create, update, and remove entries, and `hmr`

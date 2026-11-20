@@ -9,6 +9,7 @@ import weakref
 from collections.abc import AsyncGenerator, Callable, Generator, Iterator
 from pathlib import Path
 from types import MappingProxyType
+from typing import NamedTuple
 
 import pytest
 from loader_fakes import RecordingLoader
@@ -1446,6 +1447,118 @@ def test_a_marked_object_reaches_a_restricted_scope_as_a_read_only_view(
         del view.name
     assert expose(root, marked) is marked
     assert expose(restricted, [marked])[0].cordis_original is marked
+
+
+class _MarkedCallable:
+    """A callable object with an `Exposure`, which records what it receives."""
+
+    cordis_expose = Exposure()
+
+    def __init__(self, fiber: Fiber) -> None:
+        self.fiber = fiber
+        self.received: list[object] = []
+
+    def __call__(self, argument: object = None) -> Fiber:
+        self.received.append(argument)
+        return self.fiber
+
+
+class _HiddenCall(_MarkedCallable):
+    cordis_expose = Exposure(hidden=frozenset({"__call__"}))
+
+
+class _SafeCall(_MarkedCallable):
+    cordis_expose = Exposure(safe=frozenset({"__call__"}))
+
+
+class _MarkedValue:
+    """An object with an `Exposure` that is not callable."""
+
+    cordis_expose = Exposure()
+
+
+class _Point(NamedTuple):
+    fiber: Fiber
+    label: str
+
+
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize("style", ["positional", "keyword"])
+def test_a_callable_view_receives_its_arguments_and_exposes_its_result(
+    root: Context, style: str
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    target = _MarkedCallable(root.fiber)
+    view = expose(restricted, target)
+    argument = expose(restricted, root.fiber)
+
+    result = view(argument) if style == "positional" else view(argument=argument)
+
+    assert callable(view) and type(result) is FiberView
+    assert target.received == [root.fiber]
+    assert target.received[0] is root.fiber
+
+
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize(
+    ("cls", "runs", "outcome"),
+    [
+        (_HiddenCall, False, "raises"),
+        (_SafeCall, True, "unchanged"),
+    ],
+    ids=["hidden", "safe"],
+)
+def test_call_in_hidden_or_safe_names_applies_to_the_call_of_a_view(
+    root: Context, cls: type[_MarkedCallable], runs: bool, outcome: str
+) -> None:
+    restricted = restrict(root, inject=["other"])
+    target = cls(root.fiber)
+    view = expose(restricted, target)
+
+    if outcome == "raises":
+        with pytest.raises(CordisError, match='cannot read "__call__"'):
+            view()
+    else:
+        assert view() is root.fiber
+    assert bool(target.received) is runs
+
+
+@pytest.mark.divergence("context-restriction")
+def test_views_of_one_object_are_equal_only_for_the_same_scope(root: Context) -> None:
+    restricted = restrict(root, inject=["other"])
+    target = _MarkedCallable(root.fiber)
+    view = expose(restricted, target)
+
+    assert view == expose(restricted, target)
+    assert hash(view) == hash(expose(restricted, target))
+    assert view != expose(restrict(root, inject=["another"]), target)
+    assert view != expose(restricted, _MarkedCallable(root.fiber))
+
+
+@pytest.mark.divergence("context-restriction")
+def test_an_exposure_on_a_class_that_is_not_callable_gives_a_view_that_is_not(
+    root: Context,
+) -> None:
+    restricted = restrict(root, inject=["other"])
+
+    assert not callable(expose(restricted, _MarkedValue()))
+    assert callable(expose(restricted, _MarkedCallable(root.fiber)))
+
+
+@pytest.mark.divergence("context-restriction")
+@pytest.mark.parametrize("by", ["attribute", "index"])
+def test_an_exposure_on_a_container_subclass_filters_its_items(
+    root: Context, by: str
+) -> None:
+    class Marked(_Point):
+        cordis_expose = Exposure()
+
+    restricted = restrict(root, inject=["other"])
+    view = expose(restricted, Marked(root.fiber, "x"))
+
+    item = view.fiber if by == "attribute" else view[0]
+    assert type(item) is FiberView
+    assert view.label == "x"
 
 
 @pytest.fixture

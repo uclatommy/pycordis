@@ -505,9 +505,13 @@ class Exposure:
 
     The view also forwards `len`, iteration, `[]`, `in`, and `bool` to the object, and
     filters the items that iteration and `[]` give. Two views of the same object for
-    the same scope are equal. A bound method of the object that the component gets from
-    a listener argument receives its arguments through `receive` and gives its result
-    through `expose`.
+    the same scope are equal.
+
+    A class that is callable gives a view that is callable: a call passes each argument
+    through `receive` and gives the result through the same filter, and `"__call__"` in
+    `hidden` or `safe` applies to the call. A bound method of the object that the
+    component gets from a listener argument receives its arguments through `receive`
+    and gives its result through `expose`.
 
     Each value that leaves the view goes through `expose`, so a `Fiber` is a
     `FiberView`, a foreign `Context` or a provider record is a `Hidden`, a container is
@@ -537,7 +541,8 @@ class Exposure:
         traced = get_traceable(receiver, value)
         if traced is not value:
             return traced
-        return _ExposedView(receiver, value)
+        cls = _CallableExposedView if callable(value) else _ExposedView
+        return cls(receiver, value)
 
 
 def _exposure_of(target: object) -> Exposure | None:
@@ -1067,7 +1072,7 @@ class _ExposedView(_Forwarder):
         return (_read_exit(ctx, "__iter__", item) for item in _slot(self, "_target"))
 
     def __eq__(self, other: object) -> bool:
-        if type(other) is not _ExposedView:
+        if not isinstance(other, _ExposedView):
             return NotImplemented
         return (
             _slot(self, "_target") is _slot(other, "_target")
@@ -1079,6 +1084,24 @@ class _ExposedView(_Forwarder):
 
     def __repr__(self) -> str:
         return repr(_slot(self, "_target"))
+
+
+class _CallableExposedView(_ExposedView):
+    """The view of a callable object that declares an `Exposure`.
+
+    A call passes each argument through `receive`, runs the object, and gives the
+    result through the exit rule, so `"__call__"` in `Exposure.hidden` or
+    `Exposure.safe` applies to the call as it does to any other name.
+    """
+
+    __slots__ = ()
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        ctx = _slot(self, "_ctx")
+        target = _slot(self, "_target")
+        args = tuple(receive(ctx, arg) for arg in args)
+        kwargs = {key: receive(ctx, arg) for key, arg in kwargs.items()}
+        return _exit(ctx, target, "__call__", lambda: target(*args, **kwargs))
 
 
 class RealmView:

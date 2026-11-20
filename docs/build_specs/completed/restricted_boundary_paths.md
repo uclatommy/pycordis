@@ -1,6 +1,6 @@
 # Build Spec: Restricted Boundary Paths
 
-**Status**: 🚧 In progress — increment 1 complete, increment 2 not started
+**Status**: ✅ Completed — both increments are done
 
 **Reference**: [#20 Restricted context: paths that the boundary leaves open](https://github.com/uclatommy/pycordis/issues/20)
 
@@ -177,7 +177,7 @@ docs/
 
 - **Prerequisite**: the merge of `develop` (0.2.1 and 0.2.2) into `feature/cross-plugin-leaks`
   (done: `3e506a1`).
-- **Related**: [Notification Listener Errors](completed/notification_errors.md), on the same
+- **Related**: [Notification Listener Errors](notification_errors.md), on the same
   branch; no code dependency.
 - **Runtime**: none.
 - **Dev**: none new.
@@ -221,15 +221,31 @@ filtered arguments and result.
 returns a fiber to a restricted listener, and check that the call gives a `FiberView`
 **Docs**: the `Exposure` docstring; the callable-object text of the `restrict` warning; a review
 of every docstring in `traceable.py` that names `Exposure`
+**Status**: ✅ Completed
+
+**Changed**:
+- `traceable.py`: `_CallableExposedView` adds `__call__` (arguments through `receive`, result through `_exit` with the name `"__call__"`); `Exposure.__call__` selects it when `callable(value)`; `_ExposedView.__eq__` uses `isinstance`; the `Exposure` docstring describes the callable view
+- `context.py`: the callable-object text of the `restrict` warning names a callable object whose type is not a function, method, builtin, or `functools.partial`, and says that an `Exposure` keeps it callable
+
+**Tests**:
+- `tests/test_restrict.py`: four tests of an `Exposure` on a callable class (arguments by position and by keyword with a filtered result; `hidden` and `safe`; equality; not callable); parametrized test of an `Exposure` on a `NamedTuple` subclass (attribute and index)
+- Revert check: with the `traceable.py` change stashed, 5 of the new cases fail (the equality test guards the `isinstance` check, and passes both ways)
+- Full suite: 1740 passed; ruff check and format are clean; the unmarked slow tests section is empty; ruff check and format are clean
+
+**Deviations**:
+- The plan names one parametrized test for the callable view; the cases check different rules, so they are four tests with parametrization where only the input differs
+
+**Manual validation**:
+- In `uv run python`, a marked callable class gave a callable view: a `Fiber` result was a `FiberView`, a `FiberView` argument reached the object as the real `Fiber`, `"__call__"` in `hidden` raised `CordisError` before the object ran, `"__call__"` in `safe` gave the real result, and a class that is not callable gave a view that is not callable
 
 ## Code Standards
 
-- [Python Coding Standards](../../.github/instructions/python-coding-standards.instructions.md):
+- [Python Coding Standards](../../../.github/instructions/python-coding-standards.instructions.md):
   enforcement point, no vestigial code (the report reference sentence)
-- [Docstrings & Markdown Style](../../.github/instructions/docstrings-and-markdown.instructions.md)
-- [Testing Standards](../../.github/instructions/testing-standards.instructions.md): parametrized
+- [Docstrings & Markdown Style](../../../.github/instructions/docstrings-and-markdown.instructions.md)
+- [Testing Standards](../../../.github/instructions/testing-standards.instructions.md): parametrized
   cases, public surface only
-- [Upstream Porting](../../.github/instructions/upstream-porting.instructions.md): divergence
+- [Upstream Porting](../../../.github/instructions/upstream-porting.instructions.md): divergence
   evidence
 
 This spec is scaffolding — do not cite it, its filename, or its increment numbers in source,
