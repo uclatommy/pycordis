@@ -1110,8 +1110,6 @@ def restrict(
           object gives a restricted caller the same authority as that object. Declare
           an `Exposure` on the class to close the path for that class. The loader,
           the loader entries and groups, `ReloadResult`, and the logger declare one.
-        - `Scheduler.observe_steps` gives the real fiber of each step in
-          `StepReport.fiber`.
         - A service that a restricted component admits has its own authority:
           `loader` lets the component create, update, and remove entries, and `hmr`
           lets it reload modules. Provide `Loader` and `Hmr` in an unrestricted
