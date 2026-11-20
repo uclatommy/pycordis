@@ -12,11 +12,13 @@ that keeps ticking, a plugin that still holds the database connection you just c
 apps give up and restart the process.
 
 **pycordis makes every plugin the perfect houseguest: they don't arrive until their host is
-home, and when they leave, they put everything back where they found it.** A plugin declares
-the services it needs, and pycordis loads it only when they exist. When a service changes or
-goes away, pycordis undoes everything the plugin did, then loads the plugin again when it can.
-You write the setup code once, and pycordis handles teardown, reloads, and ordering. It has no
-dependencies, doesn't use `asyncio`, and runs inside your own event loop or frame loop.
+home, and when they leave, they put everything back where they found it. The host
+can also decide which rooms a guest may enter, and show them the other guests' rooms 
+through a window instead of handing them a key.** A plugin declares the services it needs, 
+and pycordis loads it only when they exist. When a service changes or goes away, pycordis 
+undoes everything the plugin did, then loads the plugin again when it can. You write the setup 
+code once, and pycordis handles teardown, reloads, and ordering. It has no dependencies, 
+doesn't use `asyncio`, and runs inside your own event loop or frame loop.
 
 ## See It Work
 
@@ -91,6 +93,11 @@ services, and schedulers.
 pycordis is a Python implementation of the programming model in *A Programming Paradigm for
 Spatiotemporal Composability* (arXiv `2608.25512`). The core package of
 [Cordis](https://github.com/cordiverse/cordis) is its reference implementation.
+
+pycordis differs from Cordis in one area: an experimental `restrict` function limits which
+services a plugin can use or provide, and gives that plugin read-only views of other plugins'
+fibers and contexts. pycordis trusts every plugin that it loads, so `restrict` stops mistakes
+and undeclared access, but it is not a sandbox against hostile code.
 
 - **Documentation**: <https://uclatommy.github.io/pycordis/>
 - **Status**: pre-1.0 (`0.x`). A breaking change to the public API increments the minor version.

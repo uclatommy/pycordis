@@ -290,8 +290,6 @@ class EventsService:
         name: EventName,
         listener: Listener,
         options: EventOptions | bool = False,
-        *,
-        site: "Context | None" = None,
     ) -> EffectHandle:
         """Register `listener` for `name` as an effect of the fiber of `ctx`.
 
@@ -301,8 +299,6 @@ class EventsService:
             listener: The function to call. An argument that has a `Tracker` reaches
                 it as its view for `ctx`.
             options: The `EventOptions`, or a `bool` for `prepend`.
-            site: The context whose restrictions decide what the listener receives
-                (see `ReflectService.bind`). It defaults to `ctx`.
 
         Returns:
             The handle of the effect. Call it to remove the listener.
@@ -316,7 +312,7 @@ class EventsService:
             else EventOptions(prepend=options)
         )
         ctx._fiber.assert_active()
-        listener = ctx._reflect.bind(ctx, listener, site=site)
+        listener = ctx._reflect.bind(ctx, listener)
         result = self.bail("internal/listener", ctx, name, listener, opts)
         if result:
             return result
@@ -329,8 +325,6 @@ class EventsService:
         name: EventName,
         listener: Listener,
         options: EventOptions | bool = False,
-        *,
-        site: "Context | None" = None,
     ) -> EffectHandle:
         """Register `listener` for `name`, and remove it after its first call.
 
@@ -341,7 +335,7 @@ class EventsService:
             dispose()
             return listener(*args)
 
-        dispose = self.on(ctx, name, call_once, options, site=site)
+        dispose = self.on(ctx, name, call_once, options)
         return dispose
 
     @owner_thread("scheduler")

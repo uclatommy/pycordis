@@ -5,11 +5,13 @@ the fiber and the scheduler of their parent, and carry their own isolation, inte
 and meta tables. Start with `Context(scheduler)` to create a root context.
 """
 
+import inspect
+import sys
 from collections import ChainMap
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
-from types import MappingProxyType
-from typing import Any, Self
+from types import CodeType, MappingProxyType
+from typing import Any, Literal, Self, overload
 
 from pycordis.deferred import Deferred
 from pycordis.errors import CallSite, CordisError
@@ -27,7 +29,13 @@ from pycordis.logger import LoggerService
 from pycordis.reflect import Accessor, ReflectService
 from pycordis.registry import Component, RegistryService
 from pycordis.scheduler import Scheduler, owner_thread
-from pycordis.traceable import Hidden, expose, get_traceable
+from pycordis.traceable import (
+    Hidden,
+    _read_exit,
+    get_traceable,
+    realm_filter,
+    receive,
+)
 
 
 def _run_update_hooks(fiber: Fiber, config: object, next_: Callable[[], Any]) -> Any:
@@ -178,50 +186,30 @@ class Context:
         """The context whose restrictions decide what this context can reach."""
         return self if self._shadow is None else self._shadow
 
-    def _check_guarded(self, name: str) -> None:
-        """Raise if a restriction on the def site makes `name` unreadable.
-
-        A restricted plugin that merely injects a service cannot reach the root
-        context, or the services that store providers, listeners, or components,
-        through it: each of those gives an unrestricted view of the whole tree.
-        """
-        if self._def_site._restrictions:
-            raise CordisError(f'cannot read "{name}" in a restricted context')
-
-    def cordis_expose(self, receiver: "Context") -> "Context | Hidden":
-        """Return this context when the component of `receiver` owns it, else `Hidden`.
+    def cordis_expose(self, receiver: "Context") -> "ContextView | Hidden":
+        """Return a `ContextView` of this context if `receiver`'s component owns it.
 
         `expose` calls this hook when the def site of `receiver` is restricted. A
         component owns a context when the restriction chain of the context's def site
         starts with the chain of the component, and the context's fiber is a fiber that
-        the component owns.
+        the component owns. Any other context gives a `Hidden`.
         """
         scope = receiver._def_site
         chain = scope._restrictions
         if extends(self._def_site._restrictions, chain) and owns(
             scope._fiber, chain, self._fiber
         ):
-            return self
-        return Hidden("Context")
+            return ContextView(self)
+        return Hidden("Context", self)
 
     @property
     def fiber(self) -> Fiber:
-        """The fiber that owns the effects that this context registers.
-
-        In a restricted context the result is a `FiberView` of the fiber: it gives no
-        context, parent, or provider record, and it ends only the fibers that the
-        component owns.
-        """
-        return expose(self, self._fiber)
+        """The fiber that owns the effects that this context registers."""
+        return self._fiber
 
     @property
     def root(self) -> Self:
-        """The root context.
-
-        Raises:
-            CordisError: In a restricted context.
-        """
-        self._check_guarded("root")
+        """The root context."""
         return self._root
 
     @property
@@ -229,11 +217,7 @@ class Context:
         """The service that stores the listeners of the root context.
 
         Every derived context shares it.
-
-        Raises:
-            CordisError: In a restricted context.
         """
-        self._check_guarded("events")
         return self._events
 
     @property
@@ -241,11 +225,7 @@ class Context:
         """The service that stores the providers and accessors of the root context.
 
         Every derived context shares it.
-
-        Raises:
-            CordisError: In a restricted context.
         """
-        self._check_guarded("reflect")
         return self._reflect
 
     @property
@@ -253,11 +233,7 @@ class Context:
         """The service that records the loaded components of the root context.
 
         Every derived context shares it.
-
-        Raises:
-            CordisError: In a restricted context.
         """
-        self._check_guarded("registry")
         return self._registry
 
     @property
@@ -491,9 +467,7 @@ class Context:
             TypeError: If `execute` returns an invalid effect.
         """
         with self.scheduler.call():
-            return self._fiber.effect(
-                execute, label, call_site=CallSite.capture(skip=1)
-            )
+            return self._fiber.effect(execute, label, call_site=_capture_site(1))
 
     @owner_thread("scheduler")
     def use(self, component: Component, config: object = None) -> Fiber:
@@ -509,8 +483,7 @@ class Context:
             config: The raw config. The component's `Config` validates it.
 
         Returns:
-            The new fiber, or a `FiberView` of it in a restricted context. A task can
-            `await` it.
+            The new fiber. A task can `await` it.
 
         Raises:
             TypeError: If `component` is not a valid component.
@@ -527,18 +500,9 @@ class Context:
             bye world
             ```
         """
-        return expose(self, self._use(component, config, skip=2))
-
-    def _use(self, component: Component, config: object, skip: int = 1) -> Fiber:
-        """Create the real fiber that `use` gives, with the call site of the caller.
-
-        Code in pycordis that creates a fiber calls this method, so that it holds a
-        `Fiber` in a restricted context. `skip` is the number of frames between the
-        caller to record and this method.
-        """
         with self.scheduler.call():
             return self._registry.use(
-                self.use_site, component, config, CallSite.capture(skip=skip)
+                self.use_site, component, config, _capture_site(1)
             )
 
     @owner_thread("scheduler")
@@ -552,14 +516,11 @@ class Context:
                 can return an effect.
 
         Returns:
-            The new fiber, or a `FiberView` of it in a restricted context.
+            The new fiber.
         """
         with self.scheduler.call():
-            return expose(
-                self,
-                self._registry.inject(
-                    self.use_site, deps, callback, CallSite.capture(skip=1)
-                ),
+            return self._registry.inject(
+                self.use_site, deps, callback, _capture_site(1)
             )
 
     def __getitem__(self, key: Keyable[Any]) -> Any:
@@ -744,8 +705,7 @@ class Context:
             name: The event name.
             listener: The function to call with the arguments of the event. An
                 argument that has a `Tracker` reaches it as its view for this
-                context, so its effects belong to this context's fiber. In a
-                restricted context, an argument is also filtered (see `restrict`).
+                context, so its effects belong to this context's fiber.
             options: The `EventOptions`, or a `bool` for `prepend`.
 
         Returns:
@@ -762,7 +722,7 @@ class Context:
             >>> remove()
             ```
         """
-        return self._events.on(self.use_site, name, listener, options, site=self)
+        return self._events.on(self.use_site, name, listener, options)
 
     @owner_thread("scheduler")
     def once(
@@ -775,7 +735,7 @@ class Context:
 
         The arguments and the result are those of `on`.
         """
-        return self._events.once(self.use_site, name, listener, options, site=self)
+        return self._events.once(self.use_site, name, listener, options)
 
     @owner_thread("scheduler")
     def emit(self, name: EventName, *args: Any, this: object = None) -> None:
@@ -872,6 +832,211 @@ class Context:
         return None
 
 
+# The code of the function that a `ContextView` forwards a call through. It adds a frame
+# between the component and `Context`, which a recorded call site leaves out.
+_FORWARDERS: set[CodeType] = set()
+
+
+def _capture_site(skip: int) -> CallSite:
+    """Record the call site of the caller of a `Context` method.
+
+    `skip` is the number of frames between the caller of this function and the frame to
+    record, as for `CallSite.capture`. The first frame to record is the owner-thread
+    wrapper of the method. When a `ContextView` forwards the call, the wrapper and the
+    forwarder are left out, so the site is the line in the component.
+    """
+    caller = sys._getframe(1 + skip).f_back
+    if caller is not None and caller.f_code in _FORWARDERS:
+        skip += 2
+    return CallSite.capture(skip=skip + 1)
+
+
+type _MemberKind = Literal["cross", "guard", "pass"]
+
+_MEMBER_KINDS: Mapping[str, _MemberKind] = MappingProxyType(
+    {
+        "accessor": "cross",
+        "bail": "cross",
+        "bind_fiber": "guard",
+        "cordis_expose": "guard",
+        "declare_realm": "guard",
+        "effect": "cross",
+        "emit": "cross",
+        "events": "guard",
+        "extend": "cross",
+        "fiber": "cross",
+        "get": "cross",
+        "inject": "cross",
+        "intercept": "cross",
+        "intercept_layer": "guard",
+        "intercept_layers": "cross",
+        "intercept_through": "guard",
+        "intercepts": "cross",
+        "isolate": "cross",
+        "isolated_since": "guard",
+        "isolates": "pass",
+        "logger": "cross",
+        "meta": "cross",
+        "mixin": "cross",
+        "on": "cross",
+        "once": "cross",
+        "parallel": "cross",
+        "provide": "cross",
+        "reflect": "guard",
+        "registry": "guard",
+        "root": "guard",
+        "scheduler": "pass",
+        "serial": "cross",
+        "set": "cross",
+        "shadow": "guard",
+        "use": "cross",
+        "use_site": "guard",
+        "waterfall": "cross",
+        "with_shadow": "guard",
+    }
+)
+"""The kind of each public member of `Context`, for `ContextView`."""
+
+# The number of leading positional arguments of a member that cross unchanged.
+_UNCHANGED_LEADING = {"use": 1}
+_DISPATCH_MEMBERS = frozenset({"emit", "bail", "serial", "parallel", "waterfall"})
+
+
+def _cross_member(
+    target: Context, name: str, method: Callable[..., Any]
+) -> Callable[..., Any]:
+    """Return the function that a `ContextView` gives for the method `name` of `target`.
+
+    Each argument goes through `receive` and the result through `_read_exit`. A
+    dispatch member refuses an `internal/` event name: pycordis emits those events on
+    the real context.
+    """
+    unchanged = _UNCHANGED_LEADING.get(name, 0)
+    dispatch = name in _DISPATCH_MEMBERS
+
+    def member(*args: Any, **kwargs: Any) -> Any:
+        if dispatch:
+            event = args[0] if args else kwargs.get("name")
+            if isinstance(event, str) and event.startswith("internal/"):
+                raise CordisError(f'cannot dispatch "{event}" in a restricted context')
+        received = {key: receive(target, arg) for key, arg in kwargs.items()}
+        if dispatch and "this" in received:
+            received["this"] = realm_filter(target, received["this"])
+        result = method(
+            *args[:unchanged],
+            *[receive(target, arg) for arg in args[unchanged:]],
+            **received,
+        )
+        return _read_exit(target, name, result)
+
+    _FORWARDERS.add(member.__code__)
+    return member
+
+
+class ContextView:
+    """The context that a restricted component holds in place of a `Context`.
+
+    `Context.cordis_expose` gives a view for each context that the component owns (see
+    `restrict`). The view forwards the members of `Context` that `ContextView.members`
+    lists, and each one has one kind:
+
+    - `cross`: the member of the context. Each argument goes through `receive`, and
+      the result goes through `expose`, so a callback of the component is called with
+      views, and a value that the component reads is a view or raises. `use` passes its
+      `component` argument unchanged. `emit`, `bail`, `serial`, `parallel`, and
+      `waterfall` raise `CordisError` for an event name that starts with `internal/`.
+    - `guard`: raises `CordisError`. These are `root`, `reflect`, `registry`, and
+      `events`, which give the whole application, `intercept_layer` and
+      `intercept_through`, and the members that only pycordis calls.
+    - `pass`: the member of the context, unchanged (`isolates` and `scheduler`).
+
+    Any other name raises `CordisError` that names it, so a public member that
+    `Context` gains later stays closed until it has a kind. A write or delete of an
+    attribute raises `CordisError`.
+
+    A view is not a `Context`: `isinstance(view, Context)` is `False`. Two views of the
+    same context are equal. Use `real_context` to get the context of a view.
+
+    Examples:
+        ```python
+        >>> view = ContextView(ctx)
+        >>> view.isolates == ctx.isolates
+        True
+        >>> view.root
+        Traceback (most recent call last):
+        pycordis.errors.CordisError: cannot read "root" in a restricted context
+        ```
+    """
+
+    __slots__ = ("_target",)
+
+    members = _MEMBER_KINDS
+    """The kind of each public member of `Context`, by name."""
+
+    # `receive` reads the real context from this slot (see `pycordis.traceable.receive`)
+    cordis_view = "_target"
+
+    def __init__(self, target: Context) -> None:
+        """Create the view of `target`. Its scope is `target`."""
+        object.__setattr__(self, "_target", target)
+
+    def __getattribute__(self, name: str) -> Any:
+        if name.startswith("__") and name.endswith("__"):
+            return object.__getattribute__(self, name)  # a protocol name
+        kind = _MEMBER_KINDS.get(name, "guard")
+        if kind == "guard":
+            raise CordisError(f'cannot read "{name}" in a restricted context')
+        target = object.__getattribute__(self, "_target")
+        value = getattr(target, name)
+        if kind == "pass":
+            return value
+        if inspect.ismethod(value):
+            return _cross_member(target, name, value)
+        return _read_exit(target, name, value)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise CordisError(f'cannot set "{name}" in a restricted context')
+
+    def __delattr__(self, name: str) -> None:
+        raise CordisError(f'cannot delete "{name}" in a restricted context')
+
+    def __getitem__(self, key: Keyable[Any]) -> Any:
+        target = object.__getattribute__(self, "_target")
+        return _read_exit(target, key_name(key), target[key])
+
+    def __setitem__(self, key: Keyable[Any], value: Any) -> None:
+        target = object.__getattribute__(self, "_target")
+        target[key] = receive(target, value)
+
+    def __copy__(self) -> Self:
+        return self  # a read-only view is its own copy
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> Self:
+        return self
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, ContextView) and object.__getattribute__(
+            self, "_target"
+        ) is object.__getattribute__(other, "_target")
+
+    def __hash__(self) -> int:
+        return hash(object.__getattribute__(self, "_target"))
+
+    def __repr__(self) -> str:
+        return f"ContextView of {object.__getattribute__(self, '_target')!r}"
+
+
+def real_context(ctx: Context | ContextView) -> Context:
+    """Return the context that `ctx` is, or that a `ContextView` shows.
+
+    pycordis code that gets a context from a restricted component calls this function,
+    so it works with a `Context` or with a `ContextView`.
+    """
+    if type(ctx) is ContextView:
+        return object.__getattribute__(ctx, "_target")
+    return ctx  # type: ignore[return-value]
+
+
 def _rule(
     names: Iterable[Keyable[Any]] | None,
     prefixes: Iterable[str] | None,
@@ -891,7 +1056,7 @@ def _rule(
     )
 
 
-@owner_thread("scheduler")
+@overload
 def restrict(
     ctx: Context,
     *,
@@ -899,42 +1064,63 @@ def restrict(
     inject_prefixes: Iterable[str] | None = None,
     provide: Iterable[Keyable[Any]] | None = None,
     provide_prefixes: Iterable[str] | None = None,
-) -> Context:
+) -> Context: ...
+
+
+@overload
+def restrict(
+    ctx: ContextView,
+    *,
+    inject: Iterable[Keyable[Any]] | None = None,
+    inject_prefixes: Iterable[str] | None = None,
+    provide: Iterable[Keyable[Any]] | None = None,
+    provide_prefixes: Iterable[str] | None = None,
+) -> ContextView: ...
+
+
+@owner_thread("scheduler")
+def restrict(
+    ctx: Context | ContextView,
+    *,
+    inject: Iterable[Keyable[Any]] | None = None,
+    inject_prefixes: Iterable[str] | None = None,
+    provide: Iterable[Keyable[Any]] | None = None,
+    provide_prefixes: Iterable[str] | None = None,
+) -> Context | ContextView:
     """Return a context that admits only the given inject, read, and provide keys.
 
     !!! warning "Guard, not sandbox"
         pycordis trusts every plugin that it loads; the host decides which plugins to
         load. This restriction stops accidental and undeclared access by trusted code,
-        and fails fast. It is not a security boundary: hostile code can reach other
-        objects through `gc`, `sys._getframe`, module globals, or
-        `pycordis.traceable.get_original`, and pycordis does not run plugins in another
-        process.
+        and fails fast. It is not a security boundary, and pycordis does not run
+        plugins in another process. Code that reaches objects on purpose is outside
+        the guard: `gc`, `sys._getframe`, module globals, private slots,
+        `pycordis.traceable.get_original`, `cordis_original`, a `cordis_` hook that the
+        component defines itself, and the traceback or other contents of an exception
+        that crosses the boundary.
 
-        `Context.use`, `inject`, and `fiber` give a restricted component a `FiberView`,
-        which hides the context, the parent, and the provider records of a fiber, and
-        ends only the fibers that the component owns. A listener that the component
-        registers gets the same protection for its arguments: a fiber becomes a
-        `FiberView`, a context that the component does not own and a provider record
-        become a `Hidden` that raises `CordisError` on use, and a method of such an
-        object becomes a `Hidden`. A `tuple`, `list`, `dict`, `set`, `frozenset`, or
-        `Deferred` argument is filtered the same way. An argument of any other type
-        reaches the listener unchanged, so an object that holds a host fiber or context
-        stays open. A service that the component reads gives the same protection for
-        its values: each attribute, method result, and call result of the service view
-        is filtered, and the service class can name members to hide or to pass
-        unchanged (see `Exposure`). The methods of the service itself read real
-        objects. These paths stay open:
+        These paths stay open, because the boundary recognizes a value by its type or
+        by an `Exposure` that its class declares:
 
-        - An event argument of a type that the filter does not recognize, such as the
-          closure that `internal/get` passes.
-        - A host service that does not declare an `Exposure` and returns an object that
-          the filter does not recognize, which holds a fiber or a context, gives a
-          restricted caller the same authority as that object. The loader, the
-          loader entries and groups, `ReloadResult`, and the logger declare one.
+        - A value of a type that the boundary does not recognize and that its class
+          does not mark passes unchanged. This includes an object that holds a host
+          fiber or context, a callable object that is not a function (a lambda,
+          `def`, method, builtin, or `functools.partial`), and a subclass of `tuple`,
+          `list`, `dict`, `set`, or `frozenset`. A host service that returns such an
+          object gives a restricted caller the same authority as that object. Declare
+          an `Exposure` on the class to close the path for that class. The loader,
+          the loader entries and groups, `ReloadResult`, and the logger declare one.
+        - `Scheduler.observe_steps` gives the real fiber of each step in
+          `StepReport.fiber`.
         - A service that a restricted component admits has its own authority:
           `loader` lets the component create, update, and remove entries, and `hmr`
           lets it reload modules. Provide `Loader` and `Hmr` in an unrestricted
           context; their own listeners do not support a restricted one.
+
+    !!! info "Authority that the host grants"
+        The config that the host gives to `use`, the realm labels that `isolates`
+        returns, and the authority of an admitted `loader` or `hmr` service reach the
+        component as the host chose. They are not gaps.
 
     !!! warning "Experimental"
         This API can change before `pycordis` exports it.
@@ -956,17 +1142,37 @@ def restrict(
     `Context.shadow`): a mixin accessor is checked by the service name it forwards,
     not by its own name. A `ctx.provide`, `ctx.accessor`, or `ctx.mixin` call outside
     the provide rule raises from the call itself, so a component that makes the call
-    in its own setup fails to load with no effect installed. `ctx.root`, `ctx.reflect`,
-    `ctx.registry`, and `ctx.events` raise `CordisError` on the result, and on every
-    context it derives, because each of them gives an unrestricted view of the whole
-    tree. `ctx.fiber`, `use`, and `inject` give a `FiberView` of the fiber: it names
-    only `name`, `uid`, `state`, `error`, `children`, and `get_effects()`, and
-    `dispose`, `restart`, and `update` raise unless the component owns the fiber (it
-    created the fiber, or the fiber descends from one that it created). A host that
-    holds an unrestricted context gets the real fiber from `FiberView.unwrap`.
+    in its own setup fails to load with no effect installed.
+
+    A restricted component holds only views, never the real objects. The first
+    argument of a function component, of a component class, of an `inject` callback,
+    and of an `@inject` method is a `ContextView` of the component's own context. Every
+    other context that the component owns reaches it as a `ContextView`, and a `Fiber`
+    reaches it as a `FiberView`. A context that the component does not own, and a
+    provider record, reach it as a `Hidden` that raises `CordisError` on use. The
+    host that holds the result of `restrict` gets real contexts, fibers, and objects.
+
+    Every value that crosses between a restricted component and the rest of the
+    application goes through one boundary, in both directions: arguments and results
+    of context members, event listeners and their results, `next_` of a waterfall,
+    accessors, callbacks, and the attributes and calls of a service view. A function
+    that crosses is wrapped, so its arguments and its result cross as well. `tuple`,
+    `list`, `dict`, `set`, `frozenset`, `Deferred`, coroutines, and generators cross
+    with their elements and later values. A value that the component gives back is the
+    real object again. A container crosses as a copy: a change that one side makes to
+    a container after the crossing is not visible to the other side. A wrapper equals
+    the function that it wraps, but it is not the same object (`is`).
+
+    A `ContextView` gives only the members of its member table. `root`, `reflect`,
+    `registry`, `events`, `intercept_layer`, and `intercept_through` raise
+    `CordisError`, and so does a dispatch (`emit`, `bail`, `serial`, `parallel`,
+    `waterfall`) of an event name that starts with `internal/`. A `FiberView` names
+    only `name`, `uid`, `state`, `error`, `children`, and `get_effects()`; `dispose`,
+    `restart`, and `update` raise unless the component owns the fiber (it created the
+    fiber, or the fiber descends from one that it created).
 
     Args:
-        ctx: The context to restrict.
+        ctx: The context to restrict. A `ContextView` is also valid.
         inject: The exact names and keys that a fiber derived from the result can
             declare in `inject`, and that a read (`ctx[key]`, `ctx.get`) can reach.
             `None` together with `inject_prefixes` admits every key.
@@ -977,7 +1183,8 @@ def restrict(
         provide_prefixes: The name prefixes for the same dimension as `provide`.
 
     Returns:
-        A context derived from `ctx` that carries the restriction.
+        A context derived from `ctx` that carries the restriction. When `ctx` is a
+        `ContextView`, the result is a `ContextView` of the derived context.
 
     Raises:
         ValueError: If `inject`, `inject_prefixes`, `provide`, and `provide_prefixes`
@@ -1005,9 +1212,11 @@ def restrict(
         _rule(inject, inject_prefixes, "inject", "inject_prefixes"),
         _rule(provide, provide_prefixes, "provide", "provide_prefixes"),
     )
-    return ctx._derive(
-        ctx._isolates,
-        ctx._intercepts,
-        ctx._meta,
-        restrictions=(*ctx._restrictions, restriction),
+    target = real_context(ctx)
+    derived = target._derive(
+        target._isolates,
+        target._intercepts,
+        target._meta,
+        restrictions=(*target._restrictions, restriction),
     )
+    return ContextView(derived) if isinstance(ctx, ContextView) else derived

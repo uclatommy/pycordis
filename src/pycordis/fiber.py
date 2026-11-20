@@ -24,7 +24,7 @@ from pycordis.deferred import Deferred
 from pycordis.disposables import DisposableList
 from pycordis.errors import CallSite, CordisError, Issue, ValidationError
 from pycordis.scheduler import Scheduler, owner_thread, spawn, start
-from pycordis.traceable import get_traceable
+from pycordis.traceable import expose, get_traceable
 
 if TYPE_CHECKING:
     from pycordis.context import Context, Restriction
@@ -681,9 +681,12 @@ class Fiber:
         assert self.runtime is not None
         callback = self.runtime.callback
         config = self._resolve(self.config)
+        # A restricted component holds a view of its context; an unrestricted one
+        # holds the context itself.
+        ctx = expose(self.ctx, self.ctx)
         if not inspect.isclass(callback):
-            return callback(self.ctx, config)
-        instance = callback(self.ctx, config)
+            return callback(ctx, config)
+        instance = callback(ctx, config)
         self.ctx._registry.run_inject_methods(self.ctx, instance)
         init = getattr(instance, "cordis_init", None)
         return None if init is None else init()
@@ -988,9 +991,10 @@ class FiberView:
 
     `Context.use`, `inject`, and `fiber` give a view in place of a `Fiber` in a
     restricted context. The view gives only `name`, `uid`, `state`, `error`,
-    `children`, and `get_effects()`; every other name raises `CordisError`, so a
-    public attribute that `Fiber` gains later stays hidden. The view gives no `ctx`,
-    `parent`, `committed`, or `runtime`.
+    `children`, and `get_effects()`; every other public name raises `CordisError`, so
+    a public attribute that `Fiber` gains later stays hidden. The view gives no `ctx`,
+    `parent`, `committed`, or `runtime`. A write or delete of any attribute raises
+    `CordisError`.
 
     `dispose`, `restart`, and `update` work only on a fiber that the component owns:
     a fiber that the component created, or a descendant of one (see `owns`). On any
@@ -999,33 +1003,49 @@ class FiberView:
     A view is not a `Fiber`: `isinstance(view, Fiber)` is `False`. Two views are equal
     when they have the same fiber, the same scope, and the same restriction chain, so
     use `==`, not `is`, to compare them. A view is never equal to its `Fiber`.
+    `copy.copy` and `copy.deepcopy` of a view give the same view.
 
     Examples:
         ```python
-        >>> view = restrict(root, inject=["db"]).use(plugin)
+        >>> view = ContextView(restrict(root, inject=["db"])).use(plugin)
         >>> view.name, view.state
         ('plugin', <FiberState.ACTIVE: 2>)
-        >>> view.unwrap(root) is root.fiber.children[0]
-        True
+        >>> view.dispose()
         ```
     """
 
     __slots__ = ("_target", "_scope", "_chain", "_owned")
 
+    # `receive` reads the real fiber from this slot (see `pycordis.traceable.receive`)
+    cordis_view = "_target"
+
     def __init__(
         self, target: Fiber, scope: Fiber, chain: tuple["Restriction", ...]
     ) -> None:
         """Create the view of `target` for the component of `scope` and `chain`."""
-        self._target = target
-        self._scope = scope
-        self._chain = chain
-        self._owned = owns(scope, chain, target)
+        init = object.__setattr__
+        init(self, "_target", target)
+        init(self, "_scope", scope)
+        init(self, "_chain", chain)
+        init(self, "_owned", owns(scope, chain, target))
 
     def __getattr__(self, name: str) -> Any:
         # Only a name that is missing from the class reaches this method.
         if name.startswith("__") and name.endswith("__"):
             raise AttributeError(name)  # a protocol probe, such as `copy`
         raise CordisError(f'cannot read "{name}" of a fiber view')
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise CordisError(f'cannot set "{name}" of a fiber view')
+
+    def __delattr__(self, name: str) -> None:
+        raise CordisError(f'cannot delete "{name}" of a fiber view')
+
+    def __copy__(self) -> Self:
+        return self  # a read-only view is its own copy
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> Self:
+        return self
 
     def __eq__(self, other: object) -> bool:
         return (
@@ -1122,21 +1142,6 @@ class FiberView:
         """
         self._require_owned("update")
         return self._target.update(config, no_save)
-
-    def unwrap(self, ctx: "Context") -> Fiber:
-        """Return the real fiber, for a host that holds an unrestricted context.
-
-        Args:
-            ctx: The context that proves the authority. Its def site (`ctx.shadow`,
-                or `ctx`) must carry no restriction. A host service method passes
-                its own context.
-
-        Raises:
-            CordisError: If the def site of `ctx` is restricted.
-        """
-        if ctx._def_site._restrictions:
-            raise CordisError("cannot unwrap a fiber view in a restricted context")
-        return self._target
 
     def _require_owned(self, operation: str) -> None:
         if not self._owned:

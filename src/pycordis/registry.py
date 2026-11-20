@@ -32,7 +32,7 @@ from pycordis.scheduler import Scheduler, owner_thread
 from pycordis.traceable import get_traceable
 
 if TYPE_CHECKING:
-    from pycordis.context import Context
+    from pycordis.context import Context, ContextView
 
 
 class Applicable(Protocol):
@@ -134,8 +134,10 @@ def inject(name: str, config: object = None) -> Callable[[Any], Any]:
     return decorate
 
 
-def _call_method(instance: object, name: str, ctx: "Context") -> Any:
-    return getattr(get_traceable(ctx, instance), name)()
+def _call_method(instance: object, name: str, ctx: "Context | ContextView") -> Any:
+    from pycordis.context import real_context  # context.py imports this module
+
+    return getattr(get_traceable(real_context(ctx), instance), name)()
 
 
 def _invalid(component: object) -> TypeError:
