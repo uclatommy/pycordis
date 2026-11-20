@@ -219,12 +219,12 @@ manual: in `uv run python`, run the #16 reproduction and the dispose case from t
 
 ## Code Standards
 
-- [Python Coding Standards](../../../.github/instructions/python-coding-standards.instructions.md):
+- Python Coding Standards (`.github/instructions/python-coding-standards.instructions.md`):
   bug remediation (invariant, sibling cases, enforcement point), mirror items
-- [Docstrings & Markdown Style](../../../.github/instructions/docstrings-and-markdown.instructions.md)
-- [Testing Standards](../../../.github/instructions/testing-standards.instructions.md): seeded
+- Docstrings & Markdown Style (`.github/instructions/docstrings-and-markdown.instructions.md`)
+- Testing Standards (`.github/instructions/testing-standards.instructions.md`): seeded
   contract schedules, parametrized cases
-- [Upstream Porting](../../../.github/instructions/upstream-porting.instructions.md): bugs that
+- Upstream Porting (`.github/instructions/upstream-porting.instructions.md`): bugs that
   upstream also has, divergence evidence
 
 This spec is scaffolding — do not cite it, its filename, or its increment numbers in source,

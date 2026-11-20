@@ -240,12 +240,12 @@ of every docstring in `traceable.py` that names `Exposure`
 
 ## Code Standards
 
-- [Python Coding Standards](../../../.github/instructions/python-coding-standards.instructions.md):
+- Python Coding Standards (`.github/instructions/python-coding-standards.instructions.md`):
   enforcement point, no vestigial code (the report reference sentence)
-- [Docstrings & Markdown Style](../../../.github/instructions/docstrings-and-markdown.instructions.md)
-- [Testing Standards](../../../.github/instructions/testing-standards.instructions.md): parametrized
+- Docstrings & Markdown Style (`.github/instructions/docstrings-and-markdown.instructions.md`)
+- Testing Standards (`.github/instructions/testing-standards.instructions.md`): parametrized
   cases, public surface only
-- [Upstream Porting](../../../.github/instructions/upstream-porting.instructions.md): divergence
+- Upstream Porting (`.github/instructions/upstream-porting.instructions.md`): divergence
   evidence
 
 This spec is scaffolding — do not cite it, its filename, or its increment numbers in source,
