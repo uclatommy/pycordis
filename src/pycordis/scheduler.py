@@ -59,16 +59,33 @@ class StepKind(Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class StepOwner:
+    """A read-only record of the fiber that owns a step.
+
+    The record holds no fiber, so an observer that keeps it gains no authority over the
+    fiber. A host that needs the fiber finds it by `uid` in its own fiber tree.
+
+    Attributes:
+        name: The name of the fiber at the end of the step.
+        uid: The uid of the fiber at the end of the step, or `None` when the step
+            disposed the fiber, or when the fiber was disposed before the step ran.
+    """
+
+    name: str
+    uid: int | None
+
+
+@dataclass(frozen=True, slots=True)
 class StepReport:
     """The measurement of one scheduler step, as `observe_steps` delivers it.
 
-    A callback must not keep a report after it returns: the report holds a reference
-    to its fiber.
+    A report holds no fiber, so a callback can keep it.
 
     Attributes:
         duration: The time that the step took, in seconds, from the scheduler clock.
         kind: The way that the step began.
-        fiber: The fiber that owns the step, or `None` when the step has no owner.
+        owner: The fiber that owns the step, as a record, or `None` when the step has
+            no owner.
         label: The label of the effect that owns the step, or `None`.
         error: The exception that leaves the step, or `None`. A task catches every
             `Exception` and rejects its `Deferred`, so a task that fails gives `None`.
@@ -77,7 +94,7 @@ class StepReport:
 
     duration: float
     kind: StepKind
-    fiber: "Fiber | None"
+    owner: StepOwner | None
     label: str | None
     error: BaseException | None
 
@@ -158,7 +175,9 @@ class Scheduler(ABC):
         finally:
             duration = clock() - started
             self._step = outer
-            self._report(StepReport(duration, step.kind, step.fiber, step.label, error))
+            fiber = step.fiber
+            owner = None if fiber is None else StepOwner(fiber.name, fiber.uid)
+            self._report(StepReport(duration, step.kind, owner, step.label, error))
 
     def _claim_step(self, fiber: "Fiber", label: str) -> None:
         """Give the running submitted step an owner, when it has none.
@@ -494,18 +513,18 @@ def observe_steps(
     that a `ManualClock` runs outside a step are not steps. With no callback
     registered, a step costs no clock read and no report.
 
-    A task step reports the fiber that owns the task and the label of the effect that
-    owns it, or `None` for a task that no effect owns. A timer callback that a clock
-    submits (such as `ThreadingClock`) reports the fiber and the label of its timer
-    effect; a step that runs several timer callbacks reports the first. The `sleep`
-    and `ticks` timers report no fiber, and the task that they wake reports its own
-    owner. A step that a host submits reports no fiber.
+    A task step reports the owner of the task and the label of the effect that owns it,
+    or `None` for a task that no effect owns. A timer callback that a clock submits
+    (such as `ThreadingClock`) reports the owner and the label of its timer effect; a
+    step that runs several timer callbacks reports the first. The `sleep` and `ticks`
+    timers report no owner, and the task that they wake reports its own owner. A step
+    that a host submits reports no owner. The owner is a `StepOwner` record, never a
+    fiber.
 
     A callback only observes. While it runs, a call into pycordis from it raises
     `CordisError`, because lifecycle work that a timing report starts would make the
-    result depend on timing. A callback can read `fiber.name`, `fiber.uid`, and
-    `fiber.state`, and it can call `Scheduler.submit`. It must not keep a report after
-    it returns.
+    result depend on timing. A callback can read the report and call
+    `Scheduler.submit`.
 
     A step that raises sends its report, with `error` set, and then the exception
     propagates. A callback that raises an `Exception` is logged, and the other

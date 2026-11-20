@@ -1,5 +1,6 @@
 """Change reports, moves between trees, and the options that the loader keeps."""
 
+import logging
 from typing import Any
 
 import pytest
@@ -393,3 +394,26 @@ def test_the_self_dispose_of_a_component_is_the_only_change_that_nobody_asked_fo
 
     assert loader.resolve("x").options == {"id": "x", "name": "foo", "disabled": True}
     assert [change.id for change in loader.changes] == ["x"]
+
+
+@pytest.mark.divergence("notification-errors")
+def test_a_failed_save_is_logged_and_does_not_fail_the_update(
+    loader: RecordingLoader,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    loader.mock("foo")
+    identifier = loader.create({"name": "foo", "config": {"a": 4}}).result()
+    error = OSError("disk full")
+
+    def fail(change: EntryChange) -> None:
+        raise error
+
+    monkeypatch.setattr(loader, "commit", fail)
+    fiber = loader.fiber(identifier)
+
+    with caplog.at_level(logging.ERROR, logger="pycordis"):
+        fiber.update({"a": 5}).result()
+
+    assert fiber.config == {"a": 5}
+    assert [r.exc_info and r.exc_info[1] for r in caplog.records] == [error]

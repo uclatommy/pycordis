@@ -1,5 +1,6 @@
 """Tests for `Deferred`, tasks, `ImmediateScheduler`, and the `FakeClock` helper."""
 
+import dataclasses
 import gc
 import logging
 import random
@@ -30,11 +31,13 @@ from test_invariants import (
 from pycordis.context import Context
 from pycordis.deferred import Deferred
 from pycordis.errors import CordisError
+from pycordis.fiber import Fiber
 from pycordis.scheduler import (
     FramePumpScheduler,
     ImmediateScheduler,
     Scheduler,
     StepKind,
+    StepOwner,
     StepReport,
     observe_steps,
     spawn,
@@ -599,7 +602,7 @@ def test_each_step_reports_its_kind_and_duration(stepper: Stepper) -> None:
         (StepKind.SUBMITTED, 1.0),
         (StepKind.RESUME, 2.0),
     ]
-    assert all(r.fiber is None and r.label is None for r in reports)
+    assert all(r.owner is None and r.label is None for r in reports)
 
 
 def test_a_step_that_raises_reports_before_the_exception_propagates(
@@ -743,10 +746,13 @@ def test_a_task_step_reports_its_fiber_and_its_effect_label() -> None:
     pump.pump(100)
 
     slow = [r for r in reports if r.label == "slow-effect" and r.duration > 0]
-    assert [(r.kind, r.fiber, r.duration) for r in slow] == [
-        (StepKind.START, fiber, pytest.approx(0.02))
+    owner = StepOwner(fiber.name, fiber.uid)
+    assert [(r.kind, r.owner, r.duration) for r in slow] == [
+        (StepKind.START, owner, pytest.approx(0.02))
     ]
-    unlabeled = [r for r in reports if r.fiber is fiber and r.label is None]
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        slow[0].owner.uid = None  # type: ignore[union-attr, misc]
+    unlabeled = [r for r in reports if r.owner == owner and r.label is None]
     assert unlabeled, "the load of the fiber reports its owner and no label"
 
 
@@ -791,7 +797,9 @@ def test_a_timer_callback_through_a_threading_clock_reports_its_fiber_and_label(
 
     claimed = [r for r in reports if r.label == "ctx.interval()"]
     assert claimed
-    assert {(r.kind, r.fiber) for r in claimed} == {(StepKind.SUBMITTED, fiber)}
+    assert {(r.kind, r.owner) for r in claimed} == {
+        (StepKind.SUBMITTED, StepOwner(fiber.name, fiber.uid))
+    }
 
 
 def test_a_step_that_runs_several_timer_callbacks_reports_the_first(
@@ -813,9 +821,47 @@ def test_a_step_that_runs_several_timer_callbacks_reports_the_first(
 
     scheduler.submit(lambda: manual.advance(5.0))
 
-    assert [(r.kind, r.fiber, r.label) for r in reports] == [
-        (StepKind.SUBMITTED, fiber, "ctx.timeout()")
+    assert [(r.kind, r.owner, r.label) for r in reports] == [
+        (StepKind.SUBMITTED, StepOwner(fiber.name, fiber.uid), "ctx.timeout()")
     ]
+
+
+def _held(report: StepReport) -> list[object]:
+    """Every attribute value of a report and of its owner."""
+    values = [getattr(report, f.name) for f in dataclasses.fields(report)]
+    if report.owner is not None:
+        values += [
+            getattr(report.owner, f.name) for f in dataclasses.fields(report.owner)
+        ]
+    return values
+
+
+def test_a_task_step_of_a_disposed_fiber_reports_its_name_and_no_uid() -> None:
+    pump = FramePumpScheduler()
+    root = Context(pump)
+    gate = Deferred[None]()
+    reports: list[StepReport] = []
+
+    def plugin(ctx: Context, config: object) -> None:
+        def effect() -> Callable[[], Coroutine[Any, Any, None]]:
+            async def teardown() -> None:
+                await gate
+
+            return teardown
+
+        ctx.effect(effect, "held")
+
+    fiber = root.use(plugin)
+    pump.pump(100)
+    observe_steps(pump, reports.append)
+    fiber.dispose()
+    pump.pump(100)
+    gate.resolve(None)
+    pump.pump(100)
+
+    assert {r.owner for r in reports if r.kind is StepKind.RESUME} == {
+        StepOwner(fiber.name, None)
+    }
 
 
 @pytest.mark.contract("LIFE-CONFLUENT")
@@ -835,8 +881,9 @@ def test_an_observer_that_calls_pycordis_does_not_change_the_lifecycle_result(
             with pytest.raises(CordisError, match="step observer cannot call"):
                 root.get("a")
             refused.append("refused")
-            if report.fiber is not None:
-                names.append(report.fiber.name)
+            assert not any(isinstance(v, Fiber) for v in _held(report))
+            if report.owner is not None:
+                names.append(report.owner.name)
             if len(refused) == 1:
                 pump.submit(lambda: None)
 

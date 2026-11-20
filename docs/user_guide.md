@@ -131,6 +131,11 @@ If `apply` raises, the fiber goes to `FAILED`, pycordis reverts the effects that
 registered, and `fiber.error` holds the exception. The error does not reach the parent or the
 siblings. The fiber does not load again until its component or configuration changes.
 
+An error in a listener of a notification event (`internal/plugin`, `internal/replace`,
+`internal/status`, `internal/service`, `internal/commit`, or `internal/dispatch`) does not
+stop the change that the event reports. pycordis logs the error with the logger of the
+listener's fiber, and calls the next listener.
+
 ### Configuration
 
 A component can have a `Config` attribute: an object with `model_validate`, or a function from
@@ -274,7 +279,11 @@ The loader follows these rules:
   component of the entry disposes its own fiber (the loader then sets `disabled: True`). The
   loss of a group or of a dependency never changes them.
 - **Saving**: a host that saves changes overrides `EntryTree.commit`. It receives an
-  `EntryChange` after each change, with copies of the new and the previous options.
+  `EntryChange` after each change, with copies of the new and the previous options. `commit`
+  must not raise. If it raises for a change that a fiber makes itself (`fiber.update`, or a
+  component that disposes its own fiber), the loader logs the error with the logger of its
+  fiber, and the change stays applied in memory but is not saved. If it raises for a call of
+  `create`, `update`, or `remove`, the error goes to the caller.
 - **Moves**: `update(id, {}, parent)` moves an entry. The component keeps running when the new
   group has the same isolation, intercepts, and `meta` as the old one. Otherwise, and for a
   move to another tree, the loader loads the component again. A change of `isolate`, `name`,

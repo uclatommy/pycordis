@@ -696,7 +696,10 @@ class Context:
     ) -> EffectHandle:
         """Register `listener` for the event `name` on this context's fiber.
 
-        The fiber removes the listener when it unloads.
+        The fiber removes the listener when it unloads. An error that the listener
+        raises goes to the code that dispatches the event. For the notification events
+        (see `InternalEventName`), `emit` logs the error with the logger of this
+        context's fiber instead, and the change that the event reports completes.
 
         Args:
             name: The event name.
@@ -737,6 +740,10 @@ class Context:
     @owner_thread("scheduler")
     def emit(self, name: EventName, *args: Any, this: object = None) -> None:
         """Call every listener of `name` with `args`, and ignore the results.
+
+        An error that a listener raises stops the dispatch and goes to the caller. For
+        the notification events (see `InternalEventName`), `emit` logs the error with
+        the logger of the listener's fiber and calls the next listener.
 
         Args:
             name: The event name.
@@ -1097,14 +1104,13 @@ def restrict(
 
         - A value of a type that the boundary does not recognize and that its class
           does not mark passes unchanged. This includes an object that holds a host
-          fiber or context, a callable object that is not a function (a lambda,
-          `def`, method, builtin, or `functools.partial`), and a subclass of `tuple`,
-          `list`, `dict`, `set`, or `frozenset`. A host service that returns such an
-          object gives a restricted caller the same authority as that object. Declare
-          an `Exposure` on the class to close the path for that class. The loader,
+          fiber or context, a callable object whose type is not a function, method,
+          builtin, or `functools.partial`, and a subclass of `tuple`, `list`, `dict`,
+          `set`, or `frozenset`. A host service that returns such an object gives a
+          restricted caller the same authority as that object. Declare an `Exposure`
+          on the class to close the path for that class; an `Exposure` on a callable
+          class keeps the view callable. The loader,
           the loader entries and groups, `ReloadResult`, and the logger declare one.
-        - `Scheduler.observe_steps` gives the real fiber of each step in
-          `StepReport.fiber`.
         - A service that a restricted component admits has its own authority:
           `loader` lets the component create, update, and remove entries, and `hmr`
           lets it reload modules. Provide `Loader` and `Hmr` in an unrestricted

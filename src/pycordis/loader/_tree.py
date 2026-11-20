@@ -343,4 +343,10 @@ class EntryTree(ABC):
 
         The tree calls it after the change is applied, on the owner thread. A host that
         stores its entries overrides it. The call must not raise.
+
+        If it raises for a change that a fiber makes itself (`fiber.update`, or a
+        component that disposes its own fiber), the loader logs the `Exception` with the
+        logger of its own fiber. The change stays applied in memory but is not saved. If
+        it raises for a call of `create`, `update`, or `remove`, the error goes to the
+        caller of that method.
         """
